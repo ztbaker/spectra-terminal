@@ -1,0 +1,30 @@
+# Virtual environments
+backend/.venv/
+.venv/
+
+# Environment files with real secrets
+backend/.env
+.env
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Pytest / test artifacts
+.pytest_cache/
+*.db
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# macOS
+.DS_Store
+
+# IDEs
+.vscode/
+.idea/
