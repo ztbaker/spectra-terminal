@@ -48,3 +48,126 @@ def test_financials_cache_miss_returns_none(temp_db):
     from cache import cache_get, TTL
     result = cache_get("financials", "MISSING", TTL["financials"])
     assert result is None
+
+
+from unittest.mock import AsyncMock, patch
+from fastapi.testclient import TestClient
+from main import app
+
+# Re-use this in both equity and financials tests
+FAKE_INFO = {
+    "longName": "Apple Inc.",
+    "currentPrice": 175.50,
+    "previousClose": 172.00,
+    "volume": 55_000_000,
+    "averageVolume": 48_000_000,
+    "marketCap": 2_700_000_000_000,
+    "trailingPE": 28.5,
+    "forwardPE": 26.2,
+    "trailingEps": 6.13,
+    "fiftyTwoWeekHigh": 199.62,
+    "fiftyTwoWeekLow": 124.17,
+    "beta": 1.29,
+    "dividendYield": 0.0053,
+    "sector": "Technology",
+    "industry": "Consumer Electronics",
+    "industryDisp": "Consumer Electronics Devices",
+    "longBusinessSummary": "Apple Inc. designs smartphones.",
+    "exchange": "NMS",
+    "currency": "USD",
+    "country": "United States",
+    "sharesOutstanding": 15_728_700_416,
+    "floatShares": 15_706_000_000,
+    "bid": 175.48,
+    "ask": 175.52,
+    "dayHigh": 176.10,
+    "dayLow": 174.20,
+    "open": 174.50,
+    "companyOfficers": [
+        {"name": "Tim Cook", "title": "Chief Executive Officer"},
+        {"name": "Luca Maestri", "title": "Chief Financial Officer"},
+    ],
+    "address1": "One Apple Park Way",
+    "city": "Cupertino",
+    "state": "CA",
+    "phone": "408-996-1010",
+    "shortRatio": 1.47,
+    "enterpriseToEbitda": 21.3,
+    "priceToBook": 45.6,
+    "fullTimeEmployees": 164_000,
+    "website": "https://www.apple.com",
+    "totalRevenue": 385_706_000_000,
+    "netIncomeToCommon": 96_995_000_000,
+    "grossMargins": 0.4431,
+    "operatingMargins": 0.2994,
+    "debtToEquity": 181.47,
+    "currentRatio": 0.988,
+    "returnOnEquity": 1.601,
+    "returnOnAssets": 0.2217,
+    "revenueGrowth": 0.0204,
+    "earningsGrowth": 0.132,
+}
+
+
+@pytest.fixture
+def client(temp_db):
+    """TestClient with a fresh in-memory DB."""
+    from database import init_db
+    init_db(temp_db)
+    with TestClient(app) as c:
+        yield c
+
+
+def test_equity_new_fields_present(client):
+    """GET /api/equity/AAPL returns all new DES fields when yfinance has them."""
+    with patch("routers.equity.get_ticker_info", new=AsyncMock(return_value=FAKE_INFO)):
+        resp = client.get("/api/equity/AAPL")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["country"] == "United States"
+    assert data["sub_industry"] == "Consumer Electronics Devices"
+    assert data["ceo"] == "Tim Cook"
+    assert data["address"] == "One Apple Park Way, Cupertino, CA"
+    assert data["phone"] == "408-996-1010"
+    assert data["short_ratio"] == pytest.approx(1.47)
+    assert data["forward_pe"] == pytest.approx(26.2)
+    assert data["ev_ebitda"] == pytest.approx(21.3)
+    assert data["price_to_book"] == pytest.approx(45.6)
+    assert data["employees"] == 164_000
+    assert data["website"] == "https://www.apple.com"
+
+
+def test_equity_new_fields_null_when_missing(client):
+    """New DES fields are null (not error) when yfinance doesn't have them."""
+    sparse_info = {
+        "longName": "Sparse Corp",
+        "currentPrice": 10.0,
+        "previousClose": 9.5,
+    }
+    with patch("routers.equity.get_ticker_info", new=AsyncMock(return_value=sparse_info)):
+        resp = client.get("/api/equity/SPARSE")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["country"] is None
+    assert data["ceo"] is None
+    assert data["address"] is None
+    assert data["forward_pe"] is None
+
+
+def test_equity_ceo_no_match_returns_none(client):
+    """ceo field is None when companyOfficers has no CEO entry."""
+    info = dict(FAKE_INFO, companyOfficers=[
+        {"name": "Someone", "title": "Chief Financial Officer"}
+    ])
+    with patch("routers.equity.get_ticker_info", new=AsyncMock(return_value=info)):
+        resp = client.get("/api/equity/AAPL")
+    assert resp.status_code == 200
+    assert resp.json()["ceo"] is None
+
+
+def test_equity_address_partial(client):
+    """address field skips null address parts."""
+    info = dict(FAKE_INFO, address1=None, city="Cupertino", state="CA")
+    with patch("routers.equity.get_ticker_info", new=AsyncMock(return_value=info)):
+        resp = client.get("/api/equity/AAPL")
+    assert resp.json()["address"] == "Cupertino, CA"
