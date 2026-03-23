@@ -7,6 +7,20 @@ from cache import cache_get, cache_set, TTL
 router = APIRouter()
 
 
+class FinancialsData(BaseModel):
+    revenue_ttm: float | None = None
+    net_income_ttm: float | None = None
+    eps_ttm: float | None = None
+    gross_margin: float | None = None
+    operating_margin: float | None = None
+    debt_to_equity: float | None = None
+    current_ratio: float | None = None
+    return_on_equity: float | None = None
+    return_on_assets: float | None = None
+    revenue_growth: float | None = None
+    earnings_growth: float | None = None
+
+
 class EquityResponse(BaseModel):
     ticker: str
     company_name: str | None
@@ -119,6 +133,39 @@ def _parse_equity(ticker: str, info: dict) -> dict:
         "employees":     info.get("fullTimeEmployees"),
         "website":       info.get("website"),
     }
+
+
+@router.get("/equity/{ticker}/financials", response_model=FinancialsData)
+async def get_financials(ticker: str):
+    ticker = ticker.upper()
+
+    cached = cache_get("financials", ticker, TTL["financials"])
+    if cached:
+        return FinancialsData(**cached)
+
+    try:
+        info = await get_ticker_info(ticker)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Data fetch failed: {exc}")
+
+    if not info:
+        raise HTTPException(status_code=404, detail=f"No data for {ticker}")
+
+    data = {
+        "revenue_ttm":      info.get("totalRevenue"),
+        "net_income_ttm":   info.get("netIncomeToCommon"),
+        "eps_ttm":          info.get("trailingEps"),
+        "gross_margin":     info.get("grossMargins"),
+        "operating_margin": info.get("operatingMargins"),
+        "debt_to_equity":   info.get("debtToEquity"),
+        "current_ratio":    info.get("currentRatio"),
+        "return_on_equity": info.get("returnOnEquity"),
+        "return_on_assets": info.get("returnOnAssets"),
+        "revenue_growth":   info.get("revenueGrowth"),
+        "earnings_growth":  info.get("earningsGrowth"),
+    }
+    cache_set("financials", ticker, data)
+    return FinancialsData(**data)
 
 
 @router.get("/equity/{ticker}", response_model=EquityResponse)
