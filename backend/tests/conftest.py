@@ -10,13 +10,11 @@ def temp_db(monkeypatch):
     with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
         db_path = f.name
     monkeypatch.setenv("DB_PATH", db_path)
-    # Reload config and database modules to pick up the new DB_PATH env var
-    if "config" in sys.modules:
-        import config
-        importlib.reload(config)
-    if "database" in sys.modules:
-        import database
-        importlib.reload(database)
+    # Reload modules in dependency order so they pick up the new DB_PATH
+    import config, database, cache
+    importlib.reload(config)
+    importlib.reload(database)
+    importlib.reload(cache)
     yield db_path
     os.unlink(db_path)
 

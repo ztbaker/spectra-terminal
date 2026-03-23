@@ -29,7 +29,10 @@ def _now_ts() -> float:
 
 def _table_for(table_name: str) -> tuple[str, str]:
     """Return (table, key_column) for a given logical table name."""
-    return _TABLE_MAP.get(table_name, ("price_cache", "ticker"))
+    try:
+        return _TABLE_MAP[table_name]
+    except KeyError:
+        raise KeyError(f"Unknown cache table key: {table_name!r}. Valid keys: {list(_TABLE_MAP)}")
 
 
 def cache_get(table: str, key: str, ttl: int) -> dict | list | None:
