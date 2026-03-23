@@ -7,8 +7,8 @@ import LoadingBar from '../shared/LoadingBar'
 
 // ─── Formatting helpers ───────────────────────────────────────────────────────
 
-function formatLarge(n: number | null): string {
-  if (n === null) return '—'
+function formatLarge(n: number | null | undefined): string {
+  if (n == null) return '—'
   const abs = Math.abs(n)
   if (abs >= 1e12) return (n / 1e12).toFixed(2) + 'T'
   if (abs >= 1e9)  return (n / 1e9).toFixed(2) + 'B'
@@ -17,19 +17,19 @@ function formatLarge(n: number | null): string {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-function formatPrice(n: number | null): string {
-  if (n === null) return '—'
+function formatPrice(n: number | null | undefined): string {
+  if (n == null) return '—'
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-function formatPct(n: number | null): string {
+function formatPct(n: number | null | undefined): string {
   // yfinance returns margins/yields as 0–1 decimals
-  if (n === null) return '—'
+  if (n == null) return '—'
   return (n * 100).toFixed(2) + '%'
 }
 
-function formatMultiple(n: number | null): string {
-  if (n === null) return '—'
+function formatMultiple(n: number | null | undefined): string {
+  if (n == null) return '—'
   return n.toFixed(2) + 'x'
 }
 
@@ -246,6 +246,7 @@ interface Props {
   onNavigate: (cmd: string) => void
 }
 
+// onNavigate reserved for future quick-links (e.g. GP, NEWS for same ticker)
 const DESScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
   const [activeTab, setActiveTab] = useState(1)
 
