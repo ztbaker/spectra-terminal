@@ -206,9 +206,10 @@ def test_financials_endpoint_null_fields(client):
 def test_financials_endpoint_uses_cache(client):
     """Second call to /financials does not call get_ticker_info again (cache hit)."""
     with patch("routers.equity.get_ticker_info", new=AsyncMock(return_value=FAKE_INFO)) as mock:
-        client.get("/api/equity/AAPL/financials")
-        client.get("/api/equity/AAPL/financials")
+        resp1 = client.get("/api/equity/AAPL/financials")
+        resp2 = client.get("/api/equity/AAPL/financials")
     assert mock.call_count == 1
+    assert resp2.json() == resp1.json()
 
 
 def test_financials_endpoint_404_on_empty_info(client):
@@ -216,3 +217,10 @@ def test_financials_endpoint_404_on_empty_info(client):
     with patch("routers.equity.get_ticker_info", new=AsyncMock(return_value={})):
         resp = client.get("/api/equity/FAKE/financials")
     assert resp.status_code == 404
+
+
+def test_financials_endpoint_502_on_service_error(client):
+    """Returns 502 when yfinance raises an exception."""
+    with patch("routers.equity.get_ticker_info", new=AsyncMock(side_effect=RuntimeError("timeout"))):
+        resp = client.get("/api/equity/AAPL/financials")
+    assert resp.status_code == 502
