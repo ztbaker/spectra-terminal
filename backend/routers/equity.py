@@ -1,4 +1,3 @@
-import json
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
@@ -52,14 +51,13 @@ class EquityResponse(BaseModel):
 
 
 def _extract_ceo(info: dict) -> str | None:
-    """Return the name of the first officer whose title indicates CEO.
-
-    Matches both the abbreviation 'ceo' and the full form 'chief executive'.
-    """
-    officers = info.get("companyOfficers") or []
+    """Return the name of the first officer whose title contains 'ceo' or 'chief executive'."""
+    officers = info.get("companyOfficers")
+    if not isinstance(officers, list):
+        return None
     for officer in officers:
-        title_lower = (officer.get("title") or "").lower()
-        if "ceo" in title_lower or "chief executive" in title_lower:
+        title = (officer.get("title") or "").lower()
+        if "ceo" in title or "chief executive" in title:
             return officer.get("name")
     return None
 
