@@ -124,7 +124,7 @@ export interface IndexQuote {
 // ─── FRED / Econ ─────────────────────────────────────────────────────────────
 export interface EconObservation {
   date: string
-  value: number
+  value: number | null
 }
 
 export interface EconSeries {

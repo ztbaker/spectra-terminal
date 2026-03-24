@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchECST, fetchEcon } from '../../lib/api'
-import type { ECSTEntry, EconSeries } from '../../types'
+import type { ECSTEntry, EconSeries, EconObservation } from '../../types'
 import LoadingBar from '../shared/LoadingBar'
 
 interface Props {
@@ -66,7 +66,9 @@ interface ChartProps {
 }
 
 const EconLineChartInline: React.FC<ChartProps> = ({ series }) => {
-  const obs = series.observations.filter(o => o.value !== null && !isNaN(o.value))
+  const obs = series.observations.filter(
+    (o): o is EconObservation & { value: number } => typeof o.value === 'number' && isFinite(o.value)
+  )
   if (obs.length < 2) {
     return <div style={{ color: '#554400', fontSize: '11px' }}>Insufficient data.</div>
   }
@@ -166,10 +168,10 @@ const ECSTRow: React.FC<RowProps> = ({ entry, isExpanded, onToggle }) => {
 
 // ─── Category header row ──────────────────────────────────────────────────────
 
-const CategoryHeader: React.FC<{ label: string }> = ({ label }) => (
+const CategoryHeader: React.FC<{ label: string; colSpan: number }> = ({ label, colSpan }) => (
   <tr>
     <td
-      colSpan={6}
+      colSpan={colSpan}
       style={{
         padding: '8px 12px 4px',
         color: '#ffcc00',
@@ -269,9 +271,16 @@ const ECSTScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
                 </td>
               </tr>
             )}
+            {!isLoading && !isError && grouped.length === 0 && (
+              <tr>
+                <td colSpan={COLUMN_COUNT} style={{ padding: '24px 12px', color: '#554400', textAlign: 'center', fontSize: '11px' }}>
+                  NO DATA AVAILABLE.
+                </td>
+              </tr>
+            )}
             {grouped.map(([category, entries]) => (
               <React.Fragment key={category}>
-                <CategoryHeader label={category} />
+                <CategoryHeader label={category} colSpan={COLUMN_COUNT} />
                 {entries.map(entry => (
                   <React.Fragment key={entry.series_id}>
                     <ECSTRow
