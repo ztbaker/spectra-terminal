@@ -25,6 +25,7 @@ import GPOScreen      from './components/screens/GPOScreen'
 import GIPScreen      from './components/screens/GIPScreen'
 import WEIScreen      from './components/screens/WEIScreen'
 import HSScreen       from './components/screens/HSScreen'
+import ECSTScreen     from './components/screens/ECSTScreen'
 
 // ─── F-key → command map ────────────────────────────────────────────────────
 const FKEY_COMMANDS: Record<string, string> = {
@@ -56,6 +57,7 @@ function HomeScreen({ onNavigate }: { onNavigate: (cmd: string) => void }) {
     { label: 'CRYPTO',    cmd: 'CRYPTO',  desc: 'Crypto dashboard' },
     { label: 'EARNINGS',  cmd: 'EARN',    desc: 'Earnings calendar' },
     { label: 'FILINGS',   cmd: 'AAPL FILINGS', desc: 'SEC filings' },
+    { label: 'ECST',      cmd: 'ECST',         desc: 'Economic statistics' },
   ]
 
   return (
@@ -236,6 +238,9 @@ function App() {
 
       case 'hs':
         return <HSScreen onNavigate={handleNavigate} />
+
+      case 'ecst':
+        return <ECSTScreen onNavigate={handleNavigate} />
 
       case 'portfolio':
         return <PortfolioScreen onNavigate={handleNavigate} />

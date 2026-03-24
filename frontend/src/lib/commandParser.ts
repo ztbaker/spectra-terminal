@@ -75,6 +75,7 @@ const STANDALONE_COMMANDS: Record<string, ScreenType> = {
   PORTFOLIO: 'portfolio',
   WLT:       'watchlist',
   WATCHLIST: 'watchlist',
+  ECST:      'ecst',
   ECON:      'econ',
   EARN:      'earnings',
   EARNINGS:  'earnings',
