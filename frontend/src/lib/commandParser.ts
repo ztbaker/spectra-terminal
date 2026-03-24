@@ -81,6 +81,7 @@ const STANDALONE_COMMANDS: Record<string, ScreenType> = {
   SCR:       'screener',
   SCREENER:  'screener',
   FX:        'fx',
+  FXC:       'fxc',
   CRYPTO:    'crypto',
   MACRO:     'macro',
   HOME:      'home',

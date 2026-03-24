@@ -16,6 +16,7 @@ import WatchlistScreen from './components/screens/WatchlistScreen'
 import EarningsScreen from './components/screens/EarningsScreen'
 import ScreenerScreen from './components/screens/ScreenerScreen'
 import FXScreen       from './components/screens/FXScreen'
+import FXCScreen      from './components/screens/FXCScreen'
 import CryptoScreen   from './components/screens/CryptoScreen'
 import FilingsScreen  from './components/screens/FilingsScreen'
 import DESScreen      from './components/screens/DESScreen'
@@ -51,6 +52,7 @@ function HomeScreen({ onNavigate }: { onNavigate: (cmd: string) => void }) {
     { label: 'PORTFOLIO', cmd: 'PORT',    desc: 'Portfolio tracker' },
     { label: 'SCREENER',  cmd: 'SCR',     desc: 'Stock screener' },
     { label: 'FX',        cmd: 'FX',      desc: 'FX rates' },
+    { label: 'FXC',       cmd: 'FXC',     desc: 'Cross currency matrix' },
     { label: 'CRYPTO',    cmd: 'CRYPTO',  desc: 'Crypto dashboard' },
     { label: 'EARNINGS',  cmd: 'EARN',    desc: 'Earnings calendar' },
     { label: 'FILINGS',   cmd: 'AAPL FILINGS', desc: 'SEC filings' },
@@ -252,6 +254,9 @@ function App() {
 
       case 'fx':
         return <FXScreen onNavigate={handleNavigate} />
+
+      case 'fxc':
+        return <FXCScreen onNavigate={handleNavigate} />
 
       case 'crypto':
         return <CryptoScreen onNavigate={handleNavigate} />
