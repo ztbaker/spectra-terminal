@@ -62,7 +62,7 @@ app.include_router(crypto.router,    prefix="/api")
 app.include_router(filings.router,   prefix="/api")
 app.include_router(macro.router,     prefix="/api")
 app.include_router(indices.router,   prefix="/api")
-app.include_router(ecst.router,     prefix="/api")
+app.include_router(ecst.router,      prefix="/api")
 
 
 @app.get("/health")

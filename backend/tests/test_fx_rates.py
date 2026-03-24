@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, patch
 from fastapi.testclient import TestClient
 from main import app
 from database import init_db
+from routers.fx import FX_PAIRS
 
 
 FAKE_QUOTE = {"price": 1.0832, "prev_close": 1.0800}
@@ -44,8 +45,8 @@ def test_fx_rates_uses_cache_on_second_call(client):
     with patch("routers.fx.get_fast_quote", new=AsyncMock(return_value=FAKE_QUOTE)) as mock:
         client.get("/api/fx/rates")
         client.get("/api/fx/rates")
-    # 9 pairs fetched once, not twice
-    assert mock.call_count == 9
+    # Each pair fetched once, not twice
+    assert mock.call_count == len(FX_PAIRS)
 
 
 def test_fx_rates_handles_null_price_gracefully(client):
