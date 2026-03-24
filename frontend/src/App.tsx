@@ -19,6 +19,11 @@ import FXScreen       from './components/screens/FXScreen'
 import CryptoScreen   from './components/screens/CryptoScreen'
 import FilingsScreen  from './components/screens/FilingsScreen'
 import DESScreen      from './components/screens/DESScreen'
+import GScreen        from './components/screens/GScreen'
+import GPOScreen      from './components/screens/GPOScreen'
+import GIPScreen      from './components/screens/GIPScreen'
+import WEIScreen      from './components/screens/WEIScreen'
+import HSScreen       from './components/screens/HSScreen'
 
 // ─── F-key → command map ────────────────────────────────────────────────────
 const FKEY_COMMANDS: Record<string, string> = {
@@ -26,7 +31,7 @@ const FKEY_COMMANDS: Record<string, string> = {
   F2:  'PORT',
   F3:  'MACRO',
   F4:  'ECON',
-  F5:  'NEWS',
+  F5:  'N',
   F6:  'EARN',
   F7:  'SCR',
   F8:  'FX',
@@ -40,7 +45,7 @@ function HomeScreen({ onNavigate }: { onNavigate: (cmd: string) => void }) {
     { label: 'EQUITY',    cmd: 'AAPL',    desc: 'Type any ticker + EQUITY' },
     { label: 'CHART',     cmd: 'AAPL GP', desc: 'Candlestick chart' },
     { label: 'OPTIONS',   cmd: 'AAPL OPT', desc: 'Options chain' },
-    { label: 'NEWS',      cmd: 'NEWS',    desc: 'Market news feed' },
+    { label: 'NEWS',      cmd: 'N',       desc: 'Market news feed' },
     { label: 'MACRO',     cmd: 'MACRO',   desc: 'FRED macro dashboard' },
     { label: 'WATCHLIST', cmd: 'WLT',     desc: 'Your watchlist' },
     { label: 'PORTFOLIO', cmd: 'PORT',    desc: 'Portfolio tracker' },
@@ -55,15 +60,15 @@ function HomeScreen({ onNavigate }: { onNavigate: (cmd: string) => void }) {
     <div style={{ padding: '24px 32px', color: '#ff9900' }}>
       {/* ASCII art header */}
       <pre style={{ color: '#ff9900', fontSize: '11px', lineHeight: 1.3, marginBottom: '24px' }}>
-{`╔══════════════════════════════════════════════════════════╗
-║  ██████╗ ██╗    ██╗ █████╗ ██╗  ██╗███████╗██████╗      ║
-║  ╚════██╗██║    ██║██╔══██╗██║ ██╔╝██╔════╝██╔══██╗     ║
-║   █████╔╝██║ █╗ ██║███████║█████╔╝ █████╗  ██████╔╝     ║
-║  ██╔═══╝ ██║███╗██║██╔══██║██╔═██╗ ██╔══╝  ██╔══██╗     ║
-║  ███████╗╚███╔███╔╝██║  ██║██║  ██╗███████╗██║  ██║     ║
-║  ╚══════╝ ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝     ║
-║                    Z A C   T E R M I N A L               ║
-╚══════════════════════════════════════════════════════════╝`}
+{`╔════════════════════════════════════════════════════════════════════════╗
+║    ████████╗███████╗██████╗ ███╗   ███╗██╗███╗   ██╗ █████╗ ██╗        ║
+║    ╚══██╔══╝██╔════╝██╔══██╗████╗ ████║██║████╗  ██║██╔══██╗██║        ║
+║       ██║   █████╗  ██████╔╝██╔████╔██║██║██╔██╗ ██║███████║██║        ║
+║       ██║   ██╔══╝  ██╔══██╗██║╚██╔╝██║██║██║╚██╗██║██╔══██║██║        ║
+║       ██║   ███████╗██║  ██╗██║ ╚═╝ ██║██║██║ ╚████║██║  ██║███████╗   ║
+║       ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝   ║
+║                                B A K E R                               ║
+╚════════════════════════════════════════════════════════════════════════╝`}
       </pre>
 
       <div style={{ color: '#cc7700', fontSize: '11px', marginBottom: '20px' }}>
@@ -107,6 +112,11 @@ function HomeScreen({ onNavigate }: { onNavigate: (cmd: string) => void }) {
   )
 }
 
+// Screens that require a ticker — will inherit the last-used ticker when none is typed
+const TICKER_SCREENS = new Set<ScreenType>([
+  'equity', 'chart', 'options', 'filings', 'des', 'gpo', 'gip', 'news',
+])
+
 // ─── Main App ────────────────────────────────────────────────────────────────
 function App() {
   const [activeCommand, setActiveCommand] = useState<ParsedCommand | null>(() => {
@@ -118,12 +128,37 @@ function App() {
     return null
   })
 
-  const handleCommand = useCallback((cmd: ParsedCommand) => {
-    setActiveCommand(cmd)
+  // Sticky ticker: persisted so it survives page refresh
+  const [lastTicker, setLastTicker] = useState<string>(() => {
     try {
-      localStorage.setItem('bb_last_command', JSON.stringify(cmd))
+      const t = localStorage.getItem('bb_last_ticker')
+      if (t) return t
+      // Fall back to ticker from last command
+      const saved = localStorage.getItem('bb_last_command')
+      if (saved) {
+        const cmd = JSON.parse(saved) as ParsedCommand
+        return cmd.ticker ?? ''
+      }
     } catch { /* ignore */ }
-  }, [])
+    return ''
+  })
+
+  const handleCommand = useCallback((cmd: ParsedCommand) => {
+    // If a ticker-required screen has no ticker, substitute the last-used ticker
+    let resolved = cmd
+    if (!cmd.ticker && TICKER_SCREENS.has(cmd.screen) && lastTicker) {
+      resolved = { ...cmd, ticker: lastTicker }
+    }
+    // Update sticky ticker whenever one is explicitly provided
+    if (resolved.ticker && TICKER_SCREENS.has(resolved.screen)) {
+      setLastTicker(resolved.ticker)
+      try { localStorage.setItem('bb_last_ticker', resolved.ticker) } catch { /* ignore */ }
+    }
+    setActiveCommand(resolved)
+    try {
+      localStorage.setItem('bb_last_command', JSON.stringify(resolved))
+    } catch { /* ignore */ }
+  }, [lastTicker])
 
   // Allow screens to trigger navigation programmatically
   const handleNavigate = useCallback((raw: string) => {
@@ -179,6 +214,27 @@ function App() {
           ? <DESScreen ticker={ticker} onNavigate={handleNavigate} />
           : <HomeScreen onNavigate={handleNavigate} />
 
+      // G (manager) and G1–G9 (graph slots)
+      // ticker field carries the graph slot number ('1'–'9') or undefined for manager
+      case 'graph':
+        return <GScreen graphId={ticker} onNavigate={handleNavigate} />
+
+      case 'gpo':
+        return ticker
+          ? <GPOScreen ticker={ticker} onNavigate={handleNavigate} />
+          : <HomeScreen onNavigate={handleNavigate} />
+
+      case 'gip':
+        return ticker
+          ? <GIPScreen ticker={ticker} onNavigate={handleNavigate} />
+          : <HomeScreen onNavigate={handleNavigate} />
+
+      case 'wei':
+        return <WEIScreen onNavigate={handleNavigate} />
+
+      case 'hs':
+        return <HSScreen onNavigate={handleNavigate} />
+
       case 'portfolio':
         return <PortfolioScreen onNavigate={handleNavigate} />
 
@@ -211,7 +267,7 @@ function App() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#000', overflow: 'hidden' }}>
-      <CommandBar onCommand={handleCommand} activeCommand={activeCommand} />
+      <CommandBar onCommand={handleCommand} activeCommand={activeCommand} contextTicker={lastTicker} />
       <PanelLayout>
         {renderScreen()}
       </PanelLayout>

@@ -1,5 +1,74 @@
 import type { ParsedCommand, ScreenType } from '../types'
 
+// ─── Bloomberg asset class qualifiers ────────────────────────────────────────
+
+const ASSET_CLASSES = new Set(['EQUITY', 'CURNCY', 'COMDTY', 'INDEX', 'CORP', 'GOVT'])
+
+/** Bloomberg exchange code → yfinance ticker suffix */
+const EXCHANGE_SUFFIX: Record<string, string> = {
+  LN: '.L',   // London
+  GY: '.DE',  // Germany (XETRA)
+  FP: '.PA',  // Paris
+  JP: '.T',   // Tokyo
+  HK: '.HK',  // Hong Kong
+  AU: '.AX',  // ASX
+  CN: '.TO',  // TSX
+  SS: '.SS',  // Shanghai
+  SZ: '.SZ',  // Shenzhen
+  IT: '.MI',  // Milan
+  SM: '.MC',  // Madrid
+  NA: '.AS',  // Amsterdam
+  SW: '.SW',  // Switzerland
+  SE: '.ST',  // Stockholm
+  US: '',     // US equities — no suffix needed
+}
+
+/** Bloomberg index mnemonics → yfinance tickers */
+const INDEX_TICKER_MAP: Record<string, string> = {
+  SPX:  '^GSPC',
+  INDU: '^DJI',
+  CCMP: '^IXIC',
+  VIX:  '^VIX',
+  RTY:  '^RUT',
+  UKX:  '^FTSE',
+  DAX:  '^GDAXI',
+  CAC:  '^FCHI',
+  NKY:  '^N225',
+  HSI:  '^HSI',
+}
+
+/** Bloomberg commodity root tickers → yfinance continuous futures */
+const COMDTY_TICKER_MAP: Record<string, string> = {
+  HG: 'HG=F',  // Copper
+  CL: 'CL=F',  // WTI Crude
+  GC: 'GC=F',  // Gold
+  SI: 'SI=F',  // Silver
+  NG: 'NG=F',  // Natural Gas
+  CO: 'BZ=F',  // Brent Crude
+  W:  'ZW=F',  // Wheat
+  S:  'ZS=F',  // Soybeans
+  C:  'ZC=F',  // Corn
+}
+
+function resolveBloombergTicker(ticker: string, exchange: string | null, assetClass: string): string {
+  switch (assetClass) {
+    case 'CURNCY':
+      return ticker.endsWith('=X') ? ticker : ticker + '=X'
+    case 'COMDTY': {
+      // Strip trailing contract number: HG1 → HG, CL1 → CL
+      const root = ticker.replace(/\d+$/, '')
+      return COMDTY_TICKER_MAP[root] ?? COMDTY_TICKER_MAP[ticker] ?? (root + '=F')
+    }
+    case 'INDEX':
+      return INDEX_TICKER_MAP[ticker] ?? ('^' + ticker)
+    default: // EQUITY, CORP, GOVT
+      if (exchange != null && exchange in EXCHANGE_SUFFIX) {
+        return ticker + EXCHANGE_SUFFIX[exchange]
+      }
+      return ticker
+  }
+}
+
 // ─── Known standalone commands (no ticker) ───────────────────────────────────
 const STANDALONE_COMMANDS: Record<string, ScreenType> = {
   PORT:      'portfolio',
@@ -15,6 +84,10 @@ const STANDALONE_COMMANDS: Record<string, ScreenType> = {
   CRYPTO:    'crypto',
   MACRO:     'macro',
   HOME:      'home',
+  G:         'graph',   // G alone = graph manager
+  WEI:       'wei',
+  WINDEX:    'wei',
+  HS:        'hs',
 }
 
 // ─── Ticker-qualified suffixes ────────────────────────────────────────────────
@@ -23,10 +96,13 @@ const TICKER_SUFFIXES: Record<string, ScreenType> = {
   CHART:    'chart',
   OPT:      'options',
   OPTIONS:  'options',
+  N:        'news',
   NEWS:     'news',
   FILINGS:  'filings',
   EQUITY:   'equity',
   DES:      'des',
+  GPO:      'gpo',
+  GIP:      'gip',
 }
 
 /**
@@ -71,21 +147,72 @@ export function parseCommand(input: string): ParsedCommand {
     return { screen: 'home', raw }
   }
 
+  // 0. G1–G9 graph slot shortcuts (before standalone check so G1 ≠ ticker)
+  if (parts.length === 1 && /^G[1-9]$/.test(parts[0])) {
+    return { screen: 'graph', ticker: parts[0][1], raw }
+  }
+
   // 1. Single-token standalone commands
   if (parts.length === 1) {
     const standalone = STANDALONE_COMMANDS[parts[0]]
     if (standalone) {
       return { screen: standalone, raw }
     }
+    // Single token that is a known ticker suffix (e.g. "GP", "DES", "OPT")
+    // → return screen with no ticker; App will fill in the last-used ticker
+    const suffixScreen = TICKER_SUFFIXES[parts[0]]
+    if (suffixScreen) {
+      return { screen: suffixScreen, raw }
+    }
     // Single token with no known command → treat as ticker → equity
     return { screen: 'equity', ticker: parts[0], raw }
   }
 
-  // 2. Two-token commands: <TICKER> <SUFFIX>  OR  standalone with garbage
+  // 2. Multi-token: detect Bloomberg asset class qualifier
+  //    e.g. "AAPL US Equity", "EURUSD Curncy", "HG1 Comdty GP", "VOD LN Equity DES"
   if (parts.length >= 2) {
-    // Long-form Bloomberg commands: "NVDA US EQUITY DES" → last token is function
+    // Find rightmost asset class token
+    let acIdx = -1
+    for (let i = parts.length - 1; i >= 1; i--) {
+      if (ASSET_CLASSES.has(parts[i])) { acIdx = i; break }
+    }
+
+    if (acIdx >= 1) {
+      const assetClass = parts[acIdx]
+
+      // Function suffix comes after the asset class token
+      let screen: ScreenType = 'equity'
+      const afterAC = parts.slice(acIdx + 1)
+      if (afterAC.length > 0) {
+        const fnScreen = TICKER_SUFFIXES[afterAC[0]]
+        if (fnScreen) screen = fnScreen
+      }
+
+      // Ticker (and optional exchange code) come before the asset class token
+      const beforeAC = parts.slice(0, acIdx)
+      let ticker: string
+      let exchange: string | null = null
+
+      if (beforeAC.length >= 2) {
+        // Last token before asset class may be an exchange code: "VOD LN Equity"
+        const possibleExchange = beforeAC[beforeAC.length - 1]
+        if (possibleExchange in EXCHANGE_SUFFIX) {
+          exchange = possibleExchange
+          ticker = beforeAC[beforeAC.length - 2]
+        } else {
+          ticker = beforeAC[beforeAC.length - 1]
+        }
+      } else {
+        ticker = beforeAC[0]
+      }
+
+      const resolvedTicker = resolveBloombergTicker(ticker, exchange, assetClass)
+      return { screen, ticker: resolvedTicker, raw }
+    }
+
+    // 3. Non-Bloomberg multi-token: <TICKER> <SUFFIX>  OR  standalone
+    const lastToken = parts[parts.length - 1]
     if (parts.length > 2) {
-      const lastToken = parts[parts.length - 1]
       const longFormScreen = TICKER_SUFFIXES[lastToken]
       if (longFormScreen) {
         return { screen: longFormScreen, ticker: parts[0], raw }
