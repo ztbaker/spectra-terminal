@@ -1,5 +1,6 @@
 import asyncio
 import math
+import time
 from typing import Optional
 
 from fastapi import APIRouter
@@ -130,7 +131,6 @@ async def _fetch_pair(pair: str, label: str) -> FXPair:
 @router.get("/fx/rates", response_model=FXRates)
 async def get_fx_rates():
     """Lightweight endpoint: current mid rates only, no chart history. 15s cache."""
-    import time
     cached = cache_get("price", "fx_rates_live", 15)
     if cached:
         return FXRates(**cached)
