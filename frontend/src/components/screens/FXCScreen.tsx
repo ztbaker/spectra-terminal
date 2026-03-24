@@ -12,7 +12,11 @@ interface Props {
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'JPY', 'CHF', 'AUD', 'CAD', 'NZD'] as const
 type Currency = typeof CURRENCIES[number]
 
-// Map each currency to its yfinance pair and whether to invert (CCY→USD = 1/rate)
+// Map each currency to its yfinance pair and inversion flag.
+// yfinance returns:
+//   EURUSD=X, GBPUSD=X, AUDUSD=X, NZDUSD=X → direct CCY/USD rates
+//   USDJPY=X, USDCHF=X, USDCAD=X → USD per 1 CCY (must invert to get CCY/USD)
+// Cross rate: BASE/QUOTE = (BASE→USD) / (QUOTE→USD)
 const CCY_TO_USD_PAIR: Record<Currency, [string, boolean]> = {
   USD: ['', false],
   EUR: ['EURUSD=X', false],
