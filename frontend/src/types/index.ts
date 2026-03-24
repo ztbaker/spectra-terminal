@@ -298,11 +298,95 @@ export interface FinancialsData {
   earnings_growth: number | null
 }
 
+// ─── World Equity Indices (WEI) ───────────────────────────────────────────────
+export interface WorldIndexEntry {
+  ticker:     string
+  name:       string
+  short:      string
+  country:    string
+  region:     string
+  price:      number | null
+  change:     number | null
+  change_pct: number | null
+  volume:     number | null
+  year_high:  number | null
+  year_low:   number | null
+  currency:   string | null
+  error:      string | null
+}
+
+export interface WorldIndicesResponse {
+  indices:    WorldIndexEntry[]
+  fetched_at: number
+}
+
+// ─── Historical Spread (HS) ───────────────────────────────────────────────────
+export interface SpreadPoint {
+  time: string
+  value: number
+}
+
+export interface SpreadData {
+  ticker1:  string
+  ticker2:  string
+  label1:   string
+  label2:   string
+  period:   string
+  spread:   SpreadPoint[]
+  current:  number | null
+  high:     number | null
+  low:      number | null
+  avg:      number | null
+}
+
+// ─── Index constituents ───────────────────────────────────────────────────────
+export interface IndexMember {
+  ticker:     string
+  price:      number | null
+  change:     number | null
+  change_pct: number | null
+  volume:     number | null
+  market_cap: number | null
+}
+
+export interface IndexMembersResponse {
+  index_ticker: string
+  index_name:   string
+  members:      IndexMember[]
+}
+
+// ─── ECST ─────────────────────────────────────────────────────────────────────
+export interface ECSTEntry {
+  series_id: string
+  category: string
+  label: string
+  value: number | null
+  prior: number | null
+  change: number | null
+  units: string
+  frequency: string
+  next_release_date: string | null
+  sparkline: number[]
+}
+
+export interface ECSTResponse {
+  entries: ECSTEntry[]
+  cached?: boolean
+}
+
+// ─── FX Rates (matrix) ────────────────────────────────────────────────────────
+export interface FXRatesResponse {
+  rates: Record<string, number | null>
+  fetched_at: number
+}
+
 // ─── Command parsing ─────────────────────────────────────────────────────────
 export type ScreenType =
   | 'equity' | 'chart' | 'options' | 'news' | 'filings'
   | 'portfolio' | 'watchlist' | 'econ' | 'earnings'
   | 'screener' | 'fx' | 'crypto' | 'macro' | 'home' | 'des'
+  | 'graph' | 'gpo' | 'gip' | 'wei' | 'hs'
+  | 'ecst' | 'fxc'
 
 export interface ParsedCommand {
   screen: ScreenType

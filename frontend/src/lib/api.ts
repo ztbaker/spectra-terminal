@@ -4,6 +4,8 @@ import type {
   EconSeries, MacroDashboard, PortfolioRow, PortfolioPerformance,
   WatchlistRow, WatchlistQuote, EarningsCalendar, ScreenerResponse,
   FXResponse, CryptoResponse, FilingsResponse, FinancialsData,
+  WorldIndicesResponse, IndexMembersResponse, SpreadData,
+  ECSTResponse, FXRatesResponse,
 } from '../types'
 
 const api = axios.create({ baseURL: '/api' })
@@ -27,6 +29,12 @@ export const fetchNews = (ticker = 'MARKET', limit = 50): Promise<NewsResponse> 
 // ─── Indices ─────────────────────────────────────────────────────────────────
 export const fetchIndices = (): Promise<IndexQuote[]> =>
   api.get('/indices').then(r => r.data)
+
+export const fetchWorldIndices = (): Promise<WorldIndicesResponse> =>
+  api.get('/indices/world').then(r => r.data)
+
+export const fetchIndexMembers = (ticker: string): Promise<IndexMembersResponse> =>
+  api.get('/indices/world/members', { params: { ticker } }).then(r => r.data)
 
 // ─── Econ ─────────────────────────────────────────────────────────────────────
 export const fetchEcon = (seriesId: string, start = '2010-01-01'): Promise<EconSeries> =>
@@ -81,8 +89,20 @@ export const fetchCrypto = (): Promise<CryptoResponse> =>
 export const fetchFilings = (ticker: string, type = '10-K', limit = 10): Promise<FilingsResponse> =>
   api.get(`/filings/${ticker}`, { params: { type, limit } }).then(r => r.data)
 
+// ─── Historical Spread ────────────────────────────────────────────────────────
+export const fetchSpread = (ticker1: string, ticker2: string, period = '2y'): Promise<SpreadData> =>
+  api.get('/chart/spread', { params: { ticker1, ticker2, period } }).then(r => r.data)
+
 // ─── Financials ──────────────────────────────────────────────────────────────
 export async function fetchFinancials(ticker: string): Promise<FinancialsData> {
   const { data } = await api.get<FinancialsData>(`/equity/${ticker}/financials`)
   return data
 }
+
+// ─── ECST ─────────────────────────────────────────────────────────────────────
+export const fetchECST = (): Promise<ECSTResponse> =>
+  api.get('/ecst').then(r => r.data)
+
+// ─── FX Rates (matrix) ────────────────────────────────────────────────────────
+export const fetchFXRates = (): Promise<FXRatesResponse> =>
+  api.get('/fx/rates').then(r => r.data)
