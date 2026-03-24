@@ -1,5 +1,4 @@
 import asyncio
-import time
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -65,52 +64,51 @@ class ECSTResponse(BaseModel):
 
 # ─── Release date helper ──────────────────────────────────────────────────────
 
-async def _get_release_date(series_id: str) -> Optional[str]:
+async def _get_release_date(series_id: str, http_client: httpx.AsyncClient) -> Optional[str]:
     """Return the next scheduled FRED release date for a series, or None."""
     api_key = settings.FRED_API_KEY
     if not api_key:
         return None
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     try:
-        async with httpx.AsyncClient(timeout=8.0) as client:
-            # Step 1: Get the release_id for this series
-            r1 = await client.get(
-                "https://api.stlouisfed.org/fred/series",
-                params={"series_id": series_id, "api_key": api_key, "file_type": "json"},
-            )
-            r1.raise_for_status()
-            seriess = r1.json().get("seriess", [])
-            if not seriess:
-                return None
-            release_id = seriess[0].get("release_id")
-            if not release_id:
-                return None
+        # Step 1: Get the release_id for this series
+        r1 = await http_client.get(
+            "https://api.stlouisfed.org/fred/series",
+            params={"series_id": series_id, "api_key": api_key, "file_type": "json"},
+        )
+        r1.raise_for_status()
+        seriess = r1.json().get("seriess", [])
+        if not seriess:
+            return None
+        release_id = seriess[0].get("release_id")
+        if not release_id:
+            return None
 
-            # Step 2: Get the next upcoming release date
-            r2 = await client.get(
-                "https://api.stlouisfed.org/fred/release/dates",
-                params={
-                    "release_id": release_id,
-                    "realtime_start": today,
-                    "sort_order": "asc",
-                    "limit": 1,
-                    "api_key": api_key,
-                    "file_type": "json",
-                },
-            )
-            r2.raise_for_status()
-            dates = r2.json().get("release_dates", [])
-            return dates[0]["date"] if dates else None
+        # Step 2: Get the next upcoming release date
+        r2 = await http_client.get(
+            "https://api.stlouisfed.org/fred/release/dates",
+            params={
+                "release_id": release_id,
+                "realtime_start": today,
+                "sort_order": "asc",
+                "limit": 1,
+                "api_key": api_key,
+                "file_type": "json",
+            },
+        )
+        r2.raise_for_status()
+        dates = r2.json().get("release_dates", [])
+        return dates[0]["date"] if dates else None
     except Exception:
         return None
 
 
 # ─── Per-entry fetch ──────────────────────────────────────────────────────────
 
-async def _fetch_entry(category: str, series_id: str, label: str) -> dict:
+async def _fetch_entry(category: str, series_id: str, label: str, http_client: httpx.AsyncClient) -> dict:
     """Fetch series data and release date concurrently; never raises."""
     series_task = get_series(series_id, start="2020-01-01")
-    release_task = _get_release_date(series_id)
+    release_task = _get_release_date(series_id, http_client)
 
     series_result, release_date = await asyncio.gather(
         series_task, release_task, return_exceptions=True
@@ -158,8 +156,9 @@ async def get_ecst():
     if cached:
         return ECSTResponse(entries=cached, cached=True)
 
-    tasks = [_fetch_entry(cat, sid, label) for cat, sid, label in ECST_SERIES]
-    entries = await asyncio.gather(*tasks)
+    async with httpx.AsyncClient(timeout=8.0) as http_client:
+        tasks = [_fetch_entry(cat, sid, label, http_client) for cat, sid, label in ECST_SERIES]
+        entries = await asyncio.gather(*tasks)
 
     payload = list(entries)
     cache_set("econ", _CACHE_KEY, payload)

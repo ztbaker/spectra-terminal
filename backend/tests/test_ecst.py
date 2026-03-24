@@ -49,7 +49,8 @@ def test_ecst_change_is_latest_minus_prior(client):
     with patch("routers.ecst.get_series", new=AsyncMock(side_effect=_fake_series)), \
          patch("routers.ecst._get_release_date", new=AsyncMock(return_value=None)):
         resp = client.get("/api/ecst")
-    entry = resp.json()["entries"][0]
+    # Pin to a known series rather than relying on order
+    entry = next(e for e in resp.json()["entries"] if e["series_id"] == "GDP")
     assert entry["value"] == pytest.approx(3.7)
     assert entry["prior"] == pytest.approx(3.6)
     assert entry["change"] == pytest.approx(0.1)
