@@ -1,31 +1,128 @@
 import { useState, useCallback, useEffect } from 'react'
 import type { ParsedCommand, ScreenType } from './types'
 import { parseCommand } from './lib/commandParser'
+import { useWorkspace } from './lib/useWorkspace'
 
-import CommandBar from './components/Terminal/CommandBar'
-import StatusBar from './components/Terminal/StatusBar'
-import PanelLayout from './components/Terminal/PanelLayout'
+import CommandBarV3 from './components/Terminal/CommandBarV3'
+import StatusBarV3 from './components/Terminal/StatusBarV3'
+import WorkspaceLayout from './components/Terminal/WorkspaceLayout'
+import PanelV3 from './components/Terminal/PanelV3'
 
-import EquityScreen   from './components/screens/EquityScreen'
-import ChartScreen    from './components/screens/ChartScreen'
-import OptionsScreen  from './components/screens/OptionsScreen'
-import NewsScreen     from './components/screens/NewsScreen'
-import MacroScreen    from './components/screens/MacroScreen'
-import PortfolioScreen from './components/screens/PortfolioScreen'
-import WatchlistScreen from './components/screens/WatchlistScreen'
-import EarningsScreen from './components/screens/EarningsScreen'
-import ScreenerScreen from './components/screens/ScreenerScreen'
-import FXScreen       from './components/screens/FXScreen'
-import FXCScreen      from './components/screens/FXCScreen'
-import CryptoScreen   from './components/screens/CryptoScreen'
-import FilingsScreen  from './components/screens/FilingsScreen'
-import DESScreen      from './components/screens/DESScreen'
-import GScreen        from './components/screens/GScreen'
-import GPOScreen      from './components/screens/GPOScreen'
-import GIPScreen      from './components/screens/GIPScreen'
-import WEIScreen      from './components/screens/WEIScreen'
-import HSScreen       from './components/screens/HSScreen'
-import ECSTScreen     from './components/screens/ECSTScreen'
+import EquityScreenV3   from './components/screens/EquityScreenV3'
+import ChartScreen      from './components/screens/ChartScreen'
+import OptionsScreen    from './components/screens/OptionsScreen'
+import NewsScreen       from './components/screens/NewsScreen'
+import MacroScreen      from './components/screens/MacroScreen'
+import PortfolioScreen  from './components/screens/PortfolioScreen'
+import WatchlistScreen  from './components/screens/WatchlistScreen'
+import EarningsScreen   from './components/screens/EarningsScreen'
+import ScreenerScreen   from './components/screens/ScreenerScreen'
+import FXScreen         from './components/screens/FXScreen'
+import FXCScreen        from './components/screens/FXCScreen'
+import CryptoScreen     from './components/screens/CryptoScreen'
+import FilingsScreen    from './components/screens/FilingsScreen'
+import DESScreen        from './components/screens/DESScreen'
+import GScreen          from './components/screens/GScreen'
+import GPOScreen        from './components/screens/GPOScreen'
+import GIPScreen        from './components/screens/GIPScreen'
+import WEIScreen        from './components/screens/WEIScreen'
+import HSScreen         from './components/screens/HSScreen'
+import ECSTScreen       from './components/screens/ECSTScreen'
+import ETFScreen        from './components/screens/ETFScreen'
+import BondScreen       from './components/screens/BondScreen'
+import CommodityScreen  from './components/screens/CommodityScreen'
+import CongressScreen   from './components/screens/CongressScreen'
+import QuantScreen      from './components/screens/QuantScreen'
+import EconScreen       from './components/screens/EconScreen'
+import HomeScreenV3     from './components/screens/HomeScreenV3'
+
+import C from './lib/colors'
+
+function QuitModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel()
+      if (e.key === 'Enter') onConfirm()
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [onConfirm, onCancel])
+
+  return (
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      background: 'rgba(0, 0, 0, 0.85)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000,
+    }}>
+      <div style={{
+        background: C.surface1,
+        border: `1px solid ${C.amber}`,
+        padding: '32px 48px',
+        textAlign: 'center',
+        borderRadius: '4px',
+        boxShadow: `0 0 30px ${C.amberGlow}`,
+      }}>
+        <div style={{
+          color: C.amber,
+          fontSize: '16px',
+          fontWeight: 700,
+          fontFamily: C.fontDisplay,
+          letterSpacing: '0.1em',
+          marginBottom: '24px',
+        }}>
+          ARE YOU SURE?
+        </div>
+        <div style={{
+          color: C.amberDim,
+          fontSize: '12px',
+          fontFamily: C.fontBody,
+          marginBottom: '32px',
+        }}>
+          This will close BakerTerminal.
+        </div>
+        <div style={{ display: 'flex', gap: '24px', justifyContent: 'center' }}>
+          <button
+            onClick={onConfirm}
+            autoFocus
+            style={{
+              background: C.amber,
+              color: C.surface0,
+              border: 'none',
+              padding: '8px 24px',
+              fontSize: '12px',
+              fontWeight: 700,
+              fontFamily: C.fontDisplay,
+              cursor: 'pointer',
+              letterSpacing: '0.05em',
+            }}
+          >
+            YES
+          </button>
+          <button
+            onClick={onCancel}
+            style={{
+              background: 'transparent',
+              color: C.amberDim,
+              border: `1px solid ${C.amberMute}`,
+              padding: '8px 24px',
+              fontSize: '12px',
+              fontWeight: 700,
+              fontFamily: C.fontDisplay,
+              cursor: 'pointer',
+              letterSpacing: '0.05em',
+            }}
+          >
+            NO
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 // ─── F-key → command map ────────────────────────────────────────────────────
 const FKEY_COMMANDS: Record<string, string> = {
@@ -41,103 +138,32 @@ const FKEY_COMMANDS: Record<string, string> = {
   F10: 'MACRO',
 }
 
-// ─── Home screen ─────────────────────────────────────────────────────────────
-function HomeScreen({ onNavigate }: { onNavigate: (cmd: string) => void }) {
-  const quickLinks: { label: string; cmd: string; desc: string }[] = [
-    { label: 'EQUITY',    cmd: 'AAPL',    desc: 'Type any ticker + EQUITY' },
-    { label: 'CHART',     cmd: 'AAPL GP', desc: 'Candlestick chart' },
-    { label: 'OPTIONS',   cmd: 'AAPL OPT', desc: 'Options chain' },
-    { label: 'NEWS',      cmd: 'N',       desc: 'Market news feed' },
-    { label: 'MACRO',     cmd: 'MACRO',   desc: 'FRED macro dashboard' },
-    { label: 'WATCHLIST', cmd: 'WLT',     desc: 'Your watchlist' },
-    { label: 'PORTFOLIO', cmd: 'PORT',    desc: 'Portfolio tracker' },
-    { label: 'SCREENER',  cmd: 'SCR',     desc: 'Stock screener' },
-    { label: 'FX',        cmd: 'FX',      desc: 'FX rates' },
-    { label: 'FXC',       cmd: 'FXC',     desc: 'Cross currency matrix' },
-    { label: 'CRYPTO',    cmd: 'CRYPTO',  desc: 'Crypto dashboard' },
-    { label: 'EARNINGS',  cmd: 'EARN',    desc: 'Earnings calendar' },
-    { label: 'FILINGS',   cmd: 'AAPL FILINGS', desc: 'SEC filings' },
-    { label: 'ECST',      cmd: 'ECST',         desc: 'Economic statistics' },
-  ]
-
-  return (
-    <div style={{ padding: '24px 32px', color: '#ff9900' }}>
-      {/* ASCII art header */}
-      <pre style={{ color: '#ff9900', fontSize: '11px', lineHeight: 1.3, marginBottom: '24px' }}>
-{`╔════════════════════════════════════════════════════════════════════════╗
-║    ████████╗███████╗██████╗ ███╗   ███╗██╗███╗   ██╗ █████╗ ██╗        ║
-║    ╚══██╔══╝██╔════╝██╔══██╗████╗ ████║██║████╗  ██║██╔══██╗██║        ║
-║       ██║   █████╗  ██████╔╝██╔████╔██║██║██╔██╗ ██║███████║██║        ║
-║       ██║   ██╔══╝  ██╔══██╗██║╚██╔╝██║██║██║╚██╗██║██╔══██║██║        ║
-║       ██║   ███████╗██║  ██╗██║ ╚═╝ ██║██║██║ ╚████║██║  ██║███████╗   ║
-║       ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝   ║
-║                                B A K E R                               ║
-╚════════════════════════════════════════════════════════════════════════╝`}
-      </pre>
-
-      <div style={{ color: '#cc7700', fontSize: '11px', marginBottom: '20px' }}>
-        TYPE A COMMAND ABOVE OR SELECT A FUNCTION BELOW
-      </div>
-
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: '8px',
-        maxWidth: '900px',
-      }}>
-        {quickLinks.map(({ label, cmd, desc }) => (
-          <button
-            key={label}
-            className="bb-btn"
-            onClick={() => onNavigate(cmd)}
-            style={{ textAlign: 'left', padding: '10px 12px', height: 'auto' }}
-          >
-            <div style={{ color: '#ffcc00', fontSize: '12px', marginBottom: '4px' }}>{label}</div>
-            <div style={{ color: '#554400', fontSize: '10px' }}>{desc}</div>
-          </button>
-        ))}
-      </div>
-
-      <div style={{ marginTop: '32px', color: '#554400', fontSize: '11px', lineHeight: 1.8 }}>
-        <div>KEYBOARD SHORTCUTS</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, auto)', gap: '0 24px', width: 'fit-content', marginTop: '8px' }}>
-          {Object.entries(FKEY_COMMANDS).map(([key, cmd]) => (
-            <div key={key}>
-              <span style={{ color: '#cc7700' }}>[{key}]</span>
-              {' → '}
-              <span style={{ color: '#e0e0e0' }}>{cmd}</span>
-            </div>
-          ))}
-          <div><span style={{ color: '#cc7700' }}>[ESC]</span>{' → '}Clear command bar</div>
-          <div><span style={{ color: '#cc7700' }}>[↑↓]</span>{' → '}Command history</div>
-        </div>
-      </div>
-    </div>
-  )
+// ─── Screen title generator ────────────────────────────────────────────────
+function screenTitle(screen: ScreenType, ticker?: string): string {
+  const labels: Record<string, string> = {
+    equity: 'EQUITY', chart: 'CHART', options: 'OPTIONS', news: 'NEWS',
+    filings: 'FILINGS', portfolio: 'PORTFOLIO', watchlist: 'WATCHLIST',
+    econ: 'ECON', earnings: 'EARNINGS', screener: 'SCREENER',
+    fx: 'FX', fxc: 'FXC', crypto: 'CRYPTO', macro: 'MACRO',
+    home: 'HOME', des: 'DES', graph: 'GRAPH', gpo: 'GPO', gip: 'GIP',
+    wei: 'WEI', hs: 'HS', ecst: 'ECST', etf: 'ETF', bond: 'BOND',
+    comd: 'COMD', cong: 'CONG', quant: 'QUANT', ask: 'ASK',
+  }
+  const label = labels[screen] ?? screen.toUpperCase()
+  return ticker ? `${label} · ${ticker}` : label
 }
-
-// Screens that require a ticker — will inherit the last-used ticker when none is typed
-const TICKER_SCREENS = new Set<ScreenType>([
-  'equity', 'chart', 'options', 'filings', 'des', 'gpo', 'gip', 'news',
-])
 
 // ─── Main App ────────────────────────────────────────────────────────────────
 function App() {
-  const [activeCommand, setActiveCommand] = useState<ParsedCommand | null>(() => {
-    // Restore last command from localStorage
-    try {
-      const saved = localStorage.getItem('bb_last_command')
-      if (saved) return JSON.parse(saved) as ParsedCommand
-    } catch { /* ignore */ }
-    return null
-  })
+  const [activeCommand, setActiveCommand] = useState<ParsedCommand | null>(null)
+  const [showQuitModal, setShowQuitModal] = useState(false)
+  const { state, openScreen, closePanel, focusPanel, maximizePanel } = useWorkspace()
 
   // Sticky ticker: persisted so it survives page refresh
   const [lastTicker, setLastTicker] = useState<string>(() => {
     try {
       const t = localStorage.getItem('bb_last_ticker')
       if (t) return t
-      // Fall back to ticker from last command
       const saved = localStorage.getItem('bb_last_command')
       if (saved) {
         const cmd = JSON.parse(saved) as ParsedCommand
@@ -149,6 +175,10 @@ function App() {
 
   const handleCommand = useCallback((cmd: ParsedCommand) => {
     // If a ticker-required screen has no ticker, substitute the last-used ticker
+    const TICKER_SCREENS = new Set<ScreenType>([
+      'equity', 'chart', 'options', 'filings', 'des', 'gpo', 'gip', 'news',
+      'etf', 'bond', 'comd', 'cong', 'quant',
+    ])
     let resolved = cmd
     if (!cmd.ticker && TICKER_SCREENS.has(cmd.screen) && lastTicker) {
       resolved = { ...cmd, ticker: lastTicker }
@@ -162,7 +192,16 @@ function App() {
     try {
       localStorage.setItem('bb_last_command', JSON.stringify(resolved))
     } catch { /* ignore */ }
-  }, [lastTicker])
+
+    // Open in workspace
+    if (resolved.screen === 'quit') {
+      setShowQuitModal(true)
+    } else if (resolved.screen === 'home') {
+      openScreen('home')
+    } else {
+      openScreen(resolved.screen, resolved.ticker, resolved.sub)
+    }
+  }, [lastTicker, openScreen])
 
   // Allow screens to trigger navigation programmatically
   const handleNavigate = useCallback((raw: string) => {
@@ -183,27 +222,36 @@ function App() {
     return () => window.removeEventListener('keydown', handler)
   }, [handleNavigate])
 
-  // ── Render active screen ──────────────────────────────────────────────────
-  const renderScreen = () => {
-    if (!activeCommand) return <HomeScreen onNavigate={handleNavigate} />
+  // Handle quit
+  const handleQuit = useCallback(() => {
+    setShowQuitModal(false)
+    setActiveCommand(null)
+    setTimeout(() => {
+      if (window.electronAPI?.quit) {
+        window.electronAPI.quit()
+      } else {
+        window.close()
+      }
+    }, 100)
+  }, [])
 
-    const { screen, ticker } = activeCommand
-
-    switch (screen as ScreenType) {
+  // ── Render screen for a panel ──────────────────────────────────────────────
+  const renderScreen = (screen: ScreenType, ticker?: string, sub?: string) => {
+    switch (screen) {
       case 'equity':
         return ticker
-          ? <EquityScreen ticker={ticker} onNavigate={handleNavigate} />
-          : <HomeScreen onNavigate={handleNavigate} />
+          ? <EquityScreenV3 ticker={ticker} onNavigate={handleNavigate} />
+          : <HomeScreenV3 onNavigate={handleNavigate} />
 
       case 'chart':
         return ticker
           ? <ChartScreen ticker={ticker} onNavigate={handleNavigate} />
-          : <HomeScreen onNavigate={handleNavigate} />
+          : <HomeScreenV3 onNavigate={handleNavigate} />
 
       case 'options':
         return ticker
           ? <OptionsScreen ticker={ticker} onNavigate={handleNavigate} />
-          : <HomeScreen onNavigate={handleNavigate} />
+          : <HomeScreenV3 onNavigate={handleNavigate} />
 
       case 'news':
         return <NewsScreen ticker={ticker} onNavigate={handleNavigate} />
@@ -211,27 +259,25 @@ function App() {
       case 'filings':
         return ticker
           ? <FilingsScreen ticker={ticker} onNavigate={handleNavigate} />
-          : <HomeScreen onNavigate={handleNavigate} />
+          : <HomeScreenV3 onNavigate={handleNavigate} />
 
       case 'des':
         return ticker
           ? <DESScreen ticker={ticker} onNavigate={handleNavigate} />
-          : <HomeScreen onNavigate={handleNavigate} />
+          : <HomeScreenV3 onNavigate={handleNavigate} />
 
-      // G (manager) and G1–G9 (graph slots)
-      // ticker field carries the graph slot number ('1'–'9') or undefined for manager
       case 'graph':
         return <GScreen graphId={ticker} onNavigate={handleNavigate} />
 
       case 'gpo':
         return ticker
           ? <GPOScreen ticker={ticker} onNavigate={handleNavigate} />
-          : <HomeScreen onNavigate={handleNavigate} />
+          : <HomeScreenV3 onNavigate={handleNavigate} />
 
       case 'gip':
         return ticker
           ? <GIPScreen ticker={ticker} onNavigate={handleNavigate} />
-          : <HomeScreen onNavigate={handleNavigate} />
+          : <HomeScreenV3 onNavigate={handleNavigate} />
 
       case 'wei':
         return <WEIScreen onNavigate={handleNavigate} />
@@ -242,6 +288,25 @@ function App() {
       case 'ecst':
         return <ECSTScreen onNavigate={handleNavigate} />
 
+      case 'etf':
+        return ticker
+          ? <ETFScreen ticker={ticker} onNavigate={handleNavigate} />
+          : <HomeScreenV3 onNavigate={handleNavigate} />
+
+      case 'bond':
+        return <BondScreen ticker={ticker} onNavigate={handleNavigate} />
+
+      case 'comd':
+        return <CommodityScreen onNavigate={handleNavigate} />
+
+      case 'cong':
+        return <CongressScreen onNavigate={handleNavigate} />
+
+      case 'quant':
+        return ticker
+          ? <QuantScreen ticker={ticker} onNavigate={handleNavigate} />
+          : <HomeScreenV3 onNavigate={handleNavigate} />
+
       case 'portfolio':
         return <PortfolioScreen onNavigate={handleNavigate} />
 
@@ -249,7 +314,7 @@ function App() {
         return <WatchlistScreen onNavigate={handleNavigate} />
 
       case 'econ':
-        return <MacroScreen onNavigate={handleNavigate} />
+        return <EconScreen onNavigate={handleNavigate} />
 
       case 'earnings':
         return <EarningsScreen onNavigate={handleNavigate} />
@@ -271,17 +336,42 @@ function App() {
 
       case 'home':
       default:
-        return <HomeScreen onNavigate={handleNavigate} />
+        return <HomeScreenV3 onNavigate={handleNavigate} />
     }
   }
 
+  // ── Build panel children ──────────────────────────────────────────────────
+  const panelChildren = state.panels.map(panel => {
+    const title = screenTitle(panel.screen, panel.ticker)
+    const accent = panel.screen === 'home' ? 'cyan' as const : 'amber' as const
+
+    return (
+      <PanelV3
+        key={panel.id}
+        title={title}
+        accent={accent}
+        focused={panel.focused}
+        onClose={() => closePanel(panel.id)}
+        onMaximize={() => maximizePanel(panel.id)}
+      >
+        {renderScreen(panel.screen, panel.ticker, panel.sub)}
+      </PanelV3>
+    )
+  })
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#000', overflow: 'hidden' }}>
-      <CommandBar onCommand={handleCommand} activeCommand={activeCommand} contextTicker={lastTicker} />
-      <PanelLayout>
-        {renderScreen()}
-      </PanelLayout>
-      <StatusBar />
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: C.surface0, overflow: 'hidden' }}>
+      <CommandBarV3 onCommand={handleCommand} activeCommand={activeCommand} contextTicker={lastTicker} />
+      <WorkspaceLayout state={state} onFocusPanel={focusPanel}>
+        {panelChildren}
+      </WorkspaceLayout>
+      <StatusBarV3 />
+      {showQuitModal && (
+        <QuitModal
+          onConfirm={handleQuit}
+          onCancel={() => setShowQuitModal(false)}
+        />
+      )}
     </div>
   )
 }

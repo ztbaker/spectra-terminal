@@ -31,17 +31,10 @@ const CCY_TO_USD_PAIR: Record<Currency, [string, boolean]> = {
 function buildCcyUsdMap(rates: Record<string, number | null>): Record<Currency, number | null> {
   const map = {} as Record<Currency, number | null>
   for (const ccy of CURRENCIES) {
-    if (ccy === 'USD') {
-      map[ccy] = 1.0
-      continue
-    }
+    if (ccy === 'USD') { map[ccy] = 1.0; continue }
     const [pair, invert] = CCY_TO_USD_PAIR[ccy]
     const raw = rates[pair] ?? null
-    if (raw === null || raw === 0) {
-      map[ccy] = null
-    } else {
-      map[ccy] = invert ? 1 / raw : raw
-    }
+    map[ccy] = (raw === null || raw === 0) ? null : (invert ? 1 / raw : raw)
   }
   return map
 }
@@ -64,15 +57,21 @@ function formatRate(val: number, quote: Currency): string {
 
 // ─── Cell ─────────────────────────────────────────────────────────────────────
 
+type FlashDir = 'up' | 'down' | null
+
 interface CellProps {
   base: Currency
   quote: Currency
   value: number | null
-  flashing: boolean
+  flashDir: FlashDir
 }
 
-const Cell: React.FC<CellProps> = ({ base, quote, value, flashing }) => {
+const Cell: React.FC<CellProps> = ({ base, quote, value, flashDir }) => {
   const isDiag = base === quote
+  let flashBg = 'transparent'
+  if (!isDiag && flashDir === 'up')   flashBg = 'rgba(0,255,65,0.22)'
+  if (!isDiag && flashDir === 'down') flashBg = 'rgba(255,51,51,0.22)'
+
   return (
     <td
       style={{
@@ -82,13 +81,9 @@ const Cell: React.FC<CellProps> = ({ base, quote, value, flashing }) => {
         fontFamily: 'monospace',
         borderBottom: '1px solid #1a1a1a',
         borderRight: '1px solid #1a1a1a',
-        background: isDiag
-          ? '#0d0d00'
-          : flashing
-          ? 'rgba(255,153,0,0.18)'
-          : 'transparent',
+        background: isDiag ? '#0d0d00' : flashBg,
         color: isDiag ? '#2a2a2a' : value === null ? '#2a2a2a' : '#e0e0e0',
-        transition: flashing ? 'none' : 'background 0.6s ease',
+        transition: flashDir ? 'none' : 'background 0.4s ease',
         minWidth: '80px',
         whiteSpace: 'nowrap',
       }}
@@ -100,36 +95,53 @@ const Cell: React.FC<CellProps> = ({ base, quote, value, flashing }) => {
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
+const FLASH_MS = 600
+
 const FXCScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['fx-rates'],
     queryFn: fetchFXRates,
-    staleTime: 15_000,
+    staleTime: 0,
   })
 
-  usePolling(refetch, 15_000)
+  usePolling(refetch, 1_000)
 
-  // Flash all data cells on each new fetch
-  const prevFetchedAt = useRef<number>(0)
-  const [isFlashing, setIsFlashing] = useState(false)
+  // Per-cell flash directions, keyed by "BASE-QUOTE"
+  const [flashDirs, setFlashDirs] = useState<Record<string, FlashDir>>({})
+  const prevCcyUsd = useRef<Record<Currency, number | null> | null>(null)
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  useEffect(() => {
-    if (data && data.fetched_at !== prevFetchedAt.current) {
-      prevFetchedAt.current = data.fetched_at
-      setIsFlashing(true)
-      const t = setTimeout(() => setIsFlashing(false), 800)
-      return () => clearTimeout(t)
-    }
-  }, [data?.fetched_at])
-
-  // "N seconds ago" footer counter
-  const [secsAgo, setSecsAgo] = useState(0)
   useEffect(() => {
     if (!data) return
-    setSecsAgo(0)
-    const id = setInterval(() => setSecsAgo(s => s + 1), 1000)
-    return () => clearInterval(id)
+
+    const newCcyUsd = buildCcyUsdMap(data.rates)
+
+    if (prevCcyUsd.current) {
+      const dirs: Record<string, FlashDir> = {}
+      for (const base of CURRENCIES) {
+        for (const quote of CURRENCIES) {
+          if (base === quote) continue
+          const prev = crossRate(base, quote, prevCcyUsd.current)
+          const next = crossRate(base, quote, newCcyUsd)
+          if (prev !== null && next !== null) {
+            if (next > prev)      dirs[`${base}-${quote}`] = 'up'
+            else if (next < prev) dirs[`${base}-${quote}`] = 'down'
+          }
+        }
+      }
+
+      if (Object.keys(dirs).length > 0) {
+        if (flashTimer.current) clearTimeout(flashTimer.current)
+        setFlashDirs(dirs)
+        flashTimer.current = setTimeout(() => setFlashDirs({}), FLASH_MS)
+      }
+    }
+
+    prevCcyUsd.current = newCcyUsd
   }, [data?.fetched_at])
+
+  // Cleanup on unmount
+  useEffect(() => () => { if (flashTimer.current) clearTimeout(flashTimer.current) }, [])
 
   const ccyUsd = data ? buildCcyUsdMap(data.rates) : ({} as Record<Currency, number | null>)
 
@@ -143,13 +155,8 @@ const FXCScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
         style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, padding: '6px 12px' }}
       >
         <span>FXC CROSS CURRENCY MATRIX</span>
-        <span style={{ color: '#554400', fontSize: '11px' }}>
-          LIVE · 15S REFRESH
-          {data?.fetched_at && (
-            <span style={{ marginLeft: '12px', color: '#2a2a2a' }}>
-              REFRESHED {secsAgo}s AGO
-            </span>
-          )}
+        <span style={{ color: '#00ff41', fontSize: '11px', letterSpacing: '0.05em' }}>
+          ● LIVE
         </span>
       </div>
 
@@ -161,13 +168,7 @@ const FXCScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
 
       {/* Matrix */}
       <div style={{ flex: 1, overflow: 'auto', padding: '12px' }}>
-        <table
-          style={{
-            borderCollapse: 'collapse',
-            fontSize: '12px',
-            fontFamily: 'monospace',
-          }}
-        >
+        <table style={{ borderCollapse: 'collapse', fontSize: '12px', fontFamily: 'monospace' }}>
           <thead>
             <tr>
               <th
@@ -235,7 +236,7 @@ const FXCScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
                     base={base}
                     quote={quote}
                     value={data ? crossRate(base, quote, ccyUsd) : null}
-                    flashing={isFlashing && base !== quote}
+                    flashDir={flashDirs[`${base}-${quote}`] ?? null}
                   />
                 ))}
               </tr>

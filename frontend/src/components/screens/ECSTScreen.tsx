@@ -136,10 +136,10 @@ const ECSTRow: React.FC<RowProps> = ({ entry, isExpanded, onToggle }) => {
   const color = changeColor(entry.series_id, entry.change)
   return (
     <tr
-      style={{ cursor: 'pointer' }}
+      style={{ cursor: 'pointer', background: isExpanded ? '#0a0800' : 'transparent' }}
       onClick={onToggle}
       onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = '#0a0800' }}
-      onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = 'transparent' }}
+      onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = isExpanded ? '#0a0800' : 'transparent' }}
     >
       <td style={{ padding: '5px 12px', color: '#e0e0e0', fontSize: '12px', borderBottom: '1px solid #1a1a1a', whiteSpace: 'nowrap' }}>
         {entry.label}

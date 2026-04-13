@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchEquity, fetchFinancials } from '../../lib/api'
+import { usePolling } from '../../hooks/usePolling'
 import type { EquityData, FinancialsData } from '../../types'
-import Panel from '../Terminal/Panel'
 import LoadingBar from '../shared/LoadingBar'
 
 // ─── Formatting helpers ───────────────────────────────────────────────────────
@@ -250,11 +250,12 @@ interface Props {
 const DESScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
   const [activeTab, setActiveTab] = useState(1)
 
-  const { data, isLoading, isError, isFetching } = useQuery<EquityData>({
+  const { data, isLoading, isError, isFetching, refetch } = useQuery<EquityData>({
     queryKey: ['equity', ticker],
     queryFn: () => fetchEquity(ticker),
-    staleTime: 60_000,
+    staleTime: 15_000,
   })
+  usePolling(refetch, 15_000)
 
   const {
     data: fins,
