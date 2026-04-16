@@ -40,6 +40,7 @@ import HomeScreenV3     from './components/screens/HomeScreenV3'
 import HelpScreen       from './components/screens/HelpScreen'
 import { UpdateToast } from './components/UpdateToast'
 import { BugReportDialog } from './components/BugReportDialog'
+import { WhatsNewDialog } from './components/WhatsNewDialog'
 
 import C from './lib/colors'
 import { accentFor } from './lib/screenAccents'
@@ -457,9 +458,16 @@ function AuthSplash() {
 
 function App() {
   const { status } = useAuth()
-  if (status === 'loading') return <AuthSplash />
-  if (status === 'anonymous') return <LoginScreen />
-  return <TerminalApp />
+  const inner =
+    status === 'loading' ? <AuthSplash />
+    : status === 'anonymous' ? <LoginScreen />
+    : <TerminalApp />
+  return (
+    <>
+      {inner}
+      <WhatsNewDialog />
+    </>
+  )
 }
 
 export default App
