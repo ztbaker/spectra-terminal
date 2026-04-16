@@ -11,15 +11,64 @@ import type {
 const API_URL = import.meta.env.VITE_API_URL || '/api'
 const API_KEY = import.meta.env.VITE_API_KEY || ''
 
+export const AUTH_TOKEN_KEY = 'spectra_auth_token'
+export const AUTH_USER_KEY = 'spectra_auth_user'
+export const AUTH_INVALIDATED_EVENT = 'spectra-auth-invalidated'
+
 const api = axios.create({ baseURL: API_URL })
 
 api.interceptors.request.use((config) => {
+  config.headers = config.headers ?? {}
   if (API_KEY) {
-    config.headers = config.headers ?? {}
     config.headers['X-Spectra-Key'] = API_KEY
+  }
+  const token = localStorage.getItem(AUTH_TOKEN_KEY)
+  if (token) {
+    config.headers['Authorization'] = `Bearer ${token}`
   }
   return config
 })
+
+api.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    const status = err?.response?.status
+    const url: string = err?.config?.url ?? ''
+    // Ignore 401s from the auth endpoints themselves (they're informational,
+    // not "session expired"). Only invalidate when an authenticated request
+    // is rejected.
+    if (status === 401 && !url.startsWith('/auth/')) {
+      localStorage.removeItem(AUTH_TOKEN_KEY)
+      localStorage.removeItem(AUTH_USER_KEY)
+      window.dispatchEvent(new Event(AUTH_INVALIDATED_EVENT))
+    }
+    return Promise.reject(err)
+  },
+)
+
+// ─── Auth ────────────────────────────────────────────────────────────────────
+export interface AuthResponse {
+  token: string
+  user_id: number
+  username: string
+}
+
+export interface UserInfo {
+  user_id: number
+  username: string
+}
+
+export const authSignup = (username: string, password: string): Promise<AuthResponse> =>
+  api.post('/auth/signup', { username, password }).then(r => r.data)
+
+export const authLogin = (username: string, password: string): Promise<AuthResponse> =>
+  api.post('/auth/login', { username, password }).then(r => r.data)
+
+export const authLogout = (): Promise<void> =>
+  api.post('/auth/logout').then(r => r.data)
+
+export const authMe = (): Promise<UserInfo> =>
+  api.get('/auth/me').then(r => r.data)
 
 // ─── Equity ──────────────────────────────────────────────────────────────────
 export const fetchEquity = (ticker: string): Promise<EquityData> =>

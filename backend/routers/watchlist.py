@@ -1,7 +1,9 @@
 import asyncio
-from fastapi import APIRouter, HTTPException
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from auth import current_user_id
 from database import get_conn
 from providers.registry import get_provider
 
@@ -31,22 +33,32 @@ class WatchlistQuote(BaseModel):
 
 
 @router.get("/watchlist", response_model=list[WatchlistRow])
-async def list_watchlist():
+async def list_watchlist(user_id: int = Depends(current_user_id)):
     with get_conn() as conn:
-        rows = conn.execute("SELECT * FROM watchlist ORDER BY added_at DESC").fetchall()
+        rows = conn.execute(
+            "SELECT id, ticker, added_at, notes FROM watchlist "
+            "WHERE user_id = ? ORDER BY added_at DESC",
+            (user_id,),
+        ).fetchall()
     return [WatchlistRow(**dict(r)) for r in rows]
 
 
 @router.post("/watchlist", response_model=WatchlistRow, status_code=201)
-async def add_to_watchlist(item: WatchlistItem):
+async def add_to_watchlist(
+    item: WatchlistItem,
+    user_id: int = Depends(current_user_id),
+):
     ticker = item.ticker.upper()
     with get_conn() as conn:
         try:
             cur = conn.execute(
-                "INSERT INTO watchlist (ticker, notes) VALUES (?, ?)",
-                (ticker, item.notes),
+                "INSERT INTO watchlist (user_id, ticker, notes) VALUES (?, ?, ?)",
+                (user_id, ticker, item.notes),
             )
-            row = conn.execute("SELECT * FROM watchlist WHERE id = ?", (cur.lastrowid,)).fetchone()
+            row = conn.execute(
+                "SELECT id, ticker, added_at, notes FROM watchlist WHERE id = ?",
+                (cur.lastrowid,),
+            ).fetchone()
         except Exception as exc:
             if "UNIQUE" in str(exc):
                 raise HTTPException(status_code=409, detail=f"{ticker} already in watchlist")
@@ -55,15 +67,24 @@ async def add_to_watchlist(item: WatchlistItem):
 
 
 @router.delete("/watchlist/{ticker}", status_code=204)
-async def remove_from_watchlist(ticker: str):
+async def remove_from_watchlist(
+    ticker: str,
+    user_id: int = Depends(current_user_id),
+):
     with get_conn() as conn:
-        conn.execute("DELETE FROM watchlist WHERE ticker = ?", (ticker.upper(),))
+        conn.execute(
+            "DELETE FROM watchlist WHERE user_id = ? AND ticker = ?",
+            (user_id, ticker.upper()),
+        )
 
 
 @router.get("/watchlist/quotes", response_model=list[WatchlistQuote])
-async def get_watchlist_quotes():
+async def get_watchlist_quotes(user_id: int = Depends(current_user_id)):
     with get_conn() as conn:
-        rows = conn.execute("SELECT ticker FROM watchlist").fetchall()
+        rows = conn.execute(
+            "SELECT ticker FROM watchlist WHERE user_id = ?",
+            (user_id,),
+        ).fetchall()
     tickers = [r["ticker"] for r in rows]
 
     if not tickers:

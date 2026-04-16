@@ -7,23 +7,72 @@ def get_db_path() -> str:
     return settings.DB_PATH
 
 
+# Target schema for user-scoped tables. If an existing table is missing
+# `user_id`, it's dropped and recreated — acceptable because data on the
+# Fly ephemeral filesystem was already being lost between restarts.
+
+_USER_SCOPED = {
+    "watchlist": """
+        CREATE TABLE watchlist (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id    INTEGER NOT NULL,
+            ticker     TEXT NOT NULL,
+            added_at   TEXT NOT NULL DEFAULT (datetime('now')),
+            notes      TEXT,
+            UNIQUE(user_id, ticker),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    """,
+    "portfolio": """
+        CREATE TABLE portfolio (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id    INTEGER NOT NULL,
+            ticker     TEXT NOT NULL,
+            shares     REAL NOT NULL,
+            avg_cost   REAL NOT NULL,
+            added_at   TEXT NOT NULL DEFAULT (datetime('now')),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    """,
+    "command_history": """
+        CREATE TABLE command_history (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id      INTEGER,
+            command      TEXT NOT NULL,
+            executed_at  TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+    """,
+}
+
+
+def _ensure_user_scoped(conn: sqlite3.Connection) -> None:
+    for table, create_sql in _USER_SCOPED.items():
+        cols = conn.execute(f"PRAGMA table_info({table})").fetchall()
+        has_user_id = any(c[1] == "user_id" for c in cols)
+        if cols and not has_user_id:
+            conn.execute(f"DROP TABLE {table}")
+        conn.execute(create_sql.replace("CREATE TABLE ", "CREATE TABLE IF NOT EXISTS "))
+
+
 def init_db(db_path: str | None = None) -> None:
     path = db_path or get_db_path()
     with sqlite3.connect(path) as conn:
+        conn.execute("PRAGMA foreign_keys = ON")
+
         conn.executescript("""
-            CREATE TABLE IF NOT EXISTS watchlist (
-                id        INTEGER PRIMARY KEY AUTOINCREMENT,
-                ticker    TEXT NOT NULL UNIQUE,
-                added_at  TEXT NOT NULL DEFAULT (datetime('now')),
-                notes     TEXT
+            CREATE TABLE IF NOT EXISTS users (
+                id             INTEGER PRIMARY KEY AUTOINCREMENT,
+                username       TEXT NOT NULL UNIQUE COLLATE NOCASE,
+                password_hash  TEXT NOT NULL,
+                created_at     TEXT NOT NULL DEFAULT (datetime('now'))
             );
 
-            CREATE TABLE IF NOT EXISTS portfolio (
-                id        INTEGER PRIMARY KEY AUTOINCREMENT,
-                ticker    TEXT NOT NULL,
-                shares    REAL NOT NULL,
-                avg_cost  REAL NOT NULL,
-                added_at  TEXT NOT NULL DEFAULT (datetime('now'))
+            CREATE TABLE IF NOT EXISTS sessions (
+                token         TEXT PRIMARY KEY,
+                user_id       INTEGER NOT NULL,
+                created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+                last_used_at  TEXT NOT NULL DEFAULT (datetime('now')),
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             );
 
             CREATE TABLE IF NOT EXISTS price_cache (
@@ -50,12 +99,6 @@ def init_db(db_path: str | None = None) -> None:
                 cached_at  TEXT NOT NULL DEFAULT (datetime('now'))
             );
 
-            CREATE TABLE IF NOT EXISTS command_history (
-                id           INTEGER PRIMARY KEY AUTOINCREMENT,
-                command      TEXT NOT NULL,
-                executed_at  TEXT NOT NULL DEFAULT (datetime('now'))
-            );
-
             CREATE TABLE IF NOT EXISTS financials_cache (
                 ticker     TEXT PRIMARY KEY,
                 data_json  TEXT NOT NULL,
@@ -63,12 +106,16 @@ def init_db(db_path: str | None = None) -> None:
             );
         """)
 
+        _ensure_user_scoped(conn)
+        conn.commit()
+
 
 @contextmanager
 def get_conn(db_path: str | None = None):
     path = db_path or get_db_path()
     conn = sqlite3.connect(path)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
     try:
         yield conn
         conn.commit()
