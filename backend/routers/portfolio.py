@@ -1,10 +1,11 @@
 import asyncio
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from providers.registry import get_provider
+from auth import current_user_id
 from database import get_conn
+from providers.registry import get_provider
 
 router = APIRouter()
 
@@ -36,33 +37,52 @@ class PortfolioPerformance(BaseModel):
 
 
 @router.get("/portfolio", response_model=list[PortfolioRow])
-async def list_portfolio():
+async def list_portfolio(user_id: int = Depends(current_user_id)):
     with get_conn() as conn:
-        rows = conn.execute("SELECT * FROM portfolio ORDER BY added_at DESC").fetchall()
+        rows = conn.execute(
+            "SELECT id, ticker, shares, avg_cost, added_at FROM portfolio "
+            "WHERE user_id = ? ORDER BY added_at DESC",
+            (user_id,),
+        ).fetchall()
     return [PortfolioRow(**dict(r)) for r in rows]
 
 
 @router.post("/portfolio", response_model=PortfolioRow, status_code=201)
-async def add_position(item: PortfolioItem):
+async def add_position(
+    item: PortfolioItem,
+    user_id: int = Depends(current_user_id),
+):
     with get_conn() as conn:
         cur = conn.execute(
-            "INSERT INTO portfolio (ticker, shares, avg_cost) VALUES (?, ?, ?)",
-            (item.ticker.upper(), item.shares, item.avg_cost),
+            "INSERT INTO portfolio (user_id, ticker, shares, avg_cost) VALUES (?, ?, ?, ?)",
+            (user_id, item.ticker.upper(), item.shares, item.avg_cost),
         )
-        row = conn.execute("SELECT * FROM portfolio WHERE id = ?", (cur.lastrowid,)).fetchone()
+        row = conn.execute(
+            "SELECT id, ticker, shares, avg_cost, added_at FROM portfolio WHERE id = ?",
+            (cur.lastrowid,),
+        ).fetchone()
     return PortfolioRow(**dict(row))
 
 
 @router.delete("/portfolio/{item_id}", status_code=204)
-async def delete_position(item_id: int):
+async def delete_position(
+    item_id: int,
+    user_id: int = Depends(current_user_id),
+):
     with get_conn() as conn:
-        conn.execute("DELETE FROM portfolio WHERE id = ?", (item_id,))
+        conn.execute(
+            "DELETE FROM portfolio WHERE id = ? AND user_id = ?",
+            (item_id, user_id),
+        )
 
 
 @router.get("/portfolio/performance", response_model=PortfolioPerformance)
-async def get_performance():
+async def get_performance(user_id: int = Depends(current_user_id)):
     with get_conn() as conn:
-        rows = conn.execute("SELECT * FROM portfolio").fetchall()
+        rows = conn.execute(
+            "SELECT id, ticker, shares, avg_cost, added_at FROM portfolio WHERE user_id = ?",
+            (user_id,),
+        ).fetchall()
 
     if not rows:
         return PortfolioPerformance(

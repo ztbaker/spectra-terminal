@@ -11,6 +11,7 @@ from database import init_db
 from middleware.auth import SharedKeyMiddleware
 
 from routers import (
+    auth,
     equity,
     chart,
     options,
@@ -62,6 +63,7 @@ app.add_middleware(
     exempt_paths=["/health", "/docs", "/openapi.json", "/redoc"],
 )
 
+app.include_router(auth.router, prefix="/api")
 app.include_router(equity.router, prefix="/api")
 app.include_router(chart.router, prefix="/api")
 app.include_router(options.router, prefix="/api")

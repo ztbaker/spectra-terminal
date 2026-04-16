@@ -43,6 +43,8 @@ import { BugReportDialog } from './components/BugReportDialog'
 
 import C from './lib/colors'
 import { accentFor } from './lib/screenAccents'
+import { useAuth } from './lib/auth'
+import LoginScreen from './components/Auth/LoginScreen'
 
 function QuitModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
   useEffect(() => {
@@ -159,8 +161,8 @@ function screenTitle(screen: ScreenType, ticker?: string): string {
   return ticker ? `${label} · ${ticker}` : label
 }
 
-// ─── Main App ────────────────────────────────────────────────────────────────
-function App() {
+// ─── Main terminal (renders only when authenticated) ─────────────────────────
+function TerminalApp() {
   const [activeCommand, setActiveCommand] = useState<ParsedCommand | null>(null)
   const [showQuitModal, setShowQuitModal] = useState(false)
   const [bugOpen, setBugOpen] = useState(false)
@@ -432,6 +434,32 @@ function App() {
       )}
     </div>
   )
+}
+
+// ─── Auth gate ────────────────────────────────────────────────────────────────
+function AuthSplash() {
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: '100vh',
+      background: C.surface0,
+      color: C.amberDim,
+      fontFamily: C.fontDisplay,
+      fontSize: '11px',
+      letterSpacing: '0.3em',
+    }}>
+      SPECTRA TERMINAL · LOADING
+    </div>
+  )
+}
+
+function App() {
+  const { status } = useAuth()
+  if (status === 'loading') return <AuthSplash />
+  if (status === 'anonymous') return <LoginScreen />
+  return <TerminalApp />
 }
 
 export default App

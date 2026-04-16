@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchIndices } from '../../lib/api'
+import { useAuth } from '../../lib/auth'
 import C from '../../lib/colors'
 import { useBreakpoint } from '../../lib/useBreakpoint'
 import { usePriceFlash } from '../../lib/usePriceFlash'
@@ -195,6 +196,7 @@ const StatusBarV3: React.FC = () => {
     document.head.appendChild(style)
   }, [indices])
 
+  const { user, logout } = useAuth()
   const status = getMarketStatus(now)
   const isLive = status === 'OPEN' || status === 'PRE' || status === 'AFTER'
   const [prevStatus, setPrevStatus] = useState(status)
@@ -450,6 +452,52 @@ const StatusBarV3: React.FC = () => {
             </span>
           )}
         </span>
+
+        {/* User / logout */}
+        {user && (
+          <>
+            <span style={{
+              width: '1px',
+              height: '14px',
+              background: C.glassBorder,
+              margin: '0 10px',
+              display: 'inline-block',
+            }} />
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}>
+              <span style={{
+                color: C.amber,
+                fontFamily: C.fontDisplay,
+                fontSize: '9px',
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+              }}>
+                {user.username}
+              </span>
+              <button
+                onClick={() => { void logout() }}
+                title="Sign out"
+                style={{
+                  background: 'transparent',
+                  border: `1px solid ${C.amberMute}`,
+                  color: C.amberDim,
+                  fontFamily: C.fontDisplay,
+                  fontSize: '8px',
+                  fontWeight: 700,
+                  letterSpacing: '0.1em',
+                  padding: '2px 6px',
+                  cursor: 'pointer',
+                }}
+              >
+                LOGOUT
+              </button>
+            </span>
+          </>
+        )}
       </div>
     </div>
   )
