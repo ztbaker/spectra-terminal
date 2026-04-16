@@ -8,6 +8,14 @@ export interface ReleaseNote {
 // "What's New" dialog on first launch after update.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.1.10',
+    date: '2026-04-16',
+    highlights: [
+      'One-time re-install required: download the v0.1.10 DMG from GitHub and replace the app in /Applications.',
+      'After this install, future updates will apply silently on restart without the code-signature error.',
+    ],
+  },
+  {
     version: '0.1.9',
     date: '2026-04-16',
     highlights: [
