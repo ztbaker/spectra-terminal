@@ -40,6 +40,7 @@ import HomeScreenV3     from './components/screens/HomeScreenV3'
 import HelpScreen       from './components/screens/HelpScreen'
 import ChatScreen       from './components/screens/ChatScreen'
 import { UpdateToast } from './components/UpdateToast'
+import ChatNotificationToast from './components/ChatNotificationToast'
 import { BugReportDialog } from './components/BugReportDialog'
 import { WhatsNewDialog } from './components/WhatsNewDialog'
 
@@ -426,6 +427,7 @@ function TerminalApp() {
       <div className="bb-scanlines" />
       <div className="bb-vignette" />
       <UpdateToast />
+      <ChatNotificationToast onNavigate={handleNavigate} />
       <BugReportDialog
         open={bugOpen}
         onClose={() => setBugOpen(false)}
