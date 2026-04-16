@@ -6,7 +6,7 @@ const path       = require('path')
 const http       = require('http')
 const fs         = require('fs')
 const url        = require('url')
-const { initAutoUpdater, installUpdateAndRestart } = require('./updater.cjs')
+const { initAutoUpdater, installUpdateAndRestart, openExternalUrl } = require('./updater.cjs')
 
 // ─── Paths ────────────────────────────────────────────────────────────────────
 
@@ -229,6 +229,12 @@ ipcMain.on('quit-app', () => {
 
 ipcMain.on('install-update', () => {
   installUpdateAndRestart()
+})
+
+ipcMain.on('open-external', (_, url) => {
+  if (typeof url === 'string' && url.startsWith('https://')) {
+    openExternalUrl(url)
+  }
 })
 
 app.on('window-all-closed', () => {
