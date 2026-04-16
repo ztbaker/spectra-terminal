@@ -1,6 +1,6 @@
 {
   "name": "spectra-terminal",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "Spectra Terminal — Bloomberg-style trading terminal",
   "main": "electron/main.cjs",
   "author": "Zachary Baker <zbaker88@me.com>",
@@ -55,7 +55,8 @@
       ],
       "icon": "build/icon.png",
       "hardenedRuntime": false,
-      "gatekeeperAssess": false
+      "gatekeeperAssess": false,
+      "identity": null
     },
     "win": {
       "target": [
