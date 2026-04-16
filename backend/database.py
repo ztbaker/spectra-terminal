@@ -54,6 +54,19 @@ def _ensure_user_scoped(conn: sqlite3.Connection) -> None:
         conn.execute(create_sql.replace("CREATE TABLE ", "CREATE TABLE IF NOT EXISTS "))
 
 
+def _ensure_email_columns(conn: sqlite3.Connection) -> None:
+    cols = {c[1] for c in conn.execute("PRAGMA table_info(users)").fetchall()}
+    if "email" not in cols:
+        conn.execute("ALTER TABLE users ADD COLUMN email TEXT")
+    if "email_verified" not in cols:
+        conn.execute("ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0")
+    # Case-insensitive uniqueness only enforced on non-null emails.
+    conn.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_email_nocase "
+        "ON users(email COLLATE NOCASE) WHERE email IS NOT NULL"
+    )
+
+
 def init_db(db_path: str | None = None) -> None:
     path = db_path or get_db_path()
     with sqlite3.connect(path) as conn:
@@ -104,8 +117,21 @@ def init_db(db_path: str | None = None) -> None:
                 data_json  TEXT NOT NULL,
                 cached_at  TEXT NOT NULL DEFAULT (datetime('now'))
             );
+
+            CREATE TABLE IF NOT EXISTS email_tokens (
+                token       TEXT PRIMARY KEY,
+                user_id     INTEGER NOT NULL,
+                kind        TEXT NOT NULL CHECK (kind IN ('verify','reset')),
+                expires_at  TEXT NOT NULL,
+                created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
+
+            CREATE INDEX IF NOT EXISTS ix_email_tokens_user
+                ON email_tokens(user_id, kind);
         """)
 
+        _ensure_email_columns(conn)
         _ensure_user_scoped(conn)
         conn.commit()
 

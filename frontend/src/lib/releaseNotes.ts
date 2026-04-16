@@ -8,6 +8,15 @@ export interface ReleaseNote {
 // "What's New" dialog on first launch after update.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.1.6',
+    date: '2026-04-16',
+    highlights: [
+      'Sign up now requires an email. A verification link is sent to you automatically.',
+      'Added "Forgot password?" on the sign-in screen — we\u2019ll email you a secure reset link.',
+      'Your sign-in is still just username + password; email is only for recovery and verification.',
+    ],
+  },
+  {
     version: '0.1.5',
     date: '2026-04-16',
     highlights: [

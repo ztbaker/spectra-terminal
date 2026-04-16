@@ -20,6 +20,9 @@ class Settings:
     SPECTRA_SHARED_KEY: str = os.getenv("SPECTRA_SHARED_KEY", "")
     GITHUB_TOKEN: str = os.getenv("GITHUB_TOKEN", "")
     GITHUB_REPO: str = os.getenv("GITHUB_REPO", "")
+    RESEND_API_KEY: str = os.getenv("RESEND_API_KEY", "")
+    EMAIL_FROM: str = os.getenv("EMAIL_FROM", "Spectra Terminal <onboarding@resend.dev>")
+    PUBLIC_BASE_URL: str = os.getenv("PUBLIC_BASE_URL", "https://spectra-terminal-api.fly.dev")
 
 
 settings = Settings()

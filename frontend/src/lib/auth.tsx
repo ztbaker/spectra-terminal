@@ -22,8 +22,9 @@ interface AuthState {
   user: UserInfo | null
   status: 'loading' | 'anonymous' | 'authenticated'
   login: (username: string, password: string) => Promise<void>
-  signup: (username: string, password: string) => Promise<void>
+  signup: (username: string, email: string, password: string) => Promise<void>
   logout: () => Promise<void>
+  refreshUser: () => Promise<void>
 }
 
 const AuthCtx = createContext<AuthState | null>(null)
@@ -90,15 +91,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (username: string, password: string) => {
     const res = await authLogin(username, password)
-    const info: UserInfo = { user_id: res.user_id, username: res.username }
+    const info: UserInfo = {
+      user_id: res.user_id,
+      username: res.username,
+      email_verified: res.email_verified,
+    }
     storeAuth(res.token, info)
     setUser(info)
     setStatus('authenticated')
   }, [])
 
-  const signup = useCallback(async (username: string, password: string) => {
-    const res = await authSignup(username, password)
-    const info: UserInfo = { user_id: res.user_id, username: res.username }
+  const signup = useCallback(async (username: string, email: string, password: string) => {
+    const res = await authSignup(username, email, password)
+    const info: UserInfo = {
+      user_id: res.user_id,
+      username: res.username,
+      email,
+      email_verified: res.email_verified,
+    }
     storeAuth(res.token, info)
     setUser(info)
     setStatus('authenticated')
@@ -113,8 +123,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus('anonymous')
   }, [])
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const info = await authMe()
+      setUser(info)
+      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(info))
+    } catch { /* ignore */ }
+  }, [])
+
   return (
-    <AuthCtx.Provider value={{ user, status, login, signup, logout }}>
+    <AuthCtx.Provider value={{ user, status, login, signup, logout, refreshUser }}>
       {children}
     </AuthCtx.Provider>
   )

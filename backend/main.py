@@ -60,7 +60,16 @@ app.add_middleware(
 
 app.add_middleware(
     SharedKeyMiddleware,
-    exempt_paths=["/health", "/docs", "/openapi.json", "/redoc"],
+    exempt_paths=[
+        "/health",
+        "/docs",
+        "/openapi.json",
+        "/redoc",
+        # Email-link flows: users click these from their inbox in a browser
+        # that has no shared key; the tokens themselves are the auth.
+        "/api/auth/verify",
+        "/api/auth/reset-password",
+    ],
 )
 
 app.include_router(auth.router, prefix="/api")

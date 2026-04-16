@@ -51,15 +51,18 @@ export interface AuthResponse {
   token: string
   user_id: number
   username: string
+  email_verified: boolean
 }
 
 export interface UserInfo {
   user_id: number
   username: string
+  email?: string | null
+  email_verified?: boolean
 }
 
-export const authSignup = (username: string, password: string): Promise<AuthResponse> =>
-  api.post('/auth/signup', { username, password }).then(r => r.data)
+export const authSignup = (username: string, email: string, password: string): Promise<AuthResponse> =>
+  api.post('/auth/signup', { username, email, password }).then(r => r.data)
 
 export const authLogin = (username: string, password: string): Promise<AuthResponse> =>
   api.post('/auth/login', { username, password }).then(r => r.data)
@@ -69,6 +72,12 @@ export const authLogout = (): Promise<void> =>
 
 export const authMe = (): Promise<UserInfo> =>
   api.get('/auth/me').then(r => r.data)
+
+export const authForgotPassword = (email: string): Promise<void> =>
+  api.post('/auth/forgot-password', { email }).then(r => r.data)
+
+export const authResendVerification = (): Promise<void> =>
+  api.post('/auth/resend-verification').then(r => r.data)
 
 // ─── Equity ──────────────────────────────────────────────────────────────────
 export const fetchEquity = (ticker: string): Promise<EquityData> =>
