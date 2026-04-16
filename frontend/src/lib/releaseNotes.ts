@@ -8,6 +8,14 @@ export interface ReleaseNote {
 // "What's New" dialog on first launch after update.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.1.7',
+    date: '2026-04-16',
+    highlights: [
+      'Added a persistent "UPDATE · RESTART" button in the status bar whenever an update finishes downloading — restart whenever you\u2019re ready.',
+      'The pop-up update toast can now be dismissed; the status-bar button stays until you restart.',
+    ],
+  },
+  {
     version: '0.1.6',
     date: '2026-04-16',
     highlights: [

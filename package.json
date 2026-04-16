@@ -1,6 +1,6 @@
 {
   "name": "spectra-terminal",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Spectra Terminal — Bloomberg-style trading terminal",
   "main": "electron/main.cjs",
   "author": "Zachary Baker <zbaker88@me.com>",

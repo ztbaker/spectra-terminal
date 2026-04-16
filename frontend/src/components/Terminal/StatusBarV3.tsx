@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchIndices } from '../../lib/api'
 import { useAuth } from '../../lib/auth'
+import { useUpdater } from '../../lib/updater'
 import C from '../../lib/colors'
 import { useBreakpoint } from '../../lib/useBreakpoint'
 import { usePriceFlash } from '../../lib/usePriceFlash'
@@ -197,6 +198,7 @@ const StatusBarV3: React.FC = () => {
   }, [indices])
 
   const { user, logout } = useAuth()
+  const { state: updateState, installAndRestart } = useUpdater()
   const status = getMarketStatus(now)
   const isLive = status === 'OPEN' || status === 'PRE' || status === 'AFTER'
   const [prevStatus, setPrevStatus] = useState(status)
@@ -452,6 +454,52 @@ const StatusBarV3: React.FC = () => {
             </span>
           )}
         </span>
+
+        {/* Update ready pill */}
+        {updateState.kind === 'ready' && (
+          <>
+            <span style={{
+              width: '1px',
+              height: '14px',
+              background: C.glassBorder,
+              margin: '0 10px',
+              display: 'inline-block',
+            }} />
+            <button
+              onClick={installAndRestart}
+              title={`Update v${updateState.version} is ready — click to restart and install`}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: 'transparent',
+                border: `1px solid ${C.amber}`,
+                color: C.amber,
+                padding: '3px 8px',
+                fontFamily: C.fontDisplay,
+                fontSize: '9px',
+                fontWeight: 700,
+                letterSpacing: '0.1em',
+                cursor: 'pointer',
+                textTransform: 'uppercase' as const,
+                boxShadow: `0 0 8px ${C.amberGlow}`,
+                animation: 'pulseGlow 2s ease-in-out infinite',
+              }}
+            >
+              <span style={{
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                background: C.amber,
+                display: 'inline-block',
+                boxShadow: `0 0 6px ${C.amberGlow}`,
+              }} />
+              {isCompact
+                ? 'RESTART'
+                : `UPDATE v${updateState.version} · RESTART`}
+            </button>
+          </>
+        )}
 
         {/* User / logout */}
         {user && (
