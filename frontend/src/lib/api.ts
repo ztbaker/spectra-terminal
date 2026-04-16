@@ -6,7 +6,7 @@ import type {
   FXResponse, CryptoResponse, FilingsResponse, FinancialsData,
   WorldIndicesResponse, IndexMembersResponse, SpreadData,
   ECSTResponse, FXRatesResponse, FAResponse, ReaderArticle,
-  ChatRoom, ChatMessage, ChatDMThread, ChatUserRow,
+  ChatRoom, ChatMessage, ChatDMThread, ChatUserRow, ChatNotification,
 } from '../types'
 
 const API_URL = import.meta.env.VITE_API_URL || '/api'
@@ -299,3 +299,6 @@ export const chatSendDM = (username: string, body: string): Promise<ChatMessage>
 
 export const chatSearchUsers = (q: string): Promise<ChatUserRow[]> =>
   api.get('/chat/users', { params: { q } }).then(r => r.data)
+
+export const chatNotifications = (sinceId: number): Promise<ChatNotification[]> =>
+  api.get('/chat/notifications', { params: { since_id: sinceId } }).then(r => r.data)

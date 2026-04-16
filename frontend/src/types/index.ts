@@ -873,6 +873,15 @@ export interface ChatUserRow {
   username: string
 }
 
+export interface ChatNotification {
+  id: number
+  kind: 'room' | 'dm'
+  room_slug: string | null
+  sender_username: string
+  body: string
+  created_at: string
+}
+
 export interface ParsedCommand {
   screen: ScreenType
   ticker?: string

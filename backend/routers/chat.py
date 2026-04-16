@@ -371,6 +371,68 @@ async def send_dm(
     return _serialize_message(row)
 
 
+# ─── Notifications ──────────────────────────────────────────────────────────
+
+
+class NotificationRow(BaseModel):
+    id: int
+    kind: str  # "room" | "dm"
+    room_slug: Optional[str] = None
+    sender_username: str
+    body: str
+    created_at: str
+
+
+@router.get("/chat/notifications", response_model=list[NotificationRow])
+async def chat_notifications(
+    since_id: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+    user_id: int = Depends(current_user_id),
+):
+    """Return messages the user should be notified about:
+    - Room messages in rooms the user has joined (not sent by self)
+    - DMs where the user is the recipient
+    """
+    with get_conn() as conn:
+        rows = conn.execute(
+            """
+            SELECT
+                m.id,
+                CASE WHEN m.room_id IS NOT NULL THEN 'room' ELSE 'dm' END AS kind,
+                r.slug AS room_slug,
+                us.username AS sender_username,
+                m.body,
+                m.created_at
+            FROM chat_messages m
+            JOIN users us ON us.id = m.sender_id
+            LEFT JOIN chat_rooms r ON r.id = m.room_id
+            LEFT JOIN chat_memberships cm
+                ON cm.room_id = m.room_id AND cm.user_id = ?
+            WHERE m.id > ?
+              AND m.sender_id != ?
+              AND (
+                  (m.room_id IS NOT NULL AND cm.user_id IS NOT NULL)
+                  OR
+                  (m.room_id IS NULL AND m.recipient_id = ?)
+              )
+            ORDER BY m.id ASC
+            LIMIT ?
+            """,
+            (user_id, since_id, user_id, user_id, limit),
+        ).fetchall()
+    return [
+        NotificationRow(
+            id=row["id"],
+            kind=row["kind"],
+            room_slug=row["room_slug"],
+            sender_username=row["sender_username"],
+            body=row["body"],
+            created_at=row["created_at"],
+        )
+        for row in rows
+    ]
+
+
 # ─── User search (for starting DMs) ─────────────────────────────────────────
 
 @router.get("/chat/users", response_model=list[UserRow])

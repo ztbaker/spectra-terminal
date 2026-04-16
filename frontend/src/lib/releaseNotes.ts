@@ -8,6 +8,14 @@ export interface ReleaseNote {
 // "What's New" dialog on first launch after update.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.1.11',
+    date: '2026-04-16',
+    highlights: [
+      'Chat notifications: a toast pops up when you receive a new message in a joined room or DM, even while on another screen.',
+      'Click the notification to jump straight into the conversation.',
+    ],
+  },
+  {
     version: '0.1.10',
     date: '2026-04-16',
     highlights: [
