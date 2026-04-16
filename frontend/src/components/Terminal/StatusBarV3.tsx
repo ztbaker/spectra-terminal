@@ -198,7 +198,7 @@ const StatusBarV3: React.FC = () => {
   }, [indices])
 
   const { user, logout } = useAuth()
-  const { state: updateState, installAndRestart } = useUpdater()
+  const { state: updateState, installAndRestart, openExternal } = useUpdater()
   const status = getMarketStatus(now)
   const isLive = status === 'OPEN' || status === 'PRE' || status === 'AFTER'
   const [prevStatus, setPrevStatus] = useState(status)
@@ -456,7 +456,7 @@ const StatusBarV3: React.FC = () => {
         </span>
 
         {/* Update ready pill */}
-        {updateState.kind === 'ready' && (
+        {(updateState.kind === 'ready' || updateState.kind === 'ready-external') && (
           <>
             <span style={{
               width: '1px',
@@ -466,8 +466,18 @@ const StatusBarV3: React.FC = () => {
               display: 'inline-block',
             }} />
             <button
-              onClick={installAndRestart}
-              title={`Update v${updateState.version} is ready — click to restart and install`}
+              onClick={() => {
+                if (updateState.kind === 'ready-external') {
+                  openExternal(updateState.url)
+                } else {
+                  installAndRestart()
+                }
+              }}
+              title={
+                updateState.kind === 'ready-external'
+                  ? `Update v${updateState.version} available — click to download`
+                  : `Update v${updateState.version} is ready — click to restart and install`
+              }
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -495,8 +505,10 @@ const StatusBarV3: React.FC = () => {
                 boxShadow: `0 0 6px ${C.amberGlow}`,
               }} />
               {isCompact
-                ? 'RESTART'
-                : `UPDATE v${updateState.version} · RESTART`}
+                ? (updateState.kind === 'ready-external' ? 'DOWNLOAD' : 'RESTART')
+                : updateState.kind === 'ready-external'
+                  ? `UPDATE v${updateState.version} · DOWNLOAD`
+                  : `UPDATE v${updateState.version} · RESTART`}
             </button>
           </>
         )}

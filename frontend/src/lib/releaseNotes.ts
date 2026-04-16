@@ -8,6 +8,14 @@ export interface ReleaseNote {
 // "What's New" dialog on first launch after update.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.1.12',
+    date: '2026-04-16',
+    highlights: [
+      'macOS updates now show a "DOWNLOAD" button that opens the GitHub releases page instead of failing with a code-signature error.',
+      'Windows auto-update still installs silently as before.',
+    ],
+  },
+  {
     version: '0.1.11',
     date: '2026-04-16',
     highlights: [

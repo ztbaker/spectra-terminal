@@ -8,20 +8,21 @@ const RED = '#ff3333'
 const BG = '#000000'
 
 export function UpdateToast() {
-  const { state, installAndRestart } = useUpdater()
+  const { state, installAndRestart, openExternal } = useUpdater()
   const [dismissedVersion, setDismissedVersion] = useState<string | null>(null)
 
   // A new 'ready' version re-opens the toast even if the user dismissed a prior one.
   useEffect(() => {
-    if (state.kind !== 'ready' && state.kind !== 'error') {
+    if (state.kind !== 'ready' && state.kind !== 'ready-external' && state.kind !== 'error') {
       setDismissedVersion(null)
     }
   }, [state.kind])
 
   if (state.kind === 'idle' || state.kind === 'checking') return null
 
+  const isReady = state.kind === 'ready' || state.kind === 'ready-external'
   const readyDismissed =
-    state.kind === 'ready' && dismissedVersion === state.version
+    isReady && dismissedVersion === state.version
   if (readyDismissed) return null
 
   const base: CSSProperties = {
@@ -45,7 +46,8 @@ export function UpdateToast() {
   if (state.kind === 'progress') {
     return <div style={base}>DOWNLOAD {state.percent}%</div>
   }
-  if (state.kind === 'ready') {
+  if (state.kind === 'ready' || state.kind === 'ready-external') {
+    const isExternal = state.kind === 'ready-external'
     return (
       <div style={{ ...base, paddingRight: 32, position: 'fixed' }}>
         <button
@@ -69,10 +71,16 @@ export function UpdateToast() {
           ×
         </button>
         <div style={{ color: GREEN, marginBottom: 6 }}>
-          UPDATE v{state.version} READY
+          UPDATE v{state.version} {isExternal ? 'AVAILABLE' : 'READY'}
         </div>
         <button
-          onClick={installAndRestart}
+          onClick={() => {
+            if (isExternal) {
+              openExternal(state.url)
+            } else {
+              installAndRestart()
+            }
+          }}
           style={{
             background: 'transparent',
             color: AMBER,
@@ -83,7 +91,7 @@ export function UpdateToast() {
             cursor: 'pointer',
           }}
         >
-          RESTART NOW
+          {isExternal ? 'DOWNLOAD FROM GITHUB' : 'RESTART NOW'}
         </button>
       </div>
     )

@@ -6,25 +6,30 @@ export type UpdateState =
   | { kind: 'available'; version: string }
   | { kind: 'progress'; percent: number }
   | { kind: 'ready'; version: string }
+  | { kind: 'ready-external'; version: string; url: string }
   | { kind: 'error'; message: string }
 
 interface Ctx {
   state: UpdateState
   installAndRestart: () => void
+  openExternal: (url: string) => void
 }
 
 const UpdaterCtx = createContext<Ctx>({
   state: { kind: 'idle' },
   installAndRestart: () => {},
+  openExternal: () => {},
 })
 
 interface SpectraUpdater {
   onChecking?: (cb: () => void) => void
   onAvailable: (cb: (info: { version: string }) => void) => void
+  onAvailableExternal?: (cb: (info: { version: string; url: string }) => void) => void
   onProgress: (cb: (p: { percent: number }) => void) => void
   onDownloaded: (cb: (info: { version: string }) => void) => void
   onError: (cb: (e: { message: string }) => void) => void
   installAndRestart: () => void
+  openExternal?: (url: string) => void
 }
 
 export function UpdaterProvider({ children }: { children: ReactNode }) {
@@ -34,8 +39,9 @@ export function UpdaterProvider({ children }: { children: ReactNode }) {
     const updater = (window as unknown as { spectraUpdater?: SpectraUpdater }).spectraUpdater
     if (!updater) return
 
-    updater.onChecking?.(() => setState(prev => (prev.kind === 'ready' ? prev : { kind: 'checking' })))
+    updater.onChecking?.(() => setState(prev => (prev.kind === 'ready' || prev.kind === 'ready-external' ? prev : { kind: 'checking' })))
     updater.onAvailable(info => setState({ kind: 'available', version: info.version }))
+    updater.onAvailableExternal?.(info => setState({ kind: 'ready-external', version: info.version, url: info.url }))
     updater.onProgress(p => setState({ kind: 'progress', percent: Math.round(p.percent) }))
     updater.onDownloaded(info => setState({ kind: 'ready', version: info.version }))
     updater.onError(e => setState({ kind: 'error', message: e.message }))
@@ -46,8 +52,13 @@ export function UpdaterProvider({ children }: { children: ReactNode }) {
     updater?.installAndRestart()
   }
 
+  const openExternal = (url: string) => {
+    const updater = (window as unknown as { spectraUpdater?: SpectraUpdater }).spectraUpdater
+    updater?.openExternal?.(url)
+  }
+
   return (
-    <UpdaterCtx.Provider value={{ state, installAndRestart }}>
+    <UpdaterCtx.Provider value={{ state, installAndRestart, openExternal }}>
       {children}
     </UpdaterCtx.Provider>
   )
