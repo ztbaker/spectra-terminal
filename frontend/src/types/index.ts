@@ -836,6 +836,7 @@ export type ScreenType =
   | 'graph' | 'gpo' | 'gip' | 'wei' | 'hs'
   | 'ecst' | 'fxc' | 'quit'
   | 'fa' | 'etf' | 'bond' | 'comd' | 'cong' | 'quant' | 'ask' | 'help' | 'back'
+  | 'bugreport'
 
 export interface ParsedCommand {
   screen: ScreenType
