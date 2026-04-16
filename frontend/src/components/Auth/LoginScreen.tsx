@@ -12,12 +12,20 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  const canSubmit =
-    username.trim().length >= 3 && password.length >= 6 && !submitting
+  const validate = (): string | null => {
+    if (username.trim().length < 3) return 'Username must be at least 3 characters'
+    if (password.length < 6) return 'Password must be at least 6 characters'
+    return null
+  }
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    if (!canSubmit) return
+    if (submitting) return
+    const msg = validate()
+    if (msg) {
+      setError(msg)
+      return
+    }
     setError(null)
     setSubmitting(true)
     try {
@@ -38,6 +46,10 @@ export default function LoginScreen() {
     setMode(next)
     setError(null)
   }
+
+  const submitLabel = submitting
+    ? mode === 'login' ? 'SIGNING IN…' : 'CREATING…'
+    : mode === 'login' ? '[ SIGN IN ]' : '[ CREATE ACCOUNT ]'
 
   return (
     <div
@@ -89,24 +101,40 @@ export default function LoginScreen() {
           boxShadow: `0 0 28px ${C.amberGlow}`,
         }}
       >
-        {/* Mode toggle */}
-        <div style={{ display: 'flex', gap: '6px', marginBottom: '22px' }}>
-          {(['login', 'signup'] as const).map(m => (
-            <button
-              type="button"
-              key={m}
-              onClick={() => switchMode(m)}
-              className={mode === m ? 'bb-btn bb-btn-active' : 'bb-btn'}
-              style={{
-                flex: 1,
-                padding: '6px 0',
-                fontSize: '11px',
-                letterSpacing: '0.15em',
-              }}
-            >
-              {m === 'login' ? 'SIGN IN' : 'CREATE ACCOUNT'}
-            </button>
-          ))}
+        {/* Mode toggle — clearly a tab row */}
+        <div
+          style={{
+            display: 'flex',
+            marginBottom: '22px',
+            borderBottom: `1px solid ${C.amberMute}`,
+          }}
+        >
+          {(['login', 'signup'] as const).map(m => {
+            const active = mode === m
+            return (
+              <button
+                type="button"
+                key={m}
+                onClick={() => switchMode(m)}
+                style={{
+                  flex: 1,
+                  padding: '8px 0',
+                  background: 'transparent',
+                  border: 'none',
+                  borderBottom: active ? `2px solid ${C.amber}` : '2px solid transparent',
+                  color: active ? C.amber : C.amberMute,
+                  fontFamily: C.fontDisplay,
+                  fontSize: '11px',
+                  letterSpacing: '0.2em',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  marginBottom: '-1px',
+                }}
+              >
+                {m === 'login' ? 'SIGN IN' : 'SIGN UP'}
+              </button>
+            )
+          })}
         </div>
 
         {/* Username */}
@@ -175,21 +203,19 @@ export default function LoginScreen() {
           </div>
         )}
 
-        {/* Submit */}
+        {/* Submit — always enabled; validation happens on submit */}
         <button
           type="submit"
-          className={canSubmit ? 'bb-btn bb-btn-active' : 'bb-btn'}
-          disabled={!canSubmit}
+          className="bb-btn bb-btn-active"
           style={{
             width: '100%',
             padding: '9px 0',
             fontSize: '12px',
             letterSpacing: '0.2em',
+            opacity: submitting ? 0.7 : 1,
           }}
         >
-          {submitting
-            ? mode === 'login' ? 'SIGNING IN...' : 'CREATING...'
-            : mode === 'login' ? '[ SIGN IN ]' : '[ CREATE ACCOUNT ]'}
+          {submitLabel}
         </button>
       </form>
 
