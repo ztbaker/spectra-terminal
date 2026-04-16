@@ -3,6 +3,7 @@ os.environ["SPECTRA_SHARED_KEY"] = "testkey"
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from middleware import auth as auth_module
 from middleware.auth import SharedKeyMiddleware
 
 
@@ -43,4 +44,17 @@ def test_accepts_correct_header():
 def test_exempts_health():
     client = TestClient(_app())
     r = client.get("/health")
+    assert r.status_code == 200
+
+
+def test_bypasses_options_preflight():
+    client = TestClient(_app())
+    r = client.options("/api/ping")
+    assert r.status_code != 401
+
+
+def test_noop_when_key_unset(monkeypatch):
+    monkeypatch.setattr(auth_module.settings, "SPECTRA_SHARED_KEY", "")
+    client = TestClient(_app())
+    r = client.get("/api/ping")
     assert r.status_code == 200
