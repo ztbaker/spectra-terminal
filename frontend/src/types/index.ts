@@ -837,6 +837,41 @@ export type ScreenType =
   | 'ecst' | 'fxc' | 'quit'
   | 'fa' | 'etf' | 'bond' | 'comd' | 'cong' | 'quant' | 'ask' | 'help' | 'back'
   | 'bugreport'
+  | 'chat'
+
+// ─── Chat ────────────────────────────────────────────────────────────────────
+export interface ChatRoom {
+  id: number
+  slug: string
+  name: string
+  description: string | null
+  created_at: string
+  member_count: number
+  joined: boolean
+}
+
+export interface ChatMessage {
+  id: number
+  room_id: number | null
+  sender_id: number
+  sender_username: string
+  recipient_id: number | null
+  recipient_username: string | null
+  body: string
+  created_at: string
+}
+
+export interface ChatDMThread {
+  peer_id: number
+  peer_username: string
+  last_message: string | null
+  last_at: string | null
+}
+
+export interface ChatUserRow {
+  id: number
+  username: string
+}
 
 export interface ParsedCommand {
   screen: ScreenType

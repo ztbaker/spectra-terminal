@@ -6,6 +6,7 @@ import type {
   FXResponse, CryptoResponse, FilingsResponse, FinancialsData,
   WorldIndicesResponse, IndexMembersResponse, SpreadData,
   ECSTResponse, FXRatesResponse, FAResponse, ReaderArticle,
+  ChatRoom, ChatMessage, ChatDMThread, ChatUserRow,
 } from '../types'
 
 const API_URL = import.meta.env.VITE_API_URL || '/api'
@@ -259,3 +260,42 @@ export const fetchLitigation = (): Promise<any> =>
 // ─── FA (Fundamental Analysis) ──────────────────────────────────────────────
 export const fetchFA = (ticker: string, period: 'annual' | 'quarterly' = 'annual'): Promise<FAResponse> =>
   api.get(`/fa/${ticker}`, { params: { period } }).then(r => r.data)
+
+// ─── Chat ────────────────────────────────────────────────────────────────────
+export const chatListRooms = (): Promise<ChatRoom[]> =>
+  api.get('/chat/rooms').then(r => r.data)
+
+export const chatCreateRoom = (
+  slug: string,
+  name: string,
+  description?: string,
+): Promise<ChatRoom> =>
+  api.post('/chat/rooms', { slug, name, description }).then(r => r.data)
+
+export const chatJoinRoom = (slug: string): Promise<void> =>
+  api.post(`/chat/rooms/${encodeURIComponent(slug)}/join`).then(r => r.data)
+
+export const chatLeaveRoom = (slug: string): Promise<void> =>
+  api.post(`/chat/rooms/${encodeURIComponent(slug)}/leave`).then(r => r.data)
+
+export const chatRoomMessages = (slug: string, after = 0): Promise<ChatMessage[]> =>
+  api.get(`/chat/rooms/${encodeURIComponent(slug)}/messages`, {
+    params: { after },
+  }).then(r => r.data)
+
+export const chatSendRoomMessage = (slug: string, body: string): Promise<ChatMessage> =>
+  api.post(`/chat/rooms/${encodeURIComponent(slug)}/messages`, { body }).then(r => r.data)
+
+export const chatListDMs = (): Promise<ChatDMThread[]> =>
+  api.get('/chat/dms').then(r => r.data)
+
+export const chatDMMessages = (username: string, after = 0): Promise<ChatMessage[]> =>
+  api.get(`/chat/dms/${encodeURIComponent(username)}/messages`, {
+    params: { after },
+  }).then(r => r.data)
+
+export const chatSendDM = (username: string, body: string): Promise<ChatMessage> =>
+  api.post(`/chat/dms/${encodeURIComponent(username)}/messages`, { body }).then(r => r.data)
+
+export const chatSearchUsers = (q: string): Promise<ChatUserRow[]> =>
+  api.get('/chat/users', { params: { q } }).then(r => r.data)

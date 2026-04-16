@@ -35,6 +35,7 @@ from routers import (
     ai,
     bugreport,
     fa,
+    chat,
 )
 
 
@@ -96,6 +97,7 @@ app.include_router(analytics.router, prefix="/api")
 app.include_router(ai.router, prefix="/api")
 app.include_router(bugreport.router, prefix="/api")
 app.include_router(fa.router, prefix="/api")
+app.include_router(chat.router, prefix="/api")
 
 
 @app.get("/health")
