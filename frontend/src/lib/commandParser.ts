@@ -102,6 +102,7 @@ const STANDALONE_COMMANDS: Record<string, ScreenType> = {
   BACK:      'back',
   QUIT:      'quit',
   EXIT:      'quit',
+  BUG:       'bugreport',
 }
 
 // ─── Ticker-qualified suffixes ────────────────────────────────────────────────

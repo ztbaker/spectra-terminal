@@ -39,6 +39,7 @@ import EconScreen       from './components/screens/EconScreen'
 import HomeScreenV3     from './components/screens/HomeScreenV3'
 import HelpScreen       from './components/screens/HelpScreen'
 import { UpdateToast } from './components/UpdateToast'
+import { BugReportDialog } from './components/BugReportDialog'
 
 import C from './lib/colors'
 import { accentFor } from './lib/screenAccents'
@@ -162,8 +163,16 @@ function screenTitle(screen: ScreenType, ticker?: string): string {
 function App() {
   const [activeCommand, setActiveCommand] = useState<ParsedCommand | null>(null)
   const [showQuitModal, setShowQuitModal] = useState(false)
+  const [bugOpen, setBugOpen] = useState(false)
+  const [lastError, setLastError] = useState<string | undefined>(undefined)
   const { state, openScreen, openScreenInNewPanel, closePanel, focusPanel, maximizePanel, swapPanels, resizePanels, goBack, clearHistory } = useWorkspace()
   const focusedPanelRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    const handler = (e: ErrorEvent) => setLastError(`${e.message} @ ${e.filename}:${e.lineno}`)
+    window.addEventListener('error', handler)
+    return () => window.removeEventListener('error', handler)
+  }, [])
 
   // Sticky ticker: persisted so it survives page refresh
   const [lastTicker, setLastTicker] = useState<string>(() => {
@@ -209,6 +218,8 @@ function App() {
     const open = inNewPanel ? openScreenInNewPanel : openScreen
     if (resolved.screen === 'quit') {
       setShowQuitModal(true)
+    } else if (resolved.screen === 'bugreport') {
+      setBugOpen(true)
     } else if (resolved.screen === 'home') {
       open('home')
       clearHistory()
@@ -407,6 +418,12 @@ function App() {
       <div className="bb-scanlines" />
       <div className="bb-vignette" />
       <UpdateToast />
+      <BugReportDialog
+        open={bugOpen}
+        onClose={() => setBugOpen(false)}
+        currentScreen={state.panels.find(p => p.focused)?.screen}
+        lastError={lastError}
+      />
       {showQuitModal && (
         <QuitModal
           onConfirm={handleQuit}
