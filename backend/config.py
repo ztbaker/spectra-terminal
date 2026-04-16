@@ -16,6 +16,9 @@ class Settings:
         "http://127.0.0.1:5173",
         "http://localhost:3000",
     ]
+    SPECTRA_SHARED_KEY: str = os.getenv("SPECTRA_SHARED_KEY", "")
+    GITHUB_TOKEN: str = os.getenv("GITHUB_TOKEN", "")
+    GITHUB_REPO: str = os.getenv("GITHUB_REPO", "")
 
 
 settings = Settings()

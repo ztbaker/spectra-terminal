@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 
 from config import settings
 from database import init_db
+from middleware.auth import SharedKeyMiddleware
 
 from routers import (
     equity,
@@ -53,6 +54,11 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+app.add_middleware(
+    SharedKeyMiddleware,
+    exempt_paths=["/health", "/docs", "/openapi.json", "/redoc"],
 )
 
 app.include_router(equity.router, prefix="/api")
