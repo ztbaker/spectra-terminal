@@ -6,6 +6,7 @@ const path       = require('path')
 const http       = require('http')
 const fs         = require('fs')
 const url        = require('url')
+const { initAutoUpdater, installUpdateAndRestart } = require('./updater.cjs')
 
 // ─── Paths ────────────────────────────────────────────────────────────────────
 
@@ -205,6 +206,10 @@ async function createWindow() {
   } catch (err) {
     mainWindow.loadURL(ERROR_HTML(err.message))
   }
+
+  if (!IS_DEV) {
+    initAutoUpdater(mainWindow)
+  }
 }
 
 // ─── App lifecycle ────────────────────────────────────────────────────────────
@@ -220,6 +225,10 @@ ipcMain.on('quit-app', () => {
   stopBackend()
   stopStaticServer()
   app.quit()
+})
+
+ipcMain.on('install-update', () => {
+  installUpdateAndRestart()
 })
 
 app.on('window-all-closed', () => {
