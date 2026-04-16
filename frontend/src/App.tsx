@@ -38,6 +38,7 @@ import FAScreen         from './components/screens/FAScreen'
 import EconScreen       from './components/screens/EconScreen'
 import HomeScreenV3     from './components/screens/HomeScreenV3'
 import HelpScreen       from './components/screens/HelpScreen'
+import { UpdateToast } from './components/UpdateToast'
 
 import C from './lib/colors'
 import { accentFor } from './lib/screenAccents'
@@ -405,6 +406,7 @@ function App() {
       {/* CRT phosphor scanlines + edge vignette */}
       <div className="bb-scanlines" />
       <div className="bb-vignette" />
+      <UpdateToast />
       {showQuitModal && (
         <QuitModal
           onConfirm={handleQuit}
