@@ -1,0 +1,22 @@
+# Fly.io configuration for spectra-terminal-api
+# App is created via `flyctl apps create spectra-terminal-api`; this file is
+# consumed by `flyctl deploy`.
+
+app = "spectra-terminal-api"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1
