@@ -8,7 +8,18 @@ import type {
   ECSTResponse, FXRatesResponse, FAResponse, ReaderArticle,
 } from '../types'
 
-const api = axios.create({ baseURL: '/api' })
+const API_URL = import.meta.env.VITE_API_URL || '/api'
+const API_KEY = import.meta.env.VITE_API_KEY || ''
+
+const api = axios.create({ baseURL: API_URL })
+
+api.interceptors.request.use((config) => {
+  if (API_KEY) {
+    config.headers = config.headers ?? {}
+    config.headers['X-Spectra-Key'] = API_KEY
+  }
+  return config
+})
 
 // ─── Equity ──────────────────────────────────────────────────────────────────
 export const fetchEquity = (ticker: string): Promise<EquityData> =>
