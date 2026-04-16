@@ -8,6 +8,14 @@ export interface ReleaseNote {
 // "What's New" dialog on first launch after update.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.1.9',
+    date: '2026-04-16',
+    highlights: [
+      'Fixed auto-update on macOS: the updater now has the ZIP archive it needs to install new versions in the background.',
+      'After this update lands, future releases will install silently on app restart as intended.',
+    ],
+  },
+  {
     version: '0.1.8',
     date: '2026-04-16',
     highlights: [
