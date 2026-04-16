@@ -1,13 +1,18 @@
 {
   "name": "spectra-terminal",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Spectra Terminal — Bloomberg-style trading terminal",
   "main": "electron/main.cjs",
+  "author": "Zachary Baker <zbaker88@me.com>",
   "scripts": {
     "build": "cd frontend && npm run build",
     "electron": "electron .",
     "app": "npm run build && electron .",
-    "electron:dev": "BAKER_DEV=1 electron ."
+    "electron:dev": "BAKER_DEV=1 electron .",
+    "dist": "npm run build && electron-builder",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "dist:win": "npm run build && electron-builder --win",
+    "release": "npm run build && electron-builder --publish always"
   },
   "devDependencies": {
     "electron": "^36.0.0",
@@ -15,5 +20,46 @@
   },
   "dependencies": {
     "electron-updater": "^6.8.3"
+  },
+  "build": {
+    "appId": "com.zbaker.spectra-terminal",
+    "productName": "Spectra Terminal",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "electron/**/*",
+      "frontend/dist/**/*",
+      "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+      "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}"
+    ],
+    "mac": {
+      "category": "public.app-category.finance",
+      "target": [
+        { "target": "dmg", "arch": ["arm64", "x64"] }
+      ],
+      "icon": "build/icon.png",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
+    },
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "REPLACE_WITH_GITHUB_OWNER",
+      "repo": "spectra-terminal",
+      "private": true,
+      "releaseType": "release"
+    }
   }
 }

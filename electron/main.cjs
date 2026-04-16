@@ -101,24 +101,6 @@ const MIME_TYPES = {
 function startStaticServer(port = 3000) {
   return new Promise((resolve, reject) => {
     const server = http.createServer((req, res) => {
-      // Proxy /api requests to the backend
-      if (req.url.startsWith('/api')) {
-        const proxyReq = http.request(
-          BACKEND_URL + req.url,
-          { method: req.method, headers: req.headers },
-          (proxyRes) => {
-            res.writeHead(proxyRes.statusCode, proxyRes.headers)
-            proxyRes.pipe(res)
-          }
-        )
-        proxyReq.on('error', () => {
-          res.writeHead(502, { 'Content-Type': 'text/plain' })
-          res.end('Backend unavailable')
-        })
-        req.pipe(proxyReq)
-        return
-      }
-
       // Serve static files from frontend/dist
       let filePath = path.join(FRONTEND_DIST, req.url === '/' ? 'index.html' : req.url)
 
@@ -212,14 +194,11 @@ async function createWindow() {
   mainWindow.loadURL(LOADING_HTML)
 
   try {
-    startBackend()
-    await waitForBackend()
-
     if (IS_DEV) {
-      // Dev mode: load Vite dev server (it proxies /api to backend)
+      startBackend()
+      await waitForBackend()
       mainWindow.loadURL('http://localhost:5173')
     } else {
-      // Production mode: serve built frontend via static server, proxy /api to backend
       const appUrl = await startStaticServer()
       mainWindow.loadURL(appUrl)
     }
