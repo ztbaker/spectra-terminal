@@ -35,7 +35,7 @@
 
 All `pytest` commands are run from the `backend/` directory with the virtualenv active:
 ```bash
-cd /path/to/BakerTerminal/backend
+cd /path/to/SpectraTerminal/backend
 source .venv/bin/activate
 ```
 
@@ -633,7 +633,7 @@ In `parseCommand`, inside the `if (parts.length >= 2)` block, add the long-form 
 - [ ] **Step 5: Verify TypeScript compiles**
 
 ```bash
-cd /path/to/BakerTerminal/frontend
+cd /path/to/SpectraTerminal/frontend
 npm run build
 ```
 
@@ -1037,7 +1037,7 @@ export default DESScreen
 - [ ] **Step 2: Verify TypeScript compiles**
 
 ```bash
-cd /path/to/BakerTerminal/frontend
+cd /path/to/SpectraTerminal/frontend
 npm run build
 ```
 
@@ -1075,7 +1075,7 @@ case 'des':
 - [ ] **Step 2: Verify final build is clean**
 
 ```bash
-cd /path/to/BakerTerminal/frontend
+cd /path/to/SpectraTerminal/frontend
 npm run build
 ```
 
@@ -1084,7 +1084,7 @@ Expected: `✓ built in ...ms`, zero TypeScript errors
 - [ ] **Step 3: Run all backend tests one final time**
 
 ```bash
-cd /path/to/BakerTerminal/backend
+cd /path/to/SpectraTerminal/backend
 source .venv/bin/activate
 pytest tests/test_des_backend.py -v
 ```
@@ -1106,12 +1106,12 @@ After all tasks complete, start the app and verify end-to-end:
 
 ```bash
 # Terminal 1 — backend
-cd /path/to/BakerTerminal/backend
+cd /path/to/SpectraTerminal/backend
 source .venv/bin/activate
 uvicorn main:app --reload --port 8000
 
 # Terminal 2 — frontend
-cd /path/to/BakerTerminal/frontend
+cd /path/to/SpectraTerminal/frontend
 npm run dev
 ```
 

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import React, { useState, useEffect, useRef } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { fetchIndices } from '../../lib/api'
 import C from '../../lib/colors'
 import { usePriceFlash } from '../../lib/usePriceFlash'
@@ -36,8 +36,8 @@ function getMarketStatus(now: Date): MarketStatus {
 function marketStatusDotColor(status: MarketStatus): string {
   switch (status) {
     case 'OPEN':   return C.green
-    case 'PRE':    return C.yellow
-    case 'AFTER':  return C.yellow
+    case 'PRE':    return C.amberBright
+    case 'AFTER':  return C.amberBright
     case 'CLOSED': return C.red
   }
 }
@@ -130,8 +130,6 @@ const MARQUEE_STYLE_ID = 'bb-marquee-keyframes'
 // ─── Backend health check ─────────────────────────────────────────────────────
 
 function useBackendHealth(): boolean {
-  const queryClient = useQueryClient()
-
   const { data } = useQuery<{ status: string }>({
     queryKey: ['health'],
     queryFn: async () => {
@@ -208,7 +206,7 @@ const StatusBar: React.FC = () => {
         left: 0,
         right: 0,
         height: '28px',
-        background: C.bg1,
+        background: C.surface1,
         borderTop: `1px solid ${C.border1}`,
         fontFamily: C.fontMono,
         fontSize: '11px',

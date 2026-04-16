@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import type { ParsedCommand, ScreenType } from './types'
 import { parseCommand } from './lib/commandParser'
 import { useWorkspace } from './lib/useWorkspace'
@@ -7,6 +7,7 @@ import CommandBarV3 from './components/Terminal/CommandBarV3'
 import StatusBarV3 from './components/Terminal/StatusBarV3'
 import WorkspaceLayout from './components/Terminal/WorkspaceLayout'
 import PanelV3 from './components/Terminal/PanelV3'
+import BackgroundLayer from './components/Terminal/BackgroundLayer'
 
 import EquityScreenV3   from './components/screens/EquityScreenV3'
 import ChartScreen      from './components/screens/ChartScreen'
@@ -33,10 +34,13 @@ import BondScreen       from './components/screens/BondScreen'
 import CommodityScreen  from './components/screens/CommodityScreen'
 import CongressScreen   from './components/screens/CongressScreen'
 import QuantScreen      from './components/screens/QuantScreen'
+import FAScreen         from './components/screens/FAScreen'
 import EconScreen       from './components/screens/EconScreen'
 import HomeScreenV3     from './components/screens/HomeScreenV3'
+import HelpScreen       from './components/screens/HelpScreen'
 
 import C from './lib/colors'
+import { accentFor } from './lib/screenAccents'
 
 function QuitModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
   useEffect(() => {
@@ -52,7 +56,7 @@ function QuitModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: (
     <div style={{
       position: 'fixed',
       inset: 0,
-      background: 'rgba(0, 0, 0, 0.85)',
+      background: `${C.surface0}E6`,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -82,7 +86,7 @@ function QuitModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: (
           fontFamily: C.fontBody,
           marginBottom: '32px',
         }}>
-          This will close BakerTerminal.
+          This will close SpectraTerminal.
         </div>
         <div style={{ display: 'flex', gap: '24px', justifyContent: 'center' }}>
           <button
@@ -147,7 +151,7 @@ function screenTitle(screen: ScreenType, ticker?: string): string {
     fx: 'FX', fxc: 'FXC', crypto: 'CRYPTO', macro: 'MACRO',
     home: 'HOME', des: 'DES', graph: 'GRAPH', gpo: 'GPO', gip: 'GIP',
     wei: 'WEI', hs: 'HS', ecst: 'ECST', etf: 'ETF', bond: 'BOND',
-    comd: 'COMD', cong: 'CONG', quant: 'QUANT', ask: 'ASK',
+    comd: 'COMD', cong: 'CONG', quant: 'QUANT', fa: 'FA', ask: 'ASK', help: 'HELP',
   }
   const label = labels[screen] ?? screen.toUpperCase()
   return ticker ? `${label} · ${ticker}` : label
@@ -157,7 +161,8 @@ function screenTitle(screen: ScreenType, ticker?: string): string {
 function App() {
   const [activeCommand, setActiveCommand] = useState<ParsedCommand | null>(null)
   const [showQuitModal, setShowQuitModal] = useState(false)
-  const { state, openScreen, closePanel, focusPanel, maximizePanel } = useWorkspace()
+  const { state, openScreen, openScreenInNewPanel, closePanel, focusPanel, maximizePanel, swapPanels, resizePanels, goBack, clearHistory } = useWorkspace()
+  const focusedPanelRef = useRef<HTMLDivElement | null>(null)
 
   // Sticky ticker: persisted so it survives page refresh
   const [lastTicker, setLastTicker] = useState<string>(() => {
@@ -173,11 +178,17 @@ function App() {
     return ''
   })
 
-  const handleCommand = useCallback((cmd: ParsedCommand) => {
+  const handleCommand = useCallback((cmd: ParsedCommand, inNewPanel = false) => {
+    // Handle BACK before any side effects — it's a history pop, not a navigation
+    if (cmd.screen === 'back') {
+      goBack()
+      return
+    }
+
     // If a ticker-required screen has no ticker, substitute the last-used ticker
     const TICKER_SCREENS = new Set<ScreenType>([
       'equity', 'chart', 'options', 'filings', 'des', 'gpo', 'gip', 'news',
-      'etf', 'bond', 'comd', 'cong', 'quant',
+      'etf', 'bond', 'comd', 'cong', 'quant', 'fa',
     ])
     let resolved = cmd
     if (!cmd.ticker && TICKER_SCREENS.has(cmd.screen) && lastTicker) {
@@ -194,19 +205,30 @@ function App() {
     } catch { /* ignore */ }
 
     // Open in workspace
+    const open = inNewPanel ? openScreenInNewPanel : openScreen
     if (resolved.screen === 'quit') {
       setShowQuitModal(true)
     } else if (resolved.screen === 'home') {
-      openScreen('home')
+      open('home')
+      clearHistory()
+      setActiveCommand(null)
+      setLastTicker('')
+      try { localStorage.removeItem('bb_last_ticker') } catch { /* ignore */ }
+      try { localStorage.removeItem('bb_last_command') } catch { /* ignore */ }
     } else {
-      openScreen(resolved.screen, resolved.ticker, resolved.sub)
+      open(resolved.screen, resolved.ticker, resolved.sub)
     }
-  }, [lastTicker, openScreen])
+  }, [lastTicker, openScreen, openScreenInNewPanel, goBack])
 
   // Allow screens to trigger navigation programmatically
   const handleNavigate = useCallback((raw: string) => {
     const cmd = parseCommand(raw)
     handleCommand(cmd)
+  }, [handleCommand])
+
+  // Command bar: Shift+Enter opens in new panel
+  const handleCommandNewPanel = useCallback((cmd: ParsedCommand) => {
+    handleCommand(cmd, true)
   }, [handleCommand])
 
   // F-key shortcuts
@@ -236,7 +258,7 @@ function App() {
   }, [])
 
   // ── Render screen for a panel ──────────────────────────────────────────────
-  const renderScreen = (screen: ScreenType, ticker?: string, sub?: string) => {
+  const renderScreen = (screen: ScreenType, ticker?: string, _sub?: string) => {
     switch (screen) {
       case 'equity':
         return ticker
@@ -307,6 +329,11 @@ function App() {
           ? <QuantScreen ticker={ticker} onNavigate={handleNavigate} />
           : <HomeScreenV3 onNavigate={handleNavigate} />
 
+      case 'fa':
+        return ticker
+          ? <FAScreen ticker={ticker} onNavigate={handleNavigate} />
+          : <HomeScreenV3 onNavigate={handleNavigate} />
+
       case 'portfolio':
         return <PortfolioScreen onNavigate={handleNavigate} />
 
@@ -334,6 +361,9 @@ function App() {
       case 'macro':
         return <MacroScreen onNavigate={handleNavigate} />
 
+      case 'help':
+        return <HelpScreen onNavigate={handleNavigate} />
+
       case 'home':
       default:
         return <HomeScreenV3 onNavigate={handleNavigate} />
@@ -343,14 +373,19 @@ function App() {
   // ── Build panel children ──────────────────────────────────────────────────
   const panelChildren = state.panels.map(panel => {
     const title = screenTitle(panel.screen, panel.ticker)
-    const accent = panel.screen === 'home' ? 'cyan' as const : 'amber' as const
+    const accent = accentFor(panel.screen)
+    const refFn = (el: HTMLDivElement | null) => {
+      if (panel.focused) focusedPanelRef.current = el
+    }
 
     return (
       <PanelV3
         key={panel.id}
+        ref={refFn}
         title={title}
         accent={accent}
         focused={panel.focused}
+        panelId={panel.id}
         onClose={() => closePanel(panel.id)}
         onMaximize={() => maximizePanel(panel.id)}
       >
@@ -361,11 +396,15 @@ function App() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: C.surface0, overflow: 'hidden' }}>
-      <CommandBarV3 onCommand={handleCommand} activeCommand={activeCommand} contextTicker={lastTicker} />
-      <WorkspaceLayout state={state} onFocusPanel={focusPanel}>
+      <BackgroundLayer focusedPanelRef={focusedPanelRef} />
+      <CommandBarV3 onCommand={handleCommand} onCommandNewPanel={handleCommandNewPanel} activeCommand={activeCommand} contextTicker={lastTicker} />
+      <WorkspaceLayout state={state} onFocusPanel={focusPanel} onSwapPanels={swapPanels} onResizePanels={resizePanels}>
         {panelChildren}
       </WorkspaceLayout>
       <StatusBarV3 />
+      {/* CRT phosphor scanlines + edge vignette */}
+      <div className="bb-scanlines" />
+      <div className="bb-vignette" />
       {showQuitModal && (
         <QuitModal
           onConfirm={handleQuit}

@@ -1,0 +1,1032 @@
+{
+  "meta": {
+    "analysis_date": "2026-03-24",
+    "project": "SpectraTerminal",
+    "test_framework_status": "NOT CONFIGURED",
+    "total_files_analyzed": 8,
+    "total_functions_identified": 47,
+    "total_untested_functions": 47,
+    "coverage_percentage": 0
+  },
+  "test_infrastructure": {
+    "status": "MISSING",
+    "gaps": [
+      "No test runner configured (vitest, jest, etc.)",
+      "No test configuration files found",
+      "No test scripts in package.json",
+      "No testing libraries installed (@testing-library/react, vitest, etc.)",
+      "No test setup files (setupTests.ts)",
+      "No mock setup for axios/API calls"
+    ],
+    "recommendations": [
+      "Install vitest + @testing-library/react",
+      "Configure vitest.config.ts with React Testing Library",
+      "Add test scripts to package.json",
+      "Set up MSW (Mock Service Worker) for API mocking",
+      "Configure coverage thresholds (target: 80%)"
+    ]
+  },
+  "files": [
+    {
+      "file": "/Users/zacbaker/Documents/Trade Strat/SpectraTerminal/frontend/src/lib/commandParser.ts",
+      "priority": "CRITICAL",
+      "complexity": "HIGH",
+      "functions": {
+        "parseCommand": {
+          "tested": false,
+          "line": 145,
+          "complexity_score": 9,
+          "critical": true,
+          "description": "Main command parser - handles all Bloomberg syntax transformations"
+        },
+        "isValidTicker": {
+          "tested": false,
+          "line": 116,
+          "complexity_score": 2,
+          "critical": false,
+          "description": "Ticker validation regex"
+        },
+        "resolveBloombergTicker": {
+          "tested": false,
+          "line": 53,
+          "complexity_score": 6,
+          "critical": true,
+          "description": "Converts Bloomberg ticker format to yfinance format"
+        }
+      },
+      "untested_scenarios": [
+        {
+          "category": "valid_inputs",
+          "cases": [
+            "Single ticker: 'AAPL' -> {screen: 'equity', ticker: 'AAPL'}",
+            "Ticker + EQUITY: 'AAPL EQUITY' -> {screen: 'equity', ticker: 'AAPL'}",
+            "Ticker + suffix: 'AAPL GP' -> {screen: 'chart', ticker: 'AAPL'}",
+            "Ticker + OPTIONS: 'AAPL OPTIONS' -> {screen: 'options', ticker: 'AAPL'}",
+            "Ticker + NEWS: 'AAPL NEWS' -> {screen: 'news', ticker: 'AAPL'}",
+            "Foreign equity: 'VOD LN EQUITY' -> {screen: 'equity', ticker: 'VOD.L'}",
+            "Index: 'SPX INDEX' -> {screen: 'equity', ticker: '^GSPC'}",
+            "Currency: 'EURUSD CURNCY' -> {screen: 'equity', ticker: 'EURUSD=X'}",
+            "Commodity: 'HG1 COMDTY GP' -> {screen: 'chart', ticker: 'HG=F'}",
+            "Standalone: 'PORT' -> {screen: 'portfolio'}",
+            "Standalone: 'ECST' -> {screen: 'ecst'}",
+            "Standalone: 'FXC' -> {screen: 'fxc'}",
+            "Graph slot: 'G1' -> {screen: 'graph', ticker: '1'}",
+            "Empty input: '' -> {screen: 'home'}",
+            "Whitespace only: '   ' -> {screen: 'home'}",
+            "Case insensitive: 'aapl equity' -> {screen: 'equity', ticker: 'AAPL'}",
+            "Multi-space: 'AAPL    EQUITY' -> {screen: 'equity', ticker: 'AAPL'}",
+            "DES suffix: 'AAPL DES' -> {screen: 'des', ticker: 'AAPL'}",
+            "GPO suffix: 'AAPL GPO' -> {screen: 'gpo', ticker: 'AAPL'}",
+            "GIP suffix: 'AAPL GIP' -> {screen: 'gip', ticker: 'AAPL'}"
+          ]
+        },
+        {
+          "category": "edge_cases",
+          "cases": [
+            "Unknown ticker: 'ZZZZZZ' -> {screen: 'equity', ticker: 'ZZZZZZ'}",
+            "Unknown suffix: 'AAPL UNKNOWN' -> {screen: 'equity', ticker: 'AAPL'}",
+            "Suffix only: 'GP' -> {screen: 'chart'} (no ticker, app fills last used)",
+            "Suffix only: 'DES' -> {screen: 'des'} (no ticker)",
+            "Mixed case Bloomberg: 'AaPl Us EqUiTy' -> normalized to uppercase",
+            "Long ticker: 'ABCDE' (5 chars) -> valid",
+            "Ticker with dash: 'BRK-B' -> valid",
+            "Ticker with dot: 'BRK.B' -> valid",
+            "G alone: 'G' -> {screen: 'graph'} (graph manager)",
+            "G10: 'G10' -> NOT a graph slot shortcut (only G1-G9)",
+            "Ticker with number: 'HG1 COMDTY' -> resolves to 'HG=F'",
+            "Currency without suffix: 'EURUSD' -> stays as 'EURUSD' (user must add CURNCY)",
+            "All standalone commands: PORT, PORTFOLIO, WLT, WATCHLIST, ECST, ECON, EARN, EARNINGS, SCR, SCREENER, FX, FXC, CRYPTO, MACRO, HOME, G, WEI, WINDEX, HS, QUIT, EXIT"
+          ]
+        },
+        {
+          "category": "invalid_inputs",
+          "cases": [
+            "Special characters: 'AAPL@#$' -> treated as ticker (may fail validation elsewhere)",
+            "Very long string: 'ABCDEFGHIJKLMNOP...' -> treated as ticker",
+            "Numbers only: '12345' -> treated as ticker",
+            "Unicode characters: 'AAPL™' -> treated as ticker",
+            "SQL injection: 'AAPL; DROP TABLE' -> treated as multi-token",
+            "XSS attempt: '<script>alert(1)</script>' -> treated as ticker"
+          ]
+        },
+        {
+          "category": "bloomberg_asset_classes",
+          "cases": [
+            "All asset classes: EQUITY, CURNCY, COMDTY, INDEX, CORP, GOVT",
+            "Exchange codes: LN, GY, FP, JP, HK, AU, CN, SS, SZ, IT, SM, NA, SW, SE, US",
+            "Index tickers: SPX, INDU, CCMP, VIX, RTY, UKX, DAX, CAC, NKY, HSI",
+            "Commodity tickers: HG, CL, GC, SI, NG, CO, W, S, C",
+            "Unknown commodity: 'XYZ1 COMDTY' -> fallback to 'XYZ=F'",
+            "Unknown index: 'CUSTOM INDEX' -> fallback to '^CUSTOM'",
+            "Unknown exchange: 'AAPL ZZ EQUITY' -> no suffix applied"
+          ]
+        },
+        {
+          "category": "parsing_logic",
+          "cases": [
+            "Rightmost asset class wins: 'AAPL EQUITY INDEX' -> uses INDEX (rightmost)",
+            "Function after asset class: 'AAPL US EQUITY GP' -> {screen: 'chart', ticker: 'AAPL'}",
+            "Exchange before asset class: 'VOD LN EQUITY DES' -> {screen: 'des', ticker: 'VOD.L'}",
+            "Multi-word before asset: 'ABC XYZ EQUITY' -> ticker is 'XYZ'",
+            "Two tickers: 'AAPL MSFT' -> first is ticker, second treated as unknown suffix"
+          ]
+        }
+      ],
+      "missing_tests": {
+        "unit_tests": 51,
+        "edge_case_tests": 0,
+        "error_handling_tests": 0,
+        "property_based_tests": 0
+      },
+      "recommended_test_structure": [
+        "describe('parseCommand - Valid Inputs')",
+        "describe('parseCommand - Standalone Commands')",
+        "describe('parseCommand - Bloomberg Asset Classes')",
+        "describe('parseCommand - Exchange Codes')",
+        "describe('parseCommand - Graph Slots')",
+        "describe('parseCommand - Edge Cases')",
+        "describe('parseCommand - Invalid/Malicious Inputs')",
+        "describe('isValidTicker')",
+        "describe('resolveBloombergTicker - Currency')",
+        "describe('resolveBloombergTicker - Commodity')",
+        "describe('resolveBloombergTicker - Index')",
+        "describe('resolveBloombergTicker - Equity with Exchange')"
+      ]
+    },
+    {
+      "file": "/Users/zacbaker/Documents/Trade Strat/SpectraTerminal/frontend/src/lib/api.ts",
+      "priority": "CRITICAL",
+      "complexity": "MEDIUM",
+      "functions": {
+        "fetchEquity": {
+          "tested": false,
+          "line": 14,
+          "critical": true,
+          "description": "Fetch equity data"
+        },
+        "fetchEquityLive": {
+          "tested": false,
+          "line": 17,
+          "critical": true,
+          "description": "Fetch live equity price"
+        },
+        "fetchChart": {
+          "tested": false,
+          "line": 21,
+          "critical": true,
+          "description": "Fetch chart data with period/interval"
+        },
+        "fetchOptions": {
+          "tested": false,
+          "line": 25,
+          "critical": true,
+          "description": "Fetch options data"
+        },
+        "fetchNews": {
+          "tested": false,
+          "line": 29,
+          "critical": false,
+          "description": "Fetch news with default ticker=MARKET"
+        },
+        "fetchIndices": {
+          "tested": false,
+          "line": 33,
+          "critical": false,
+          "description": "Fetch index quotes"
+        },
+        "fetchWorldIndices": {
+          "tested": false,
+          "line": 36,
+          "critical": false,
+          "description": "Fetch world indices"
+        },
+        "fetchIndexMembers": {
+          "tested": false,
+          "line": 39,
+          "critical": false,
+          "description": "Fetch index members"
+        },
+        "fetchEcon": {
+          "tested": false,
+          "line": 43,
+          "critical": false,
+          "description": "Fetch economic series from FRED"
+        },
+        "fetchMacroDashboard": {
+          "tested": false,
+          "line": 46,
+          "critical": false,
+          "description": "Fetch macro dashboard"
+        },
+        "fetchPortfolio": {
+          "tested": false,
+          "line": 50,
+          "critical": false,
+          "description": "Fetch portfolio positions"
+        },
+        "fetchPortfolioPerformance": {
+          "tested": false,
+          "line": 53,
+          "critical": false,
+          "description": "Fetch portfolio performance"
+        },
+        "addPosition": {
+          "tested": false,
+          "line": 56,
+          "critical": false,
+          "description": "POST add portfolio position"
+        },
+        "deletePosition": {
+          "tested": false,
+          "line": 59,
+          "critical": false,
+          "description": "DELETE portfolio position"
+        },
+        "fetchWatchlist": {
+          "tested": false,
+          "line": 63,
+          "critical": false,
+          "description": "Fetch watchlist"
+        },
+        "fetchWatchlistQuotes": {
+          "tested": false,
+          "line": 66,
+          "critical": false,
+          "description": "Fetch watchlist quotes"
+        },
+        "addToWatchlist": {
+          "tested": false,
+          "line": 69,
+          "critical": false,
+          "description": "POST add to watchlist"
+        },
+        "removeFromWatchlist": {
+          "tested": false,
+          "line": 72,
+          "critical": false,
+          "description": "DELETE from watchlist"
+        },
+        "fetchEarnings": {
+          "tested": false,
+          "line": 76,
+          "critical": false,
+          "description": "Fetch earnings calendar"
+        },
+        "fetchScreener": {
+          "tested": false,
+          "line": 80,
+          "critical": false,
+          "description": "Fetch screener results with params"
+        },
+        "fetchFX": {
+          "tested": false,
+          "line": 84,
+          "critical": false,
+          "description": "Fetch FX data"
+        },
+        "fetchCrypto": {
+          "tested": false,
+          "line": 88,
+          "critical": false,
+          "description": "Fetch crypto data"
+        },
+        "fetchFilings": {
+          "tested": false,
+          "line": 92,
+          "critical": false,
+          "description": "Fetch SEC filings"
+        },
+        "fetchSpread": {
+          "tested": false,
+          "line": 96,
+          "critical": false,
+          "description": "Fetch historical spread between two tickers"
+        },
+        "fetchFinancials": {
+          "tested": false,
+          "line": 100,
+          "critical": false,
+          "description": "Fetch financial statements"
+        },
+        "fetchECST": {
+          "tested": false,
+          "line": 106,
+          "critical": false,
+          "description": "Fetch ECST economic statistics"
+        },
+        "fetchFXRates": {
+          "tested": false,
+          "line": 110,
+          "critical": false,
+          "description": "Fetch FX rates matrix"
+        }
+      },
+      "missing_error_handling_tests": [
+        {
+          "scenario": "Network timeout",
+          "test": "Should reject with timeout error after configured delay"
+        },
+        {
+          "scenario": "404 Not Found",
+          "test": "Should reject with 404 status when ticker not found"
+        },
+        {
+          "scenario": "500 Internal Server Error",
+          "test": "Should reject with 500 status when backend fails"
+        },
+        {
+          "scenario": "401 Unauthorized",
+          "test": "Should reject with 401 when API key invalid"
+        },
+        {
+          "scenario": "429 Rate Limited",
+          "test": "Should reject with 429 when rate limit exceeded"
+        },
+        {
+          "scenario": "Network offline",
+          "test": "Should reject with network error when offline"
+        },
+        {
+          "scenario": "Invalid response format",
+          "test": "Should handle malformed JSON response"
+        },
+        {
+          "scenario": "Empty response",
+          "test": "Should handle empty data array"
+        },
+        {
+          "scenario": "Partial data failure",
+          "test": "Should handle missing fields in response"
+        },
+        {
+          "scenario": "CORS error",
+          "test": "Should handle CORS blocked request"
+        }
+      ],
+      "missing_parameter_validation_tests": [
+        {
+          "function": "fetchChart",
+          "tests": [
+            "Should handle empty ticker string",
+            "Should handle invalid period value",
+            "Should handle invalid interval value",
+            "Should handle special characters in ticker"
+          ]
+        },
+        {
+          "function": "fetchNews",
+          "tests": [
+            "Should handle negative limit",
+            "Should handle zero limit",
+            "Should handle very large limit (>1000)"
+          ]
+        },
+        {
+          "function": "addPosition",
+          "tests": [
+            "Should reject negative shares",
+            "Should reject zero shares",
+            "Should reject negative avg_cost",
+            "Should reject invalid ticker format"
+          ]
+        },
+        {
+          "function": "fetchScreener",
+          "tests": [
+            "Should handle empty params object",
+            "Should handle undefined params",
+            "Should handle params with undefined values"
+          ]
+        }
+      ],
+      "missing_integration_tests": [
+        "Should chain multiple API calls correctly",
+        "Should handle concurrent requests to same endpoint",
+        "Should handle concurrent requests to different endpoints",
+        "Should respect axios instance baseURL configuration",
+        "Should include correct headers in all requests",
+        "Should handle request cancellation"
+      ],
+      "missing_response_type_tests": [
+        "All 27 functions should return correctly typed responses",
+        "Type guards should validate response matches interface",
+        "Should handle nullable fields correctly",
+        "Should handle optional fields correctly"
+      ],
+      "recommended_test_structure": [
+        "describe('API Client - GET Endpoints')",
+        "describe('API Client - POST Endpoints')",
+        "describe('API Client - DELETE Endpoints')",
+        "describe('API Client - Error Handling - 4xx')",
+        "describe('API Client - Error Handling - 5xx')",
+        "describe('API Client - Error Handling - Network')",
+        "describe('API Client - Parameter Validation')",
+        "describe('API Client - Response Type Validation')",
+        "describe('API Client - Concurrent Requests')",
+        "describe('API Client - Axios Instance Configuration')"
+      ]
+    },
+    {
+      "file": "/Users/zacbaker/Documents/Trade Strat/SpectraTerminal/frontend/src/hooks/usePolling.ts",
+      "priority": "HIGH",
+      "complexity": "MEDIUM",
+      "functions": {
+        "usePolling": {
+          "tested": false,
+          "line": 11,
+          "critical": true,
+          "description": "Custom hook for polling with interval"
+        }
+      },
+      "missing_hook_lifecycle_tests": [
+        {
+          "scenario": "Initial mount",
+          "test": "Should start polling immediately when enabled=true"
+        },
+        {
+          "scenario": "Unmount",
+          "test": "Should clear interval on unmount"
+        },
+        {
+          "scenario": "Enabled toggle",
+          "test": "Should stop polling when enabled changes to false"
+        },
+        {
+          "scenario": "Enabled toggle",
+          "test": "Should resume polling when enabled changes back to true"
+        },
+        {
+          "scenario": "Interval change",
+          "test": "Should restart with new interval when intervalMs changes"
+        },
+        {
+          "scenario": "Callback change",
+          "test": "Should call latest refetchFn without restarting interval"
+        },
+        {
+          "scenario": "Callback stability",
+          "test": "Should not restart interval when refetchFn reference changes"
+        },
+        {
+          "scenario": "Multiple intervals",
+          "test": "Should only have one active interval at a time"
+        },
+        {
+          "scenario": "Zero interval",
+          "test": "Should handle intervalMs=0 (no polling)"
+        },
+        {
+          "scenario": "Negative interval",
+          "test": "Should handle negative intervalMs gracefully"
+        }
+      ],
+      "missing_edge_cases": [
+        "refetchFn throws error during poll",
+        "refetchFn is async and takes longer than interval",
+        "Component remounts rapidly",
+        "Browser tab hidden (should continue polling?)",
+        "Very short interval (<100ms)",
+        "Very long interval (>1 hour)",
+        "refetchFn is null/undefined initially"
+      ],
+      "recommended_test_structure": [
+        "describe('usePolling - Lifecycle')",
+        "describe('usePolling - Enabled/Disabled Toggle')",
+        "describe('usePolling - Interval Changes')",
+        "describe('usePolling - Callback Changes')",
+        "describe('usePolling - Edge Cases')",
+        "describe('usePolling - Cleanup')"
+      ]
+    },
+    {
+      "file": "/Users/zacbaker/Documents/Trade Strat/SpectraTerminal/frontend/src/hooks/useLivePrice.ts",
+      "priority": "HIGH",
+      "complexity": "MEDIUM",
+      "functions": {
+        "useLivePrice": {
+          "tested": false,
+          "line": 16,
+          "critical": true,
+          "description": "React Query hook for live price polling"
+        }
+      },
+      "missing_hook_lifecycle_tests": [
+        {
+          "scenario": "Initial query",
+          "test": "Should fetch immediately on mount when enabled=true"
+        },
+        {
+          "scenario": "Refetch interval",
+          "test": "Should refetch every 500ms by default"
+        },
+        {
+          "scenario": "Custom interval",
+          "test": "Should respect custom intervalMs parameter"
+        },
+        {
+          "scenario": "Enabled=false",
+          "test": "Should not poll when enabled=false"
+        },
+        {
+          "scenario": "Ticker change",
+          "test": "Should invalidate and refetch when ticker changes"
+        },
+        {
+          "scenario": "Background refetch",
+          "test": "Should NOT refetch when tab is in background (refetchIntervalInBackground=false)"
+        },
+        {
+          "scenario": "Query key",
+          "test": "Should use ['live-price', ticker] as query key"
+        },
+        {
+          "scenario": "Stale time",
+          "test": "Should consider data stale immediately (staleTime=0)"
+        },
+        {
+          "scenario": "Retry",
+          "test": "Should not retry on error (retry=false)"
+        }
+      ],
+      "missing_react_query_tests": [
+        "Should return isLoading=true on initial fetch",
+        "Should return isError=true on fetch failure",
+        "Should return error object when fetch fails",
+        "Should return data when fetch succeeds",
+        "Should return isRefetching=true during background refetch",
+        "Should cache data with query key",
+        "Should deduplicate requests for same ticker",
+        "Should cancel in-flight requests on unmount"
+      ],
+      "missing_integration_tests": [
+        "Should call fetchEquityLive with correct ticker",
+        "Should handle API timeout (>2s)",
+        "Should handle API 404 error",
+        "Should handle API 500 error",
+        "Should handle network offline",
+        "Should handle malformed response"
+      ],
+      "missing_type_tests": [
+        "Should return LivePriceData type when successful",
+        "Should handle null values in response fields",
+        "Should handle missing optional fields"
+      ],
+      "recommended_test_structure": [
+        "describe('useLivePrice - Initial Load')",
+        "describe('useLivePrice - Polling')",
+        "describe('useLivePrice - Enabled Toggle')",
+        "describe('useLivePrice - Ticker Changes')",
+        "describe('useLivePrice - React Query Behavior')",
+        "describe('useLivePrice - Error Handling')",
+        "describe('useLivePrice - Type Safety')"
+      ]
+    },
+    {
+      "file": "/Users/zacbaker/Documents/Trade Strat/SpectraTerminal/frontend/src/components/shared/DataTable.tsx",
+      "priority": "MEDIUM",
+      "complexity": "HIGH",
+      "functions": {
+        "DataTable": {
+          "tested": false,
+          "line": 52,
+          "critical": false,
+          "description": "Reusable sortable data table component"
+        },
+        "getField": {
+          "tested": false,
+          "line": 21,
+          "critical": false,
+          "description": "Helper to extract field from row object"
+        },
+        "compareValues": {
+          "tested": false,
+          "line": 28,
+          "critical": false,
+          "description": "Comparison function for sorting"
+        },
+        "handleHeaderClick": {
+          "tested": false,
+          "line": 62,
+          "critical": false,
+          "description": "Header click handler for sorting"
+        }
+      },
+      "missing_component_tests": [
+        {
+          "category": "Rendering",
+          "tests": [
+            "Should render table with correct number of columns",
+            "Should render table with correct number of rows",
+            "Should render column headers from column definitions",
+            "Should render cell content using custom render function",
+            "Should render cell content from field key when no render function",
+            "Should render '—' for null/undefined values",
+            "Should apply left/right text alignment",
+            "Should apply custom alignment from column config"
+          ]
+        },
+        {
+          "category": "Sorting",
+          "tests": [
+            "Should sort ascending on first header click",
+            "Should toggle to descending on second click",
+            "Should toggle back to ascending on third click",
+            "Should show ▲ arrow for ascending sort",
+            "Should show ▼ arrow for descending sort",
+            "Should highlight active sort column in orange",
+            "Should not sort when column.sortable=false",
+            "Should sort numbers correctly",
+            "Should sort strings correctly (localeCompare)",
+            "Should sort null values to bottom",
+            "Should maintain sort when data prop updates"
+          ]
+        },
+        {
+          "category": "Interaction",
+          "tests": [
+            "Should call onRowClick when row clicked",
+            "Should pass correct row data to onRowClick",
+            "Should show pointer cursor when onRowClick provided",
+            "Should show default cursor when no onRowClick",
+            "Should show pointer cursor on sortable headers",
+            "Should prevent text selection on header click (userSelect: none)"
+          ]
+        },
+        {
+          "category": "Scrolling",
+          "tests": [
+            "Should apply maxHeight when provided",
+            "Should enable vertical scrolling when maxHeight set",
+            "Should not set overflow when maxHeight not provided"
+          ]
+        },
+        {
+          "category": "Edge Cases",
+          "tests": [
+            "Should handle empty data array",
+            "Should handle data with missing keyField",
+            "Should handle data with duplicate keys (fallback to rowIdx)",
+            "Should handle all null column values",
+            "Should handle mixed null and valid values",
+            "Should handle very long strings in cells",
+            "Should handle negative numbers",
+            "Should handle zero values",
+            "Should handle objects with extra fields not in columns"
+          ]
+        },
+        {
+          "category": "Type Safety",
+          "tests": [
+            "Should work with generic type T",
+            "Should respect Column<T> type constraints",
+            "Should handle nested field access (getField)"
+          ]
+        }
+      ],
+      "missing_accessibility_tests": [
+        "Should have correct table semantics",
+        "Should support keyboard navigation",
+        "Should announce sort state to screen readers"
+      ],
+      "recommended_test_structure": [
+        "describe('DataTable - Rendering')",
+        "describe('DataTable - Sorting Logic')",
+        "describe('DataTable - User Interaction')",
+        "describe('DataTable - Scrolling')",
+        "describe('DataTable - Edge Cases')",
+        "describe('DataTable - Type Safety')",
+        "describe('compareValues - Number Sorting')",
+        "describe('compareValues - String Sorting')",
+        "describe('compareValues - Null Handling')",
+        "describe('getField - Field Extraction')"
+      ]
+    },
+    {
+      "file": "/Users/zacbaker/Documents/Trade Strat/SpectraTerminal/frontend/src/components/shared/Sparkline.tsx",
+      "priority": "LOW",
+      "complexity": "LOW",
+      "functions": {
+        "Sparkline": {
+          "tested": false,
+          "line": 16,
+          "critical": false,
+          "description": "Inline SVG sparkline chart component"
+        }
+      },
+      "missing_component_tests": [
+        {
+          "category": "Rendering",
+          "tests": [
+            "Should render SVG with correct width",
+            "Should render SVG with correct height",
+            "Should render polyline with correct color",
+            "Should render polyline with correct points",
+            "Should apply default width=80",
+            "Should apply default height=24",
+            "Should apply default color=#ff9900",
+            "Should have aria-hidden=true"
+          ]
+        },
+        {
+          "category": "Data Processing",
+          "tests": [
+            "Should filter out null values",
+            "Should normalize data to fit height",
+            "Should calculate correct min/max",
+            "Should handle identical values (range=0)",
+            "Should space points evenly across width",
+            "Should format point coordinates to 2 decimals"
+          ]
+        },
+        {
+          "category": "Edge Cases",
+          "tests": [
+            "Should return null for empty data array",
+            "Should return null for single data point",
+            "Should return null for all-null data",
+            "Should handle two data points (minimum valid)",
+            "Should handle very large values",
+            "Should handle very small values",
+            "Should handle negative values",
+            "Should handle mixed positive/negative",
+            "Should handle zero values",
+            "Should handle decimal values",
+            "Should handle very long data array (1000+ points)"
+          ]
+        },
+        {
+          "category": "Visual",
+          "tests": [
+            "Should render line at mid-height when all values equal",
+            "Should render line from bottom to top for increasing values",
+            "Should render line from top to bottom for decreasing values"
+          ]
+        }
+      ],
+      "recommended_test_structure": [
+        "describe('Sparkline - Rendering')",
+        "describe('Sparkline - Data Processing')",
+        "describe('Sparkline - Edge Cases')",
+        "describe('Sparkline - Normalization Logic')"
+      ]
+    },
+    {
+      "file": "/Users/zacbaker/Documents/Trade Strat/SpectraTerminal/frontend/src/components/shared/LoadingBar.tsx",
+      "priority": "LOW",
+      "complexity": "LOW",
+      "functions": {
+        "LoadingBar": {
+          "tested": false,
+          "line": 11,
+          "critical": false,
+          "description": "Bloomberg-style loading indicator"
+        }
+      },
+      "missing_component_tests": [
+        {
+          "category": "Rendering",
+          "tests": [
+            "Should render container div with bb-loading-bg class",
+            "Should render loading bar div with bb-loading-bar class",
+            "Should be visible when loading=true",
+            "Should be hidden when loading=false",
+            "Should use visibility:hidden (not display:none) to reserve height",
+            "Should always reserve space regardless of loading state"
+          ]
+        },
+        {
+          "category": "Props",
+          "tests": [
+            "Should accept loading boolean prop",
+            "Should toggle visibility on loading prop change"
+          ]
+        }
+      ],
+      "recommended_test_structure": [
+        "describe('LoadingBar - Visibility')",
+        "describe('LoadingBar - Layout Stability')"
+      ]
+    },
+    {
+      "file": "/Users/zacbaker/Documents/Trade Strat/SpectraTerminal/frontend/src/components/shared/TickerBadge.tsx",
+      "priority": "MEDIUM",
+      "complexity": "LOW",
+      "functions": {
+        "TickerBadge": {
+          "tested": false,
+          "line": 19,
+          "critical": false,
+          "description": "Colored value badge (gain/loss/neutral)"
+        }
+      },
+      "missing_component_tests": [
+        {
+          "category": "Rendering - Positive Values",
+          "tests": [
+            "Should render +1.23 for positive value",
+            "Should apply bb-gain class for positive value",
+            "Should prepend + sign for positive values",
+            "Should render +1.23% when pct=true",
+            "Should respect decimals prop for positive values",
+            "Should render prefix before sign"
+          ]
+        },
+        {
+          "category": "Rendering - Negative Values",
+          "tests": [
+            "Should render -1.23 for negative value",
+            "Should apply bb-loss class for negative value",
+            "Should prepend - sign for negative values",
+            "Should render -1.23% when pct=true",
+            "Should respect decimals prop for negative values"
+          ]
+        },
+        {
+          "category": "Rendering - Zero",
+          "tests": [
+            "Should render 0.00 for zero value",
+            "Should apply amber color (#ff9900) for zero",
+            "Should not apply bb-gain or bb-loss class for zero",
+            "Should not show sign for zero"
+          ]
+        },
+        {
+          "category": "Rendering - Null",
+          "tests": [
+            "Should render '—' for null value",
+            "Should apply amber color (#ff9900) for null",
+            "Should render prefix before '—' when value is null"
+          ]
+        },
+        {
+          "category": "Props",
+          "tests": [
+            "Should default pct=false",
+            "Should default decimals=2",
+            "Should default prefix=''",
+            "Should handle decimals=0",
+            "Should handle decimals=4",
+            "Should handle empty prefix",
+            "Should handle prefix='$'",
+            "Should handle prefix='Δ '"
+          ]
+        },
+        {
+          "category": "Edge Cases",
+          "tests": [
+            "Should handle very small positive (0.0001)",
+            "Should handle very small negative (-0.0001)",
+            "Should handle very large positive (999999.99)",
+            "Should handle very large negative (-999999.99)",
+            "Should round correctly (1.235 with decimals=2 -> 1.24)",
+            "Should handle exactly zero (0.00 vs -0.00)"
+          ]
+        }
+      ],
+      "recommended_test_structure": [
+        "describe('TickerBadge - Positive Values')",
+        "describe('TickerBadge - Negative Values')",
+        "describe('TickerBadge - Zero Values')",
+        "describe('TickerBadge - Null Values')",
+        "describe('TickerBadge - Props')",
+        "describe('TickerBadge - Formatting Edge Cases')"
+      ]
+    }
+  ],
+  "summary": {
+    "total_missing_tests": 400,
+    "breakdown": {
+      "commandParser": {
+        "unit_tests": 51,
+        "edge_cases": 33,
+        "error_handling": 6
+      },
+      "api": {
+        "unit_tests": 27,
+        "error_handling": 10,
+        "parameter_validation": 12,
+        "integration": 6,
+        "type_validation": 4
+      },
+      "usePolling": {
+        "lifecycle_tests": 10,
+        "edge_cases": 7
+      },
+      "useLivePrice": {
+        "lifecycle_tests": 9,
+        "react_query_tests": 8,
+        "integration_tests": 6,
+        "type_tests": 3
+      },
+      "DataTable": {
+        "rendering": 8,
+        "sorting": 11,
+        "interaction": 6,
+        "scrolling": 3,
+        "edge_cases": 9,
+        "type_safety": 3,
+        "accessibility": 3
+      },
+      "Sparkline": {
+        "rendering": 8,
+        "data_processing": 6,
+        "edge_cases": 11,
+        "visual": 3
+      },
+      "LoadingBar": {
+        "rendering": 6,
+        "props": 2
+      },
+      "TickerBadge": {
+        "positive": 6,
+        "negative": 5,
+        "zero": 4,
+        "null": 3,
+        "props": 8,
+        "edge_cases": 6
+      }
+    }
+  },
+  "prioritized_test_plan": [
+    {
+      "priority": 1,
+      "file": "lib/commandParser.ts",
+      "reason": "Critical path - all user input flows through this parser",
+      "estimated_tests": 90,
+      "risk": "CRITICAL - parsing errors break entire UX"
+    },
+    {
+      "priority": 2,
+      "file": "lib/api.ts",
+      "reason": "Critical path - all data fetching depends on API client",
+      "estimated_tests": 59,
+      "risk": "HIGH - API errors cause data loss/incorrect displays"
+    },
+    {
+      "priority": 3,
+      "file": "hooks/useLivePrice.ts",
+      "reason": "High-frequency polling - errors compound quickly",
+      "estimated_tests": 26,
+      "risk": "HIGH - polling errors cause performance/UX degradation"
+    },
+    {
+      "priority": 4,
+      "file": "hooks/usePolling.ts",
+      "reason": "Shared polling logic used by multiple screens",
+      "estimated_tests": 17,
+      "risk": "MEDIUM - affects FXC, ECST, and other polling screens"
+    },
+    {
+      "priority": 5,
+      "file": "components/shared/DataTable.tsx",
+      "reason": "Reusable component used across many screens",
+      "estimated_tests": 43,
+      "risk": "MEDIUM - sorting/display bugs affect UX"
+    },
+    {
+      "priority": 6,
+      "file": "components/shared/TickerBadge.tsx",
+      "reason": "Widely used for displaying gains/losses",
+      "estimated_tests": 32,
+      "risk": "LOW - display-only, no critical logic"
+    },
+    {
+      "priority": 7,
+      "file": "components/shared/Sparkline.tsx",
+      "reason": "Visual component, limited logic",
+      "estimated_tests": 28,
+      "risk": "LOW - cosmetic issues only"
+    },
+    {
+      "priority": 8,
+      "file": "components/shared/LoadingBar.tsx",
+      "reason": "Simple visibility toggle",
+      "estimated_tests": 8,
+      "risk": "LOW - cosmetic only"
+    }
+  ],
+  "recommended_first_steps": [
+    "1. Install test dependencies: npm install -D vitest @testing-library/react @testing-library/user-event @testing-library/jest-dom jsdom",
+    "2. Install MSW for API mocking: npm install -D msw",
+    "3. Create vitest.config.ts with React Testing Library setup",
+    "4. Create tests/setup.ts with global test configuration",
+    "5. Add test scripts to package.json: 'test', 'test:watch', 'test:coverage'",
+    "6. Write tests for commandParser.ts (Priority 1 - 90 tests)",
+    "7. Write tests for api.ts (Priority 2 - 59 tests)",
+    "8. Set up MSW handlers for API mocking",
+    "9. Write tests for useLivePrice (Priority 3 - 26 tests)",
+    "10. Write tests for usePolling (Priority 4 - 17 tests)",
+    "11. Configure coverage thresholds (target 80%)",
+    "12. Integrate tests into CI/CD pipeline"
+  ],
+  "coverage_goals": {
+    "statements": "80%",
+    "branches": "75%",
+    "functions": "80%",
+    "lines": "80%",
+    "critical_files": {
+      "commandParser.ts": "95%+",
+      "api.ts": "90%+"
+    }
+  }
+}

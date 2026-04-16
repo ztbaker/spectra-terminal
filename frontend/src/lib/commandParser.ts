@@ -86,10 +86,22 @@ const STANDALONE_COMMANDS: Record<string, ScreenType> = {
   CRYPTO:    'crypto',
   MACRO:     'macro',
   HOME:      'home',
-  G:         'graph',   // G alone = graph manager
+  G:         'graph',
   WEI:       'wei',
   WINDEX:    'wei',
   HS:        'hs',
+  BOND:      'bond',
+  YLD:       'bond',
+  COMD:      'comd',
+  COMMODITY: 'comd',
+  CONG:      'cong',
+  CONGRESS:  'cong',
+  QUANT:     'quant',
+  ASK:       'ask',
+  HELP:      'help',
+  BACK:      'back',
+  QUIT:      'quit',
+  EXIT:      'quit',
 }
 
 // ─── Ticker-qualified suffixes ────────────────────────────────────────────────
@@ -103,8 +115,15 @@ const TICKER_SUFFIXES: Record<string, ScreenType> = {
   FILINGS:  'filings',
   EQUITY:   'equity',
   DES:      'des',
+  FA:       'fa',
   GPO:      'gpo',
   GIP:      'gip',
+  ETF:      'etf',
+  BOND:     'bond',
+  YLD:      'bond',
+  COMD:     'comd',
+  CONG:     'cong',
+  QUANT:    'quant',
 }
 
 /**
@@ -112,7 +131,7 @@ const TICKER_SUFFIXES: Record<string, ScreenType> = {
  * 1–5 uppercase letters, numbers, dots, or dashes.
  */
 export function isValidTicker(s: string): boolean {
-  return /^[A-Z0-9.\-]{1,5}$/.test(s)
+  return /^[A-Z][A-Z0-9.-]{0,4}$/.test(s)
 }
 
 /**
@@ -151,7 +170,7 @@ export function parseCommand(input: string): ParsedCommand {
 
   // 0. G1–G9 graph slot shortcuts (before standalone check so G1 ≠ ticker)
   if (parts.length === 1 && /^G[1-9]$/.test(parts[0])) {
-    return { screen: 'graph', ticker: parts[0][1], raw }
+    return { screen: 'graph', ticker: parts[0].slice(1), raw }
   }
 
   // 1. Single-token standalone commands

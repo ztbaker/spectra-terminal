@@ -5,7 +5,7 @@ import type {
   WatchlistRow, WatchlistQuote, EarningsCalendar, ScreenerResponse,
   FXResponse, CryptoResponse, FilingsResponse, FinancialsData,
   WorldIndicesResponse, IndexMembersResponse, SpreadData,
-  ECSTResponse, FXRatesResponse,
+  ECSTResponse, FXRatesResponse, FAResponse, ReaderArticle,
 } from '../types'
 
 const api = axios.create({ baseURL: '/api' })
@@ -14,13 +14,33 @@ const api = axios.create({ baseURL: '/api' })
 export const fetchEquity = (ticker: string): Promise<EquityData> =>
   api.get(`/equity/${ticker}`).then(r => r.data)
 
+export const fetchEquityLive = (ticker: string): Promise<import('../types').ExtendedHoursData & { ticker: string; price: number | null; change: number | null; change_pct: number | null; bid: number | null; ask: number | null; volume: number | null; day_high: number | null; day_low: number | null; as_of: number }> =>
+  api.get(`/equity/${ticker}/live`).then(r => r.data)
+
 // ─── Chart ───────────────────────────────────────────────────────────────────
 export const fetchChart = (ticker: string, period = '1y', interval = '1d'): Promise<ChartData> =>
   api.get(`/chart/${ticker}`, { params: { period, interval } }).then(r => r.data)
 
+export const fetchChartHistory = (
+  ticker: string,
+  start: string,
+  end: string,
+  interval = '1d',
+): Promise<ChartData> =>
+  api.get(`/chart/${ticker}`, { params: { start, end, interval } }).then(r => r.data)
+
 // ─── Options ─────────────────────────────────────────────────────────────────
 export const fetchOptions = (ticker: string): Promise<OptionsData> =>
   api.get(`/options/${ticker}`).then(r => r.data)
+
+export const fetchOptionsSurface = (ticker: string) =>
+  api.get(`/options/${ticker}/surface`).then(r => r.data)
+
+export const fetchOptionsTermStructure = (ticker: string) =>
+  api.get(`/options/${ticker}/term-structure`).then(r => r.data)
+
+export const fetchOptionsUnusual = (ticker: string) =>
+  api.get(`/options/${ticker}/unusual`).then(r => r.data)
 
 // ─── News ─────────────────────────────────────────────────────────────────────
 export const fetchNews = (ticker = 'MARKET', limit = 50): Promise<NewsResponse> =>
@@ -77,6 +97,9 @@ export const fetchEarnings = (lookahead_days = 14): Promise<EarningsCalendar> =>
 export const fetchScreener = (params: Record<string, string | number | undefined>): Promise<ScreenerResponse> =>
   api.get('/screener', { params }).then(r => r.data)
 
+export const fetchScreenerDSL = (query: string): Promise<ScreenerResponse> =>
+  api.get('/screener/dsl', { params: { q: query } }).then(r => r.data)
+
 // ─── FX ──────────────────────────────────────────────────────────────────────
 export const fetchFX = (): Promise<FXResponse> =>
   api.get('/fx').then(r => r.data)
@@ -106,3 +129,64 @@ export const fetchECST = (): Promise<ECSTResponse> =>
 // ─── FX Rates (matrix) ────────────────────────────────────────────────────────
 export const fetchFXRates = (): Promise<FXRatesResponse> =>
   api.get('/fx/rates').then(r => r.data)
+
+// ─── News (extended) ──────────────────────────────────────────────────────────
+export const fetchNewsCompany = (symbol: string, limit = 50): Promise<NewsResponse> =>
+  api.get('/news/company', { params: { symbol, limit } }).then(r => r.data)
+
+export const fetchNewsWorld = (topic = 'general', limit = 50): Promise<NewsResponse> =>
+  api.get('/news/world', { params: { topic, limit } }).then(r => r.data)
+
+export const fetchReaderArticle = (url: string): Promise<ReaderArticle> =>
+  api.get('/news/reader', { params: { url } }).then(r => r.data)
+
+// ─── Commodity ────────────────────────────────────────────────────────────────
+export const fetchCommoditySpots = (): Promise<any[]> =>
+  api.get('/commodity/spot').then(r => r.data)
+
+export const fetchCommodityEnergyOutlook = (): Promise<any> =>
+  api.get('/commodity/energy/outlook').then(r => r.data)
+
+export const fetchCommodityEnergyStocks = (): Promise<any> =>
+  api.get('/commodity/energy/stocks').then(r => r.data)
+
+export const fetchCommodityAgPSD = (commodityCode = '0440000'): Promise<any> =>
+  api.get('/commodity/ag/psd', { params: { commodity_code: commodityCode } }).then(r => r.data)
+
+// ─── Analytics ─────────────────────────────────────────────────────────────────
+export const fetchAnalyticsSummary = (ticker: string, period = '2y'): Promise<any> =>
+  api.get('/analytics/summary', { params: { ticker, period } }).then(r => r.data)
+
+export const fetchAnalyticsRegression = (yTicker: string, xTicker?: string, marketTicker = '^GSPC'): Promise<any> =>
+  api.get('/analytics/regression', { params: { y_ticker: yTicker, x_ticker: xTicker, market_ticker: marketTicker } }).then(r => r.data)
+
+export const fetchAnalyticsCointegration = (ticker1: string, ticker2: string): Promise<any> =>
+  api.get('/analytics/cointegration', { params: { ticker1, ticker2 } }).then(r => r.data)
+
+export const fetchAnalyticsFamaFrench = (ticker: string): Promise<any> =>
+  api.get('/analytics/fama-french', { params: { ticker } }).then(r => r.data)
+
+// ─── Congress ──────────────────────────────────────────────────────────────────
+export const fetchCongressBills = (limit = 30): Promise<any> =>
+  api.get('/congress/bills', { params: { limit } }).then(r => r.data)
+
+export const fetchCongressBill = (billId: string): Promise<any> =>
+  api.get(`/congress/bill/${billId}`).then(r => r.data)
+
+// ─── Econ Search ──────────────────────────────────────────────────────────────
+export const fetchEconSearch = (q: string, limit = 20): Promise<any> =>
+  api.get('/econ/search', { params: { q, limit } }).then(r => r.data)
+
+// ─── 13F & Litigation ────────────────────────────────────────────────────────
+export const fetch13F = (cik: string): Promise<any> =>
+  api.get(`/filings/13f/${cik}`).then(r => r.data)
+
+export const fetchInstitutionSearch = (q: string): Promise<any> =>
+  api.get('/filings/institutions/search', { params: { q } }).then(r => r.data)
+
+export const fetchLitigation = (): Promise<any> =>
+  api.get('/filings/litigation').then(r => r.data)
+
+// ─── FA (Fundamental Analysis) ──────────────────────────────────────────────
+export const fetchFA = (ticker: string, period: 'annual' | 'quarterly' = 'annual'): Promise<FAResponse> =>
+  api.get(`/fa/${ticker}`, { params: { period } }).then(r => r.data)

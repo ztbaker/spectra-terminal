@@ -1,3 +1,4 @@
+import Panel from '../Terminal/Panel'
 import React, { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import C from '../../lib/colors'
@@ -19,15 +20,15 @@ function statusPill(action: string | null): { label: string; color: string; bg: 
     return { label: 'ENACTED', color: C.green, bg: C.greenDim }
   }
   if (lower.includes('passed') || lower.includes('agreed to')) {
-    return { label: 'PASSED', color: C.yellow, bg: `${C.yellow}11` }
+    return { label: 'PASSED', color: C.amberBright, bg: `${C.amberBright}11` }
   }
   if (lower.includes('introduced') || lower.includes('referred')) {
-    return { label: 'INTRODUCED', color: C.amberDim, bg: C.amberGhost }
+    return { label: 'INTRODUCED', color: C.amberDim, bg: C.amberMute }
   }
   if (lower.includes('committee') || lower.includes('reported')) {
-    return { label: 'COMMITTEE', color: C.amber, bg: C.amberGhost }
+    return { label: 'COMMITTEE', color: C.amber, bg: C.amberMute }
   }
-  return { label: 'ACTIVE', color: C.whiteDim, bg: C.bg2 }
+  return { label: 'ACTIVE', color: C.whiteDim, bg: C.surface2 }
 }
 
 // ─── Detail panel ─────────────────────────────────────────────────────────────
@@ -51,7 +52,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ billId, onClose }) => {
     <div style={{
       width: 400,
       height: '100%',
-      background: C.bg1,
+      background: C.surface1,
       borderLeft: `1px solid ${C.border1}`,
       display: 'flex',
       flexDirection: 'column',
@@ -65,9 +66,9 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ billId, onClose }) => {
         alignItems: 'center',
         padding: '10px 16px',
         borderBottom: `1px solid ${C.border1}`,
-        background: C.bg2,
+        background: C.surface2,
       }}>
-        <span style={{ color: C.yellow, fontSize: 13, fontFamily: C.fontMono, fontWeight: 700, letterSpacing: '0.05em' }}>
+        <span style={{ color: C.amberBright, fontSize: 13, fontFamily: C.fontMono, fontWeight: 700, letterSpacing: '0.05em' }}>
           {billId ?? 'BILL DETAIL'}
         </span>
         <button
@@ -94,28 +95,28 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ billId, onClose }) => {
       {bill && !isLoading && (
         <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
           {/* Title */}
-          <div style={{ color: C.white, fontSize: 14, fontFamily: C.fontSans, fontWeight: 600, lineHeight: 1.4, marginBottom: 16 }}>
+          <div style={{ color: C.white, fontSize: 14, fontFamily: C.fontDisplay, fontWeight: 600, lineHeight: 1.4, marginBottom: 16 }}>
             {bill.title || '—'}
           </div>
 
           {/* Metadata grid */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
             <div>
-              <div style={{ color: C.whiteDim, fontSize: 9, fontFamily: C.fontSans, letterSpacing: '0.08em', fontWeight: 600, marginBottom: 2 }}>TYPE</div>
+              <div style={{ color: C.whiteDim, fontSize: 9, fontFamily: C.fontDisplay, letterSpacing: '0.08em', fontWeight: 600, marginBottom: 2 }}>TYPE</div>
               <div style={{ color: C.white, fontSize: 12, fontFamily: C.fontMono }}>{bill.type?.toUpperCase() ?? '—'}</div>
             </div>
             <div>
-              <div style={{ color: C.whiteDim, fontSize: 9, fontFamily: C.fontSans, letterSpacing: '0.08em', fontWeight: 600, marginBottom: 2 }}>CONGRESS</div>
+              <div style={{ color: C.whiteDim, fontSize: 9, fontFamily: C.fontDisplay, letterSpacing: '0.08em', fontWeight: 600, marginBottom: 2 }}>CONGRESS</div>
               <div style={{ color: C.white, fontSize: 12, fontFamily: C.fontMono }}>{bill.congress ?? '—'}</div>
             </div>
             <div>
-              <div style={{ color: C.whiteDim, fontSize: 9, fontFamily: C.fontSans, letterSpacing: '0.08em', fontWeight: 600, marginBottom: 2 }}>SPONSOR</div>
+              <div style={{ color: C.whiteDim, fontSize: 9, fontFamily: C.fontDisplay, letterSpacing: '0.08em', fontWeight: 600, marginBottom: 2 }}>SPONSOR</div>
               <div style={{ color: C.white, fontSize: 12, fontFamily: C.fontMono }}>{bill.sponsor || '—'}</div>
             </div>
             <div>
-              <div style={{ color: C.whiteDim, fontSize: 9, fontFamily: C.fontSans, letterSpacing: '0.08em', fontWeight: 600, marginBottom: 2 }}>PARTY</div>
+              <div style={{ color: C.whiteDim, fontSize: 9, fontFamily: C.fontDisplay, letterSpacing: '0.08em', fontWeight: 600, marginBottom: 2 }}>PARTY</div>
               <div style={{
-                color: bill.sponsor_party === 'D' ? C.blue : bill.sponsor_party === 'R' ? C.red : C.whiteDim,
+                color: bill.sponsor_party === 'D' ? C.cyan : bill.sponsor_party === 'R' ? C.red : C.whiteDim,
                 fontSize: 12,
                 fontFamily: C.fontMono,
                 fontWeight: 700,
@@ -124,7 +125,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ billId, onClose }) => {
               </div>
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
-              <div style={{ color: C.whiteDim, fontSize: 9, fontFamily: C.fontSans, letterSpacing: '0.08em', fontWeight: 600, marginBottom: 2 }}>INTRODUCED</div>
+              <div style={{ color: C.whiteDim, fontSize: 9, fontFamily: C.fontDisplay, letterSpacing: '0.08em', fontWeight: 600, marginBottom: 2 }}>INTRODUCED</div>
               <div style={{ color: C.white, fontSize: 12, fontFamily: C.fontMono }}>{bill.introduced_date || '—'}</div>
             </div>
           </div>
@@ -132,9 +133,9 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ billId, onClose }) => {
           {/* Latest action */}
           {bill.latest_action && (
             <div style={{ marginBottom: 16 }}>
-              <div style={{ color: C.whiteDim, fontSize: 9, fontFamily: C.fontSans, letterSpacing: '0.08em', fontWeight: 600, marginBottom: 4 }}>LATEST ACTION</div>
+              <div style={{ color: C.whiteDim, fontSize: 9, fontFamily: C.fontDisplay, letterSpacing: '0.08em', fontWeight: 600, marginBottom: 4 }}>LATEST ACTION</div>
               <div style={{
-                background: C.bg2,
+                background: C.surface2,
                 border: `1px solid ${C.border0}`,
                 padding: '8px 12px',
                 color: C.amberDim,
@@ -150,9 +151,9 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ billId, onClose }) => {
           {/* Summary */}
           {bill.summary && (
             <div style={{ marginBottom: 16 }}>
-              <div style={{ color: C.whiteDim, fontSize: 9, fontFamily: C.fontSans, letterSpacing: '0.08em', fontWeight: 600, marginBottom: 4 }}>SUMMARY</div>
+              <div style={{ color: C.whiteDim, fontSize: 9, fontFamily: C.fontDisplay, letterSpacing: '0.08em', fontWeight: 600, marginBottom: 4 }}>SUMMARY</div>
               <div style={{
-                background: C.bg2,
+                background: C.surface2,
                 border: `1px solid ${C.border0}`,
                 padding: '10px 12px',
                 color: C.whiteDim,
@@ -174,7 +175,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ billId, onClose }) => {
                 href={bill.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ color: C.blue, fontSize: 11, fontFamily: C.fontMono, textDecoration: 'none' }}
+                style={{ color: C.cyan, fontSize: 11, fontFamily: C.fontMono, textDecoration: 'none' }}
               >
                 View on Congress.gov →
               </a>
@@ -218,7 +219,7 @@ export default function CongressScreen(_props: Props) {
 
   const columns = useMemo(() => [
     { key: 'bill_id', header: 'BILL', type: 'text' as const, width: '100px', render: (row: any) => (
-      <span style={{ color: C.yellow, fontWeight: 700, fontFamily: C.fontMono }}>{row.bill_id}</span>
+      <span style={{ color: C.amberBright, fontWeight: 700, fontFamily: C.fontMono }}>{row.bill_id}</span>
     )},
     { key: 'title', header: 'TITLE', type: 'text' as const, render: (row: any) => (
       <span style={{ color: C.white, maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block' }}>
@@ -258,14 +259,14 @@ export default function CongressScreen(_props: Props) {
         {/* Main list area */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           {/* Search/filter bar */}
-          <div style={{ padding: '8px 12px', borderBottom: `1px solid ${C.border1}`, background: C.bg1 }}>
+          <div style={{ padding: '8px 12px', borderBottom: `1px solid ${C.border1}`, background: C.surface1 }}>
             <input
               value={searchFilter}
               onChange={e => setSearchFilter(e.target.value)}
               placeholder="Search bills by ID, title, or action..."
               style={{
                 width: '100%',
-                background: C.bg2,
+                background: C.surface2,
                 border: `1px solid ${C.border1}`,
                 color: C.white,
                 fontFamily: C.fontMono,

@@ -1,8 +1,10 @@
+import Panel from '../Terminal/Panel'
 import React, { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchEarnings } from '../../lib/api'
 import type { EarningsEntry } from '../../types'
 import LoadingBar from '../shared/LoadingBar'
+import C from '../../lib/colors'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -34,8 +36,8 @@ const WhenBadge: React.FC<WhenBadgeProps> = ({ when }) => {
     return (
       <span
         style={{
-          background: '#ffcc00',
-          color: '#000',
+          background: C.amberBright,
+          color: C.surface0,
           fontSize: '9px',
           padding: '1px 4px',
           letterSpacing: '0.04em',
@@ -51,8 +53,8 @@ const WhenBadge: React.FC<WhenBadgeProps> = ({ when }) => {
     return (
       <span
         style={{
-          background: '#0088ff',
-          color: '#fff',
+          background: C.cyanBright,
+          color: C.surface0,
           fontSize: '9px',
           padding: '1px 4px',
           letterSpacing: '0.04em',
@@ -67,8 +69,8 @@ const WhenBadge: React.FC<WhenBadgeProps> = ({ when }) => {
   return (
     <span
       style={{
-        background: '#554400',
-        color: '#cc7700',
+        background: C.amberMute,
+        color: C.amberDim,
         fontSize: '9px',
         padding: '1px 4px',
         letterSpacing: '0.04em',
@@ -99,7 +101,7 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry, onNavigate }) => {
         width: '100%',
         textAlign: 'left',
         background: 'transparent',
-        border: '1px solid #2a2a2a',
+        border: `1px solid ${C.border1}`,
         borderRadius: 0,
         padding: '5px 6px',
         cursor: 'pointer',
@@ -108,18 +110,18 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry, onNavigate }) => {
         transition: 'background 0.1s',
       }}
       onMouseEnter={e => {
-        ;(e.currentTarget as HTMLButtonElement).style.background = '#1a1a00'
-        ;(e.currentTarget as HTMLButtonElement).style.borderColor = '#ff9900'
+        ;(e.currentTarget as HTMLButtonElement).style.background = C.surfaceGlow
+        ;(e.currentTarget as HTMLButtonElement).style.borderColor = C.amber
       }}
       onMouseLeave={e => {
         ;(e.currentTarget as HTMLButtonElement).style.background = 'transparent'
-        ;(e.currentTarget as HTMLButtonElement).style.borderColor = '#2a2a2a'
+        ;(e.currentTarget as HTMLButtonElement).style.borderColor = C.border1
       }}
     >
       {/* Top row: badge + ticker */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '2px' }}>
         <WhenBadge when={entry.when_market} />
-        <span style={{ color: '#ff9900', fontSize: '12px', fontWeight: 700, letterSpacing: '0.05em' }}>
+        <span style={{ color: C.amber, fontSize: '12px', fontWeight: 700, letterSpacing: '0.05em' }}>
           {entry.ticker}
         </span>
       </div>
@@ -128,7 +130,7 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry, onNavigate }) => {
       {entry.company_name && (
         <div
           style={{
-            color: '#cc7700',
+            color: C.amberDim,
             fontSize: '10px',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -146,21 +148,21 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry, onNavigate }) => {
         <div style={{ display: 'flex', gap: '8px', fontSize: '10px', marginTop: '1px' }}>
           {epsEst && (
             <span>
-              <span style={{ color: '#554400' }}>EST </span>
-              <span style={{ color: '#cc7700' }}>{epsEst}</span>
+              <span style={{ color: C.amberMute }}>EST </span>
+              <span style={{ color: C.amberDim }}>{epsEst}</span>
             </span>
           )}
           {epsActual && (
             <span>
-              <span style={{ color: '#554400' }}>ACT </span>
+              <span style={{ color: C.amberMute }}>ACT </span>
               <span
                 style={{
                   color:
                     entry.eps_actual != null && entry.eps_estimate != null
                       ? entry.eps_actual >= entry.eps_estimate
-                        ? '#00ff41'
-                        : '#ff3333'
-                      : '#e0e0e0',
+                        ? C.green
+                        : C.red
+                      : C.white,
                 }}
               >
                 {epsActual}
@@ -209,7 +211,7 @@ const EarningsScreen: React.FC<Props> = ({ onNavigate }) => {
   const totalEntries = days.reduce((sum, d) => sum + d.entries.length, 0)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#000' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: C.surface0 }}>
       <LoadingBar loading={isLoading || isFetching} />
 
       <Panel
@@ -230,14 +232,14 @@ const EarningsScreen: React.FC<Props> = ({ onNavigate }) => {
       >
         {/* Error state */}
         {error && !isLoading && (
-          <div style={{ padding: '12px', color: '#ff3333', fontSize: '12px', borderBottom: '1px solid #2a2a2a' }}>
+          <div style={{ padding: '12px', color: C.red, fontSize: '12px', borderBottom: `1px solid ${C.border1}` }}>
             ERR: {(error as Error).message ?? 'Failed to load earnings calendar'}
           </div>
         )}
 
         {/* Loading skeleton */}
         {isLoading && !data && (
-          <div style={{ padding: '16px', color: '#554400', fontSize: '12px', textAlign: 'center' }}>
+          <div style={{ padding: '16px', color: C.amberMute, fontSize: '12px', textAlign: 'center' }}>
             LOADING EARNINGS DATA...
           </div>
         )}
@@ -258,17 +260,17 @@ const EarningsScreen: React.FC<Props> = ({ onNavigate }) => {
                   {/* Column header */}
                   <div
                     style={{
-                      background: '#1a1a00',
-                      borderBottom: '2px solid #ff9900',
+                      background: C.surfaceGlow,
+                      borderBottom: `2px solid ${C.amber}`,
                       padding: '4px 6px',
                       marginBottom: '6px',
                       textAlign: 'center',
                     }}
                   >
-                    <span style={{ color: '#ffcc00', fontSize: '11px', letterSpacing: '0.08em', fontWeight: 700 }}>
+                    <span style={{ color: C.amberBright, fontSize: '11px', letterSpacing: '0.08em', fontWeight: 700 }}>
                       {formatColumnDate(day.date)}
                     </span>
-                    <span style={{ color: '#554400', fontSize: '10px', marginLeft: '6px' }}>
+                    <span style={{ color: C.amberMute, fontSize: '10px', marginLeft: '6px' }}>
                       ({day.entries.length})
                     </span>
                   </div>
@@ -277,7 +279,7 @@ const EarningsScreen: React.FC<Props> = ({ onNavigate }) => {
                   {day.entries.length === 0 ? (
                     <div
                       style={{
-                        color: '#554400',
+                        color: C.amberMute,
                         fontSize: '11px',
                         textAlign: 'center',
                         padding: '12px 0',
@@ -303,7 +305,7 @@ const EarningsScreen: React.FC<Props> = ({ onNavigate }) => {
 
         {/* Empty state when no weekday data */}
         {!isLoading && !error && weekdays.length === 0 && (
-          <div style={{ padding: '32px', color: '#554400', fontSize: '12px', textAlign: 'center' }}>
+          <div style={{ padding: '32px', color: C.amberMute, fontSize: '12px', textAlign: 'center' }}>
             NO EARNINGS DATA FOR THIS PERIOD
           </div>
         )}
@@ -312,11 +314,11 @@ const EarningsScreen: React.FC<Props> = ({ onNavigate }) => {
         {!isLoading && days.length > 0 && (
           <div
             style={{
-              borderTop: '1px solid #2a2a2a',
+              borderTop: `1px solid ${C.border1}`,
               padding: '4px 12px',
               display: 'flex',
               justifyContent: 'space-between',
-              color: '#554400',
+              color: C.amberMute,
               fontSize: '10px',
             }}
           >
@@ -324,7 +326,7 @@ const EarningsScreen: React.FC<Props> = ({ onNavigate }) => {
               {totalEntries} EARNINGS OVER NEXT {lookahead} DAYS
             </span>
             {data?.cached && (
-              <span style={{ color: '#554400' }}>CACHED</span>
+              <span style={{ color: C.amberMute }}>CACHED</span>
             )}
           </div>
         )}

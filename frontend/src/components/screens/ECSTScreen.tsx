@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { fetchECST, fetchEcon } from '../../lib/api'
 import type { ECSTEntry, EconSeries, EconObservation } from '../../types'
 import LoadingBar from '../shared/LoadingBar'
+import C from '../../lib/colors'
 
 interface Props {
   onNavigate: (cmd: string) => void
@@ -12,9 +13,9 @@ interface Props {
 const INVERTED_SERIES = new Set(['UNRATE', 'ICSA', 'U6RATE', 'MORTGAGE30US'])
 
 function changeColor(seriesId: string, change: number | null): string {
-  if (change === null || change === 0) return '#554400'
+  if (change === null || change === 0) return C.amberMute
   const improving = INVERTED_SERIES.has(seriesId) ? change < 0 : change > 0
-  return improving ? '#00ff41' : '#ff3333'
+  return improving ? C.green : C.red
 }
 
 function formatValue(value: number | null): string {
@@ -44,11 +45,11 @@ const ExpandedRow: React.FC<ExpandedRowProps> = ({ entry, colSpan }) => {
 
   return (
     <tr>
-      <td colSpan={colSpan} style={{ padding: 0, background: '#0d0d00' }}>
-        <div style={{ padding: '12px 16px', borderBottom: '1px solid #2a2a2a' }}>
+      <td colSpan={colSpan} style={{ padding: 0, background: C.surfaceGlow }}>
+        <div style={{ padding: '12px 16px', borderBottom: `1px solid ${C.border1}` }}>
           <LoadingBar loading={isLoading} />
           {isError && (
-            <div style={{ color: '#ff3333', fontSize: '11px' }}>
+            <div style={{ color: C.red, fontSize: '11px' }}>
               ERROR: Could not load series data.
             </div>
           )}
@@ -70,7 +71,7 @@ const EconLineChartInline: React.FC<ChartProps> = ({ series }) => {
     (o): o is EconObservation & { value: number } => typeof o.value === 'number' && isFinite(o.value)
   )
   if (obs.length < 2) {
-    return <div style={{ color: '#554400', fontSize: '11px' }}>Insufficient data.</div>
+    return <div style={{ color: C.amberMute, fontSize: '11px' }}>Insufficient data.</div>
   }
 
   const width = 600
@@ -109,17 +110,17 @@ const EconLineChartInline: React.FC<ChartProps> = ({ series }) => {
   return (
     <svg viewBox={`0 0 ${width} ${height}`} width="100%" style={{ display: 'block', maxHeight: height }} aria-label={series.title}>
       {yTicks.map((t, i) => (
-        <line key={i} x1={PAD.left} y1={t.y} x2={PAD.left + innerW} y2={t.y} stroke="#1a1a1a" strokeWidth="1" />
+        <line key={i} x1={PAD.left} y1={t.y} x2={PAD.left + innerW} y2={t.y} stroke={C.border0} strokeWidth="1" />
       ))}
       {yTicks.map((t, i) => (
-        <text key={i} x={PAD.left - 4} y={t.y + 3} textAnchor="end" fill="#554400" fontSize="8" fontFamily="monospace">{t.label}</text>
+        <text key={i} x={PAD.left - 4} y={t.y + 3} textAnchor="end" fill={C.amberMute} fontSize="8" fontFamily="monospace">{t.label}</text>
       ))}
       {xTicks.map((t, i) => (
-        <text key={i} x={t.x} y={PAD.top + innerH + 18} textAnchor="middle" fill="#554400" fontSize="8" fontFamily="monospace">{t.label}</text>
+        <text key={i} x={t.x} y={PAD.top + innerH + 18} textAnchor="middle" fill={C.amberMute} fontSize="8" fontFamily="monospace">{t.label}</text>
       ))}
-      <line x1={PAD.left} y1={PAD.top} x2={PAD.left} y2={PAD.top + innerH} stroke="#2a2a2a" strokeWidth="1" />
-      <line x1={PAD.left} y1={PAD.top + innerH} x2={PAD.left + innerW} y2={PAD.top + innerH} stroke="#2a2a2a" strokeWidth="1" />
-      <path d={d} fill="none" stroke="#ff9900" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+      <line x1={PAD.left} y1={PAD.top} x2={PAD.left} y2={PAD.top + innerH} stroke={C.border1} strokeWidth="1" />
+      <line x1={PAD.left} y1={PAD.top + innerH} x2={PAD.left + innerW} y2={PAD.top + innerH} stroke={C.border1} strokeWidth="1" />
+      <path d={d} fill="none" stroke={C.amber} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
     </svg>
   )
 }
@@ -136,30 +137,30 @@ const ECSTRow: React.FC<RowProps> = ({ entry, isExpanded, onToggle }) => {
   const color = changeColor(entry.series_id, entry.change)
   return (
     <tr
-      style={{ cursor: 'pointer', background: isExpanded ? '#0a0800' : 'transparent' }}
+      style={{ cursor: 'pointer', background: isExpanded ? C.surfaceGlow : 'transparent' }}
       onClick={onToggle}
-      onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = '#0a0800' }}
-      onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = isExpanded ? '#0a0800' : 'transparent' }}
+      onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = C.surfaceGlow }}
+      onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = isExpanded ? C.surfaceGlow : 'transparent' }}
     >
-      <td style={{ padding: '5px 12px', color: '#e0e0e0', fontSize: '12px', borderBottom: '1px solid #1a1a1a', whiteSpace: 'nowrap' }}>
+      <td style={{ padding: '5px 12px', color: C.white, fontSize: '12px', borderBottom: '1px solid ' + C.border0, whiteSpace: 'nowrap' }}>
         {entry.label}
-        <span style={{ color: '#2a2a2a', fontSize: '10px', marginLeft: '6px' }}>
+        <span style={{ color: C.border1, fontSize: '10px', marginLeft: '6px' }}>
           {entry.series_id}
         </span>
       </td>
-      <td style={{ padding: '5px 12px', color: '#e0e0e0', fontSize: '12px', fontFamily: 'monospace', textAlign: 'right', borderBottom: '1px solid #1a1a1a', whiteSpace: 'nowrap' }}>
+      <td style={{ padding: '5px 12px', color: C.white, fontSize: '12px', fontFamily: 'monospace', textAlign: 'right', borderBottom: '1px solid ' + C.border0, whiteSpace: 'nowrap' }}>
         {formatValue(entry.value)}
       </td>
-      <td style={{ padding: '5px 12px', color: '#554400', fontSize: '11px', fontFamily: 'monospace', textAlign: 'right', borderBottom: '1px solid #1a1a1a', whiteSpace: 'nowrap' }}>
+      <td style={{ padding: '5px 12px', color: C.amberMute, fontSize: '11px', fontFamily: 'monospace', textAlign: 'right', borderBottom: '1px solid ' + C.border0, whiteSpace: 'nowrap' }}>
         {formatValue(entry.prior)}
       </td>
-      <td style={{ padding: '5px 12px', color, fontSize: '12px', fontFamily: 'monospace', textAlign: 'right', borderBottom: '1px solid #1a1a1a', whiteSpace: 'nowrap' }}>
+      <td style={{ padding: '5px 12px', color, fontSize: '12px', fontFamily: 'monospace', textAlign: 'right', borderBottom: '1px solid ' + C.border0, whiteSpace: 'nowrap' }}>
         {formatChange(entry.change)}
       </td>
-      <td style={{ padding: '5px 12px', color: '#554400', fontSize: '10px', textAlign: 'center', borderBottom: '1px solid #1a1a1a', letterSpacing: '0.04em' }}>
+      <td style={{ padding: '5px 12px', color: C.amberMute, fontSize: '10px', textAlign: 'center', borderBottom: '1px solid ' + C.border0, letterSpacing: '0.04em' }}>
         {entry.frequency || '—'}
       </td>
-      <td style={{ padding: '5px 12px', color: '#cc7700', fontSize: '11px', fontFamily: 'monospace', textAlign: 'right', borderBottom: '1px solid #1a1a1a', whiteSpace: 'nowrap' }}>
+      <td style={{ padding: '5px 12px', color: C.amberDim, fontSize: '11px', fontFamily: 'monospace', textAlign: 'right', borderBottom: '1px solid ' + C.border0, whiteSpace: 'nowrap' }}>
         {entry.next_release_date ?? '—'}
       </td>
     </tr>
@@ -174,13 +175,13 @@ const CategoryHeader: React.FC<{ label: string; colSpan: number }> = ({ label, c
       colSpan={colSpan}
       style={{
         padding: '8px 12px 4px',
-        color: '#ffcc00',
+        color: C.amberBright,
         fontSize: '10px',
         letterSpacing: '0.1em',
         textTransform: 'uppercase',
-        borderBottom: '1px solid #2a2a2a',
-        borderTop: '1px solid #2a2a2a',
-        background: '#0d0d00',
+        borderBottom: `1px solid ${C.border1}`,
+        borderTop: `1px solid ${C.border1}`,
+        background: C.surfaceGlow,
       }}
     >
       {label}
@@ -212,7 +213,7 @@ const ECSTScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
   }, [data?.entries])
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#000', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: C.surface0, overflow: 'hidden' }}>
       <LoadingBar loading={isLoading} />
 
       <div
@@ -222,7 +223,7 @@ const ECSTScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
         <span>ECST ECONOMIC STATISTICS</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           {data?.cached && (
-            <span style={{ color: '#2a2a2a', fontSize: '10px', letterSpacing: '0.05em' }}>CACHED</span>
+            <span style={{ color: C.border1, fontSize: '10px', letterSpacing: '0.05em' }}>CACHED</span>
           )}
           <button
             className="bb-btn"
@@ -235,7 +236,7 @@ const ECSTScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
       </div>
 
       {isError && (
-        <div style={{ padding: '8px 12px', color: '#ff3333', fontSize: '12px', borderBottom: '1px solid #2a2a2a', flexShrink: 0 }}>
+        <div style={{ padding: '8px 12px', color: C.red, fontSize: '12px', borderBottom: `1px solid ${C.border1}`, flexShrink: 0 }}>
           ERROR: Failed to load economic statistics.
         </div>
       )}
@@ -243,18 +244,18 @@ const ECSTScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
       <div style={{ flex: 1, overflowY: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
           <thead>
-            <tr style={{ position: 'sticky', top: 0, zIndex: 10, background: '#000' }}>
+            <tr style={{ position: 'sticky', top: 0, zIndex: 10, background: C.surface0 }}>
               {(['INDICATOR', 'LATEST', 'PRIOR', 'CHG', 'FREQ', 'NEXT RELEASE'] as const).map((col, i) => (
                 <th
                   key={col}
                   style={{
                     padding: '6px 12px',
-                    color: '#ff9900',
+                    color: C.amber,
                     fontSize: '10px',
                     letterSpacing: '0.08em',
                     fontWeight: 700,
                     textAlign: i === 0 ? 'left' : i === 4 ? 'center' : 'right',
-                    borderBottom: '2px solid #2a2a2a',
+                    borderBottom: `2px solid ${C.border1}`,
                     whiteSpace: 'nowrap',
                   }}
                 >
@@ -266,14 +267,14 @@ const ECSTScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
           <tbody>
             {isLoading && grouped.length === 0 && (
               <tr>
-                <td colSpan={COLUMN_COUNT} style={{ padding: '24px 12px', color: '#554400', textAlign: 'center', fontSize: '11px' }}>
+                <td colSpan={COLUMN_COUNT} style={{ padding: '24px 12px', color: C.amberMute, textAlign: 'center', fontSize: '11px' }}>
                   LOADING ECONOMIC DATA...
                 </td>
               </tr>
             )}
             {!isLoading && !isError && grouped.length === 0 && (
               <tr>
-                <td colSpan={COLUMN_COUNT} style={{ padding: '24px 12px', color: '#554400', textAlign: 'center', fontSize: '11px' }}>
+                <td colSpan={COLUMN_COUNT} style={{ padding: '24px 12px', color: C.amberMute, textAlign: 'center', fontSize: '11px' }}>
                   NO DATA AVAILABLE.
                 </td>
               </tr>

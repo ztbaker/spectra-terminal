@@ -1,8 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchFXRates } from '../../lib/api'
 import { usePolling } from '../../hooks/usePolling'
 import LoadingBar from '../shared/LoadingBar'
+import C from '../../lib/colors'
 
 interface Props {
   onNavigate: (cmd: string) => void
@@ -79,10 +80,10 @@ const Cell: React.FC<CellProps> = ({ base, quote, value, flashDir }) => {
         textAlign: 'right',
         fontSize: '12px',
         fontFamily: 'monospace',
-        borderBottom: '1px solid #1a1a1a',
-        borderRight: '1px solid #1a1a1a',
-        background: isDiag ? '#0d0d00' : flashBg,
-        color: isDiag ? '#2a2a2a' : value === null ? '#2a2a2a' : '#e0e0e0',
+        borderBottom: '1px solid ' + C.border0,
+        borderRight: '1px solid ' + C.border0,
+        background: isDiag ? C.surfaceGlow : flashBg,
+        color: isDiag ? C.border1 : value === null ? C.border1 : C.white,
         transition: flashDir ? 'none' : 'background 0.4s ease',
         minWidth: '80px',
         whiteSpace: 'nowrap',
@@ -111,10 +112,12 @@ const FXCScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
   const prevCcyUsd = useRef<Record<Currency, number | null> | null>(null)
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  const ccyUsd = useMemo(() => data ? buildCcyUsdMap(data.rates) : ({} as Record<Currency, number | null>), [data])
+
   useEffect(() => {
     if (!data) return
 
-    const newCcyUsd = buildCcyUsdMap(data.rates)
+    const newCcyUsd = ccyUsd
 
     if (prevCcyUsd.current) {
       const dirs: Record<string, FlashDir> = {}
@@ -138,15 +141,13 @@ const FXCScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
     }
 
     prevCcyUsd.current = newCcyUsd
-  }, [data?.fetched_at])
+  }, [data?.fetched_at, ccyUsd])
 
   // Cleanup on unmount
   useEffect(() => () => { if (flashTimer.current) clearTimeout(flashTimer.current) }, [])
 
-  const ccyUsd = data ? buildCcyUsdMap(data.rates) : ({} as Record<Currency, number | null>)
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#000', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: C.surface0, overflow: 'hidden' }}>
       <LoadingBar loading={isLoading} />
 
       {/* Header */}
@@ -155,13 +156,13 @@ const FXCScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
         style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, padding: '6px 12px' }}
       >
         <span>FXC CROSS CURRENCY MATRIX</span>
-        <span style={{ color: '#00ff41', fontSize: '11px', letterSpacing: '0.05em' }}>
+        <span style={{ color: C.green, fontSize: '11px', letterSpacing: '0.05em' }}>
           ● LIVE
         </span>
       </div>
 
       {error && !isLoading && (
-        <div style={{ padding: '8px 12px', color: '#ff3333', fontSize: '12px', borderBottom: '1px solid #2a2a2a', flexShrink: 0 }}>
+        <div style={{ padding: '8px 12px', color: C.red, fontSize: '12px', borderBottom: `1px solid ${C.border1}`, flexShrink: 0 }}>
           ERR: {(error as Error).message ?? 'Failed to load FX rates'}
         </div>
       )}
@@ -174,13 +175,13 @@ const FXCScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
               <th
                 style={{
                   padding: '6px 10px',
-                  color: '#554400',
+                  color: C.amberMute,
                   fontSize: '10px',
                   letterSpacing: '0.06em',
                   textAlign: 'left',
-                  borderBottom: '1px solid #2a2a2a',
-                  borderRight: '1px solid #2a2a2a',
-                  background: '#000',
+                  borderBottom: `1px solid ${C.border1}`,
+                  borderRight: `1px solid ${C.border1}`,
+                  background: C.surface0,
                   position: 'sticky',
                   left: 0,
                   zIndex: 2,
@@ -193,14 +194,14 @@ const FXCScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
                   key={ccy}
                   style={{
                     padding: '6px 10px',
-                    color: '#ff9900',
+                    color: C.amber,
                     fontSize: '12px',
                     fontWeight: 700,
                     letterSpacing: '0.06em',
                     textAlign: 'center',
-                    borderBottom: '1px solid #2a2a2a',
-                    borderRight: '1px solid #1a1a1a',
-                    background: '#0d0d00',
+                    borderBottom: `1px solid ${C.border1}`,
+                    borderRight: '1px solid ' + C.border0,
+                    background: C.surfaceGlow,
                     minWidth: '80px',
                   }}
                 >
@@ -215,13 +216,13 @@ const FXCScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
                 <td
                   style={{
                     padding: '6px 10px',
-                    color: '#ff9900',
+                    color: C.amber,
                     fontSize: '12px',
                     fontWeight: 700,
                     letterSpacing: '0.06em',
-                    borderBottom: '1px solid #1a1a1a',
-                    borderRight: '1px solid #2a2a2a',
-                    background: '#0d0d00',
+                    borderBottom: '1px solid ' + C.border0,
+                    borderRight: `1px solid ${C.border1}`,
+                    background: C.surfaceGlow,
                     position: 'sticky',
                     left: 0,
                     zIndex: 1,

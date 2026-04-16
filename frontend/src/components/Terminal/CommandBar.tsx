@@ -283,7 +283,7 @@ const CommandBar: React.FC<Props> = ({ onCommand, activeCommand, contextTicker }
         left: 0,
         right: 0,
         height: '40px',
-        background: C.bg0,
+        background: C.surface0,
         fontFamily: C.fontMono,
         fontSize: '13px',
         display: 'flex',
@@ -294,15 +294,15 @@ const CommandBar: React.FC<Props> = ({ onCommand, activeCommand, contextTicker }
         userSelect: 'none',
         // Subtle warm gradient on bottom border
         borderBottom: '1px solid transparent',
-        backgroundImage: `linear-gradient(${C.bg0}, ${C.bg0}), linear-gradient(90deg, #ff990033, transparent 30%, transparent 70%, #ff990033)`,
+        backgroundImage: `linear-gradient(${C.surface0}, ${C.surface0}), linear-gradient(90deg, #ff990033, transparent 30%, transparent 70%, #ff990033)`,
         backgroundOrigin: 'border-box',
         backgroundClip: 'padding-box, border-box',
       }}
     >
-      {/* Left: BAKER wordmark */}
+      {/* Left: SPECTRA wordmark */}
       <div
         style={{
-          fontFamily: C.fontSans,
+          fontFamily: C.fontDisplay,
           fontWeight: 700,
           fontSize: '14px',
           color: C.amber,
@@ -316,7 +316,7 @@ const CommandBar: React.FC<Props> = ({ onCommand, activeCommand, contextTicker }
           flexShrink: 0,
         }}
       >
-        BAKER
+        SPECTRA
       </div>
 
       {/* Context ticker ghost prefix */}
@@ -416,7 +416,7 @@ const CommandBar: React.FC<Props> = ({ onCommand, activeCommand, contextTicker }
                 style={{
                   padding: '5px 10px',
                   cursor: 'pointer',
-                  color: i === suggestionIdx ? C.bg0 : C.amber,
+                  color: i === suggestionIdx ? C.surface0 : C.amber,
                   background: i === suggestionIdx ? C.amber : 'transparent',
                   fontSize: '12px',
                   letterSpacing: '0.02em',
@@ -474,7 +474,7 @@ const CommandBar: React.FC<Props> = ({ onCommand, activeCommand, contextTicker }
 
           {/* Active screen pill */}
           <div style={{
-            background: C.bg3,
+            background: C.surface3,
             color: C.amber,
             fontSize: '10px',
             fontWeight: 500,

@@ -4,7 +4,7 @@ from database import get_conn
 
 # TTL in seconds
 TTL = {
-    "price":      60,
+    "price":      15,
     "intraday":   300,   # 5 min
     "daily":      3600,  # 1 hr
     "news":       300,   # 5 min

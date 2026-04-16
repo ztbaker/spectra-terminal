@@ -10,6 +10,7 @@ import { useQuery } from '@tanstack/react-query'
 import { fetchWorldIndices, fetchIndexMembers } from '../../lib/api'
 import type { WorldIndexEntry, IndexMember } from '../../types'
 import LoadingBar from '../shared/LoadingBar'
+import C from '../../lib/colors'
 
 // ─── Regions in display order ─────────────────────────────────────────────────
 
@@ -68,9 +69,9 @@ function fmtTime(ts: number): string {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const UP_COLOR   = '#00ff41'
-const DOWN_COLOR = '#ff3333'
-const FLAT_COLOR = '#cc7700'
+const UP_COLOR   = C.green
+const DOWN_COLOR = C.red
+const FLAT_COLOR = C.amberDim
 
 const MONO: React.CSSProperties = {
   fontFamily: "'JetBrains Mono', 'IBM Plex Mono', 'Courier New', monospace",
@@ -79,21 +80,21 @@ const MONO: React.CSSProperties = {
 // ─── 52-week range bar ────────────────────────────────────────────────────────
 
 const RangeBar: React.FC<{ lo: number; hi: number; cur: number }> = ({ lo, hi, cur }) => {
-  if (hi <= lo) return <span style={{ color: '#2a2a2a' }}>—</span>
+  if (hi <= lo) return <span style={{ color: C.border1 }}>—</span>
   const pct = Math.min(1, Math.max(0, (cur - lo) / (hi - lo))) * 100
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
       <div style={{
         position: 'relative', width: 60, height: 4,
-        background: '#1a1a00', borderRadius: 2,
+        background: C.surfaceGlow, borderRadius: 2,
       }}>
         <div style={{
           position: 'absolute', left: `${pct}%`, top: -1,
-          width: 2, height: 6, background: '#ff9900',
+          width: 2, height: 6, background: C.amber,
           transform: 'translateX(-50%)',
         }} />
       </div>
-      <span style={{ color: '#2a2a2a', fontSize: 9 }}>
+      <span style={{ color: C.border1, fontSize: 9 }}>
         {pct.toFixed(0)}%
       </span>
     </div>
@@ -108,12 +109,12 @@ const HeaderRow: React.FC = () => (
   <div style={{
     display: 'grid', gridTemplateColumns: GRID,
     padding: '4px 12px', gap: 0,
-    borderBottom: '1px solid #2a2a2a',
+    borderBottom: `1px solid ${C.border1}`,
     ...MONO,
   }}>
     {['INDEX', 'CTY', 'LAST', 'CHG', '%CHG', 'VOLUME', '52-WEEK RANGE'].map(h => (
       <div key={h} style={{
-        color: '#554400', fontSize: 10,
+        color: C.amberMute, fontSize: 10,
         textAlign: h === 'INDEX' || h === 'CTY' || h === '52-WEEK RANGE' ? 'left' : 'right',
         paddingRight: h === 'INDEX' || h === 'CTY' || h === '52-WEEK RANGE' ? 0 : 8,
       }}>
@@ -141,42 +142,42 @@ const IndexRow: React.FC<{ entry: WorldIndexEntry; onClick?: () => void }> = ({ 
     <div style={{
       display: 'grid', gridTemplateColumns: GRID,
       padding: '5px 12px', gap: 0,
-      borderBottom: '1px solid #0d0d0d',
+      borderBottom: `1px solid ${C.surface1}`,
       alignItems: 'center',
       transition: 'background 0.1s',
       cursor: clickable ? 'pointer' : 'default',
       ...MONO,
     }}
     onClick={onClick}
-    onMouseEnter={e => (e.currentTarget.style.background = clickable ? '#0f0f00' : '#0a0a00')}
+    onMouseEnter={e => (e.currentTarget.style.background = C.surfaceGlow)}
     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
     >
       {/* INDEX NAME */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
         <span style={{
           width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
-          background: hasError ? '#2a2a2a' : chgColor,
+          background: hasError ? C.border1 : chgColor,
           boxShadow:  hasError ? 'none' : `0 0 4px ${chgColor}`,
         }} />
-        <span style={{ color: '#e0e0e0', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <span style={{ color: C.white, fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {entry.name}
         </span>
-        <span style={{ color: '#2a2a2a', fontSize: 9, flexShrink: 0 }}>
+        <span style={{ color: C.border1, fontSize: 9, flexShrink: 0 }}>
           {entry.short}
         </span>
         {clickable && (
-          <span style={{ color: '#2a2a2a', fontSize: 9, flexShrink: 0, marginLeft: 2 }}>›</span>
+          <span style={{ color: C.border1, fontSize: 9, flexShrink: 0, marginLeft: 2 }}>›</span>
         )}
       </div>
 
       {/* COUNTRY */}
-      <div style={{ color: '#554400', fontSize: 10, letterSpacing: '0.04em' }}>
+      <div style={{ color: C.amberMute, fontSize: 10, letterSpacing: '0.04em' }}>
         {entry.country}
       </div>
 
       {/* LAST PRICE */}
       <div style={{
-        color: hasError ? '#2a2a2a' : '#e0e0e0',
+        color: hasError ? C.border1 : C.white,
         fontSize: 12, fontWeight: hasError ? 400 : 600,
         textAlign: 'right', paddingRight: 8,
       }}>
@@ -197,7 +198,7 @@ const IndexRow: React.FC<{ entry: WorldIndexEntry; onClick?: () => void }> = ({ 
       </div>
 
       {/* VOLUME */}
-      <div style={{ color: '#554400', fontSize: 10, textAlign: 'right', paddingRight: 8 }}>
+      <div style={{ color: C.amberMute, fontSize: 10, textAlign: 'right', paddingRight: 8 }}>
         {fmtVol(entry.volume)}
       </div>
 
@@ -205,16 +206,16 @@ const IndexRow: React.FC<{ entry: WorldIndexEntry; onClick?: () => void }> = ({ 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         {entry.year_low != null && entry.year_high != null && entry.price != null ? (
           <>
-            <span style={{ color: '#2a2a2a', fontSize: 9, width: 52, textAlign: 'right' }}>
+            <span style={{ color: C.border1, fontSize: 9, width: 52, textAlign: 'right' }}>
               {fmtPrice(entry.year_low)}
             </span>
             <RangeBar lo={entry.year_low} hi={entry.year_high} cur={entry.price} />
-            <span style={{ color: '#2a2a2a', fontSize: 9, width: 52 }}>
+            <span style={{ color: C.border1, fontSize: 9, width: 52 }}>
               {fmtPrice(entry.year_high)}
             </span>
           </>
         ) : (
-          <span style={{ color: '#2a2a2a', fontSize: 9 }}>—</span>
+          <span style={{ color: C.border1, fontSize: 9 }}>—</span>
         )}
       </div>
     </div>
@@ -234,19 +235,19 @@ const RegionHeader: React.FC<{
     alignItems:   'center',
     gap:          10,
     padding:      '6px 12px',
-    borderTop:    '1px solid #1a1a00',
-    borderBottom: '1px solid #1a1a00',
-    background:   '#070700',
+    borderTop: `1px solid ${C.surfaceGlow}`,
+    borderBottom: `1px solid ${C.surfaceGlow}`,
+    background:   C.surface0,
     marginTop:    2,
     ...MONO,
   }}>
-    <span style={{ color: '#ff9900', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em' }}>
+    <span style={{ color: C.amber, fontSize: 11, fontWeight: 700, letterSpacing: '0.08em' }}>
       {region.toUpperCase()}
     </span>
-    <span style={{ color: '#2a2a2a', fontSize: 10 }}>
+    <span style={{ color: C.border1, fontSize: 10 }}>
       {count} INDICES
     </span>
-    <span style={{ color: '#554400', fontSize: 10 }}>·</span>
+    <span style={{ color: C.amberMute, fontSize: 10 }}>·</span>
     <span style={{ color: UP_COLOR,   fontSize: 10 }}>▲ {advances}</span>
     <span style={{ color: DOWN_COLOR, fontSize: 10 }}>▼ {declines}</span>
   </div>
@@ -260,12 +261,12 @@ const MemberHeaderRow: React.FC = () => (
   <div style={{
     display: 'grid', gridTemplateColumns: MEMBER_GRID,
     padding: '4px 12px', gap: 0,
-    borderBottom: '1px solid #2a2a2a',
+    borderBottom: `1px solid ${C.border1}`,
     ...MONO,
   }}>
     {['TICKER', 'LAST', 'CHG', '%CHG', 'VOLUME', 'MKT CAP'].map(h => (
       <div key={h} style={{
-        color: '#554400', fontSize: 10,
+        color: C.amberMute, fontSize: 10,
         textAlign: h === 'TICKER' ? 'left' : 'right',
         paddingRight: h === 'TICKER' ? 0 : 8,
       }}>
@@ -284,15 +285,15 @@ const MemberRow: React.FC<{ member: IndexMember }> = ({ member }) => {
     <div style={{
       display: 'grid', gridTemplateColumns: MEMBER_GRID,
       padding: '4px 12px', gap: 0,
-      borderBottom: '1px solid #0d0d0d',
+      borderBottom: `1px solid ${C.surface1}`,
       alignItems: 'center',
       ...MONO,
     }}
-    onMouseEnter={e => (e.currentTarget.style.background = '#0a0a00')}
+    onMouseEnter={e => (e.currentTarget.style.background = C.surfaceGlow)}
     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
     >
-      <div style={{ color: '#ffcc00', fontSize: 11, fontWeight: 700 }}>{member.ticker}</div>
-      <div style={{ color: '#e0e0e0', fontSize: 11, fontWeight: 600, textAlign: 'right', paddingRight: 8 }}>
+      <div style={{ color: C.amberBright, fontSize: 11, fontWeight: 700 }}>{member.ticker}</div>
+      <div style={{ color: C.white, fontSize: 11, fontWeight: 600, textAlign: 'right', paddingRight: 8 }}>
         {fmtPrice(member.price)}
       </div>
       <div style={{ color: chgColor, fontSize: 11, textAlign: 'right', paddingRight: 8 }}>
@@ -301,10 +302,10 @@ const MemberRow: React.FC<{ member: IndexMember }> = ({ member }) => {
       <div style={{ color: chgColor, fontSize: 12, fontWeight: 600, textAlign: 'right', paddingRight: 8 }}>
         {fmtPct(member.change_pct)}
       </div>
-      <div style={{ color: '#554400', fontSize: 10, textAlign: 'right', paddingRight: 8 }}>
+      <div style={{ color: C.amberMute, fontSize: 10, textAlign: 'right', paddingRight: 8 }}>
         {fmtVol(member.volume)}
       </div>
-      <div style={{ color: '#554400', fontSize: 10, textAlign: 'right', paddingRight: 8 }}>
+      <div style={{ color: C.amberMute, fontSize: 10, textAlign: 'right', paddingRight: 8 }}>
         {fmtMktCap(member.market_cap)}
       </div>
     </div>
@@ -340,8 +341,8 @@ const MembersPanel: React.FC<MembersPanelProps> = ({ index, onBack }) => {
 
       {/* Sub-header */}
       <div style={{
-        flexShrink: 0, background: '#0d0d0d',
-        borderBottom: '1px solid #2a2a2a',
+        flexShrink: 0, background: C.surface1,
+        borderBottom: `1px solid ${C.border1}`,
         padding: '5px 12px',
         display: 'flex', alignItems: 'center', gap: 12,
         ...MONO,
@@ -353,18 +354,18 @@ const MembersPanel: React.FC<MembersPanelProps> = ({ index, onBack }) => {
         >
           ← WEI
         </button>
-        <span style={{ color: '#ff9900', fontSize: 12, fontWeight: 700 }}>
+        <span style={{ color: C.amber, fontSize: 12, fontWeight: 700 }}>
           {index.name.toUpperCase()}
         </span>
-        <span style={{ color: '#554400', fontSize: 10 }}>
+        <span style={{ color: C.amberMute, fontSize: 10 }}>
           {index.short} · {index.country}
         </span>
         {data && (
           <>
-            <span style={{ color: '#2a2a2a', fontSize: 10 }}>·</span>
+            <span style={{ color: C.border1, fontSize: 10 }}>·</span>
             <span style={{ color: UP_COLOR,   fontSize: 10 }}>▲ {advances}</span>
             <span style={{ color: DOWN_COLOR, fontSize: 10 }}>▼ {declines}</span>
-            <span style={{ color: '#2a2a2a', fontSize: 10, marginLeft: 4 }}>
+            <span style={{ color: C.border1, fontSize: 10, marginLeft: 4 }}>
               {data.members.length} CONSTITUENTS
             </span>
           </>
@@ -373,7 +374,7 @@ const MembersPanel: React.FC<MembersPanelProps> = ({ index, onBack }) => {
 
       {/* Body */}
       {error && (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ff3333', fontSize: 11 }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.red, fontSize: 11 }}>
           ERR: {(error as Error).message}
         </div>
       )}
@@ -381,7 +382,7 @@ const MembersPanel: React.FC<MembersPanelProps> = ({ index, onBack }) => {
         <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
           <MemberHeaderRow />
           {isLoading && !data && (
-            <div style={{ padding: '20px 12px', color: '#2a2a2a', fontSize: 11 }}>
+            <div style={{ padding: '20px 12px', color: C.border1, fontSize: 11 }}>
               FETCHING CONSTITUENTS…
             </div>
           )}
@@ -389,7 +390,7 @@ const MembersPanel: React.FC<MembersPanelProps> = ({ index, onBack }) => {
             <MemberRow key={m.ticker} member={m} />
           ))}
           {data?.members.length === 0 && (
-            <div style={{ padding: '20px 12px', color: '#2a2a2a', fontSize: 11 }}>
+            <div style={{ padding: '20px 12px', color: C.border1, fontSize: 11 }}>
               NO CONSTITUENT DATA AVAILABLE
             </div>
           )}
@@ -466,7 +467,7 @@ const WEIScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
       display:       'flex',
       flexDirection: 'column',
       height:        '100%',
-      background:    '#000',
+      background:    C.surface0,
       overflow:      'hidden',
       ...MONO,
     }}>
@@ -475,39 +476,39 @@ const WEIScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
       {/* ── Header ────────────────────────────────────────────────────────── */}
       <div style={{
         flexShrink:   0,
-        background:   '#0d0d0d',
-        borderBottom: '1px solid #2a2a2a',
+        background:   C.surface1,
+        borderBottom: `1px solid ${C.border1}`,
         padding:      '6px 12px',
       }}>
         {/* Row 1: title + timestamp */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 5 }}>
           <span style={{
-            color: '#ff9900', fontSize: 14, fontWeight: 700, letterSpacing: '0.08em',
+            color: C.amber, fontSize: 14, fontWeight: 700, letterSpacing: '0.08em',
           }}>
             WEI{' '}
             {selectedIndex ? (
-              <span style={{ color: '#554400', fontSize: 11, fontWeight: 400 }}>
+              <span style={{ color: C.amberMute, fontSize: 11, fontWeight: 400 }}>
                 WORLD EQUITY INDICES
-                <span style={{ color: '#ff9900' }}> › {selectedIndex.name.toUpperCase()}</span>
+                <span style={{ color: C.amber }}> › {selectedIndex.name.toUpperCase()}</span>
               </span>
             ) : (
-              <span style={{ color: '#554400', fontSize: 11, fontWeight: 400 }}>
+              <span style={{ color: C.amberMute, fontSize: 11, fontWeight: 400 }}>
                 WORLD EQUITY INDICES
               </span>
             )}
           </span>
 
           {!selectedIndex && dataUpdatedAt > 0 && (
-            <span style={{ color: '#2a2a2a', fontSize: 10 }}>
+            <span style={{ color: C.border1, fontSize: 10 }}>
               LAST UPDATE: {fmtTime(dataUpdatedAt / 1000)}
             </span>
           )}
 
           {/* Auto-refresh label */}
           {!selectedIndex && (
-            <span style={{ color: '#2a2a2a', fontSize: 10, marginLeft: 'auto' }}>
+            <span style={{ color: C.border1, fontSize: 10, marginLeft: 'auto' }}>
               {isLoading ? (
-                <span style={{ color: '#554400' }}>● REFRESHING…</span>
+                <span style={{ color: C.amberMute }}>● REFRESHING…</span>
               ) : (
                 'AUTO-REFRESH 60s'
               )}
@@ -520,7 +521,7 @@ const WEIScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             {totalWithData > 0 && (
               <>
-                <span style={{ color: '#554400', fontSize: 10 }}>
+                <span style={{ color: C.amberMute, fontSize: 10 }}>
                   {totalWithData} INDICES
                 </span>
                 <span style={{ color: UP_COLOR,   fontSize: 11, fontWeight: 600 }}>
@@ -542,7 +543,7 @@ const WEIScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
                     height:   6,
                     width:    120,
                     overflow: 'hidden',
-                    border:   '1px solid #1a1a1a',
+                    border:   '1px solid ' + C.border0,
                   }}>
                     <div style={{
                       width:      `${(advances / totalWithData) * 100}%`,
@@ -551,7 +552,7 @@ const WEIScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
                     }} />
                     <div style={{
                       width:      `${(unchanged / totalWithData) * 100}%`,
-                      background: '#554400',
+                      background: C.amberMute,
                       opacity:    0.5,
                     }} />
                     <div style={{
@@ -566,7 +567,7 @@ const WEIScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
 
             {/* Sort buttons */}
             <div style={{ marginLeft: 'auto', display: 'flex', gap: 4, alignItems: 'center' }}>
-              <span style={{ color: '#2a2a2a', fontSize: 10, marginRight: 4 }}>SORT:</span>
+              <span style={{ color: C.border1, fontSize: 10, marginRight: 4 }}>SORT:</span>
               {([
                 ['default',  'REGION'],
                 ['pct_desc', '▲ %CHG'],
@@ -603,7 +604,7 @@ const WEIScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
           {error && !isLoading && (
             <div style={{
               flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#ff3333', fontSize: 12,
+              color: C.red, fontSize: 12,
             }}>
               ERR: {(error as Error).message ?? 'Failed to load world indices'}
             </div>
@@ -641,7 +642,7 @@ const WEIScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
 
               {/* Loading skeleton */}
               {isLoading && !data && (
-                <div style={{ padding: '24px 12px', color: '#2a2a2a', fontSize: 11 }}>
+                <div style={{ padding: '24px 12px', color: C.border1, fontSize: 11 }}>
                   FETCHING WORLD INDICES…
                 </div>
               )}

@@ -1,3 +1,4 @@
+import Panel from '../Terminal/Panel'
 import React, { useState, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -63,21 +64,18 @@ interface Props {
 const WatchlistScreen: React.FC<Props> = ({ onNavigate }) => {
   const queryClient = useQueryClient()
   const [tickerInput, setTickerInput] = useState('')
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [expandedRow, setExpandedRow] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   // ─── Query ────────────────────────────────────────────────────────────────
 
-  const { data, isLoading, isError, refetch, isFetching } = useQuery<WatchlistQuote[]>({
+  const { data, isLoading, isError, refetch, isFetching, dataUpdatedAt } = useQuery<WatchlistQuote[]>({
     queryKey: ['watchlist', 'quotes'],
-    queryFn: async () => {
-      const result = await fetchWatchlistQuotes()
-      setLastUpdated(new Date())
-      return result
-    },
+    queryFn: () => fetchWatchlistQuotes(),
     staleTime: 15_000,
   })
+
+  const lastUpdated = dataUpdatedAt ? new Date(dataUpdatedAt) : null
 
   usePolling(refetch, 15_000)
 
@@ -182,7 +180,7 @@ const WatchlistScreen: React.FC<Props> = ({ onNavigate }) => {
           style={{
             padding: '40px 24px',
             textAlign: 'center',
-            color: '#554400',
+            color: C.amberMute,
             fontSize: '12px',
             letterSpacing: '0.05em',
           }}
@@ -211,7 +209,7 @@ const WatchlistScreen: React.FC<Props> = ({ onNavigate }) => {
                   <tr>
                     {/* TICKER */}
                     <td
-                      style={{ color: '#ff9900', cursor: 'pointer', fontWeight: 'bold' }}
+                      style={{ color: C.amber, cursor: 'pointer', fontWeight: 'bold' }}
                       onClick={() => onNavigate(`${row.ticker} EQUITY`)}
                     >
                       {row.ticker}
@@ -221,7 +219,7 @@ const WatchlistScreen: React.FC<Props> = ({ onNavigate }) => {
                     <td
                       style={{
                         textAlign: 'left',
-                        color: '#cc7700',
+                        color: C.amberDim,
                         maxWidth: '180px',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -231,7 +229,7 @@ const WatchlistScreen: React.FC<Props> = ({ onNavigate }) => {
                     </td>
 
                     {/* PRICE */}
-                    <td style={{ color: '#e0e0e0' }}>
+                    <td style={{ color: C.white }}>
                       {row.price !== null ? formatPrice(row.price) : '—'}
                     </td>
 
@@ -246,10 +244,10 @@ const WatchlistScreen: React.FC<Props> = ({ onNavigate }) => {
                     </td>
 
                     {/* VOLUME */}
-                    <td style={{ color: '#e0e0e0' }}>{formatLarge(row.volume)}</td>
+                    <td style={{ color: C.white }}>{formatLarge(row.volume)}</td>
 
                     {/* MKT CAP */}
-                    <td style={{ color: '#e0e0e0' }}>{formatLarge(row.market_cap)}</td>
+                    <td style={{ color: C.white }}>{formatLarge(row.market_cap)}</td>
 
                     {/* Quick nav toggle */}
                     <td style={{ textAlign: 'center' }}>
@@ -273,8 +271,8 @@ const WatchlistScreen: React.FC<Props> = ({ onNavigate }) => {
                         style={{
                           fontSize: '11px',
                           padding: '1px 5px',
-                          color: '#ff3333',
-                          borderColor: '#441111',
+                          color: C.red,
+                          borderColor: C.redDim,
                         }}
                         title={`Remove ${row.ticker}`}
                         onClick={e => {
@@ -294,9 +292,9 @@ const WatchlistScreen: React.FC<Props> = ({ onNavigate }) => {
                       <td
                         colSpan={9}
                         style={{
-                          background: '#0a0800',
+                          background: C.surfaceGlow,
                           padding: '4px 12px',
-                          borderBottom: '1px solid #2a2a2a',
+                          borderBottom: `1px solid ${C.border1}`,
                         }}
                       >
                         <span className="bb-label" style={{ marginRight: '8px' }}>
@@ -317,11 +315,11 @@ const WatchlistScreen: React.FC<Props> = ({ onNavigate }) => {
       <div
         style={{
           padding: '3px 8px',
-          borderTop: '1px solid #2a2a2a',
+          borderTop: `1px solid ${C.border1}`,
           display: 'flex',
           justifyContent: 'space-between',
           fontSize: '10px',
-          color: '#554400',
+          color: C.amberMute,
           flexShrink: 0,
         }}
       >

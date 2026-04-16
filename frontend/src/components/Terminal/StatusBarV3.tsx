@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { fetchIndices } from '../../lib/api'
 import C from '../../lib/colors'
+import { useBreakpoint } from '../../lib/useBreakpoint'
 import { usePriceFlash } from '../../lib/usePriceFlash'
 import Sparkline from '../shared/Sparkline'
 import type { IndexQuote } from '../../types'
@@ -13,18 +14,11 @@ type MarketStatus = 'PRE' | 'OPEN' | 'AFTER' | 'CLOSED'
 function getMarketStatus(now: Date): MarketStatus {
   const etString = now.toLocaleString('en-US', { timeZone: 'America/New_York' })
   const et = new Date(etString)
-
-  const day = et.getDay() // 0=Sun, 6=Sat
+  const day = et.getDay()
   if (day === 0 || day === 6) return 'CLOSED'
-
   const hours = et.getHours()
   const minutes = et.getMinutes()
   const totalMinutes = hours * 60 + minutes
-
-  // 04:00 – 09:29 pre-market
-  // 09:30 – 15:59 open
-  // 16:00 – 20:00 after-hours
-  // otherwise closed
   if (totalMinutes >= 4 * 60 && totalMinutes < 9 * 60 + 30) return 'PRE'
   if (totalMinutes >= 9 * 60 + 30 && totalMinutes < 16 * 60) return 'OPEN'
   if (totalMinutes >= 16 * 60 && totalMinutes < 20 * 60) return 'AFTER'
@@ -61,17 +55,31 @@ function generateMicroSparkline(quote: IndexQuote): (number | null)[] {
 function IndexPrice({ quote }: { quote: IndexQuote }) {
   const { flashStyle, triggerFlash } = usePriceFlash()
   const prevPriceRef = useRef<number | null>(null)
+  const [dirFlash, setDirFlash] = useState<'up' | 'down' | 'none'>('none')
+  const dirTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (quote.price !== null) {
+      if (prevPriceRef.current !== null && quote.price !== prevPriceRef.current) {
+        const dir = quote.price > prevPriceRef.current ? 'up' : 'down'
+        setDirFlash(dir)
+        if (dirTimerRef.current) clearTimeout(dirTimerRef.current)
+        dirTimerRef.current = setTimeout(() => setDirFlash('none'), 400)
+      }
       triggerFlash(quote.price, prevPriceRef.current)
       prevPriceRef.current = quote.price
     }
   }, [quote.price, triggerFlash])
 
-  const price = quote.price !== null ? quote.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'
+  useEffect(() => () => { if (dirTimerRef.current) clearTimeout(dirTimerRef.current) }, [])
 
-  return <span style={{ color: C.white, ...flashStyle }}>{price}</span>
+  const price = quote.price !== null ? quote.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'
+  const dirFlashStyle: React.CSSProperties = dirFlash === 'up'
+    ? { color: C.greenBright, transition: 'color 0ms' }
+    : dirFlash === 'down'
+    ? { color: C.redBright, transition: 'color 0ms' }
+    : { transition: 'color 300ms' }
+  return <span style={{ color: C.white, ...flashStyle, ...dirFlashStyle }}>{price}</span>
 }
 
 function IndexItem({ q }: { q: IndexQuote }): React.ReactElement {
@@ -79,22 +87,26 @@ function IndexItem({ q }: { q: IndexQuote }): React.ReactElement {
   const pct = q.change_pct !== null ? q.change_pct.toFixed(2) : '—'
   const isPos = q.change !== null && q.change > 0
   const isNeg = q.change !== null && q.change < 0
-
   const color = isPos ? C.green : isNeg ? C.red : C.whiteDim
   const sign = isPos ? '+' : ''
-
   const sparkData = generateMicroSparkline(q)
   const sparkColor = isPos ? C.cyan : isNeg ? C.red : C.amberDim
 
   return (
     <span style={{
-      marginRight: '24px',
       whiteSpace: 'nowrap' as const,
       display: 'inline-flex',
       alignItems: 'center',
-      gap: '6px',
+      gap: '8px',
     }}>
-      <span style={{ color: C.amber, fontFamily: C.fontMono, fontSize: '10px', fontWeight: 600, letterSpacing: '0.04em' }}>{q.label}</span>
+      <span style={{
+        color: C.amber,
+        fontFamily: C.fontDisplay,
+        fontSize: '9px',
+        fontWeight: 700,
+        letterSpacing: '0.06em',
+        textTransform: 'uppercase',
+      }}>{q.label}</span>
       <span style={{ fontFamily: C.fontMono, fontSize: '10px' }}>
         <IndexPrice quote={q} />
       </span>
@@ -102,19 +114,26 @@ function IndexItem({ q }: { q: IndexQuote }): React.ReactElement {
       {sparkData.length >= 2 && (
         <Sparkline data={sparkData} width={24} height={8} color={sparkColor} />
       )}
+      <span style={{
+        width: '3px',
+        height: '3px',
+        borderRadius: '50%',
+        background: C.amber,
+        opacity: 0.4,
+        marginLeft: '10px',
+        flexShrink: 0,
+      }} />
     </span>
   )
 }
 
-// ─── Marquee animation keyframe injection ─────────────────────────────────────
+// ─── Marquee keyframe injection ──────────────────────────────────────────────
 
 const MARQUEE_STYLE_ID = 'bb-marquee-keyframes'
 
 // ─── Backend health check ─────────────────────────────────────────────────────
 
 function useBackendHealth(): boolean {
-  const queryClient = useQueryClient()
-
   const { data } = useQuery<{ status: string }>({
     queryKey: ['health'],
     queryFn: async () => {
@@ -130,7 +149,6 @@ function useBackendHealth(): boolean {
     staleTime: 10_000,
     retry: 1,
   })
-
   return data?.status === 'ok'
 }
 
@@ -140,25 +158,29 @@ const StatusBarV3: React.FC = () => {
   const [now, setNow] = useState(() => new Date())
   const marqueeRef = useRef<HTMLDivElement>(null)
   const backendHealthy = useBackendHealth()
+  const bp = useBreakpoint()
+  const isCompact = bp === 'compact'
+  const isExpanded = bp === 'expanded'
 
-  // Clock tick every second
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000)
     return () => clearInterval(id)
   }, [])
 
-  // Fetch indices every 30 seconds
-  const { data: indices } = useQuery<IndexQuote[]>({
+  const { data: indices, dataUpdatedAt } = useQuery<IndexQuote[]>({
     queryKey: ['indices'],
     queryFn: fetchIndices,
     refetchInterval: 30_000,
     staleTime: 25_000,
   })
 
-  // Set up marquee keyframe once we know the inner div width
+  const lastWidthRef = useRef(0)
   useEffect(() => {
     if (!marqueeRef.current) return
     const w = marqueeRef.current.scrollWidth || 800
+    if (w === lastWidthRef.current) return
+    lastWidthRef.current = w
+    const duration = Math.max(20, (w / window.innerWidth) * 30)
     const existing = document.getElementById(MARQUEE_STYLE_ID)
     if (existing) existing.remove()
     const style = document.createElement('style')
@@ -168,17 +190,27 @@ const StatusBarV3: React.FC = () => {
         0%   { transform: translateX(100vw); }
         100% { transform: translateX(-${w}px); }
       }
+      .bb-marquee-track { animation-duration: ${duration}s !important; }
     `
     document.head.appendChild(style)
   }, [indices])
 
   const status = getMarketStatus(now)
   const isLive = status === 'OPEN' || status === 'PRE' || status === 'AFTER'
+  const [prevStatus, setPrevStatus] = useState(status)
+  const [borderFlash, setBorderFlash] = useState(false)
 
+  useEffect(() => {
+    if (status !== prevStatus) {
+      setPrevStatus(status)
+      setBorderFlash(true)
+      const t = setTimeout(() => setBorderFlash(false), 500)
+      return () => clearTimeout(t)
+    }
+  }, [status, prevStatus])
   const nyTime  = formatClock(now, 'America/New_York')
   const lonTime = formatClock(now, 'Europe/London')
   const hkTime  = formatClock(now, 'Asia/Hong_Kong')
-
   const hasIndices = indices && indices.length > 0
 
   return (
@@ -188,8 +220,8 @@ const StatusBarV3: React.FC = () => {
         bottom: 0,
         left: 0,
         right: 0,
-        height: '28px',
-        background: C.surface0,
+        height: '30px',
+        background: `linear-gradient(0deg, ${C.surface0}, ${C.surface1})`,
         fontFamily: C.fontBody,
         fontSize: '11px',
         display: 'flex',
@@ -197,47 +229,51 @@ const StatusBarV3: React.FC = () => {
         zIndex: 1000,
         overflow: 'hidden',
         borderTop: '1px solid transparent',
-        backgroundImage: `linear-gradient(${C.surface0}, ${C.surface0}), linear-gradient(90deg, ${C.amberGlow}, transparent 15%, transparent 85%, ${C.amberGlow})`,
+        backgroundImage: `linear-gradient(${C.surface0}, ${C.surface0}), linear-gradient(90deg, ${borderFlash ? C.amber : C.amber}40, ${C.cyan}20, transparent 30%, transparent 70%, ${C.violet}20, ${borderFlash ? C.amber : C.amber}40)`,
         backgroundOrigin: 'border-box',
         backgroundClip: 'padding-box, border-box',
+        boxShadow: borderFlash ? `0 0 20px ${C.amberGlow}, 0 -1px 8px rgba(0,0,0,0.3)` : '0 -1px 8px rgba(0,0,0,0.3)',
+        transition: 'border-image 300ms ease, box-shadow 300ms ease',
       }}
     >
-      {/* ── Left: market status with pulsing dot ── */}
+      {/* ── Left: market status ── */}
       <div
         style={{
-          paddingLeft: '10px',
-          paddingRight: '10px',
+          paddingLeft: '14px',
+          paddingRight: '14px',
           whiteSpace: 'nowrap' as const,
-          borderRight: `1px solid ${C.border1}`,
+          borderRight: `1px solid ${C.glassBorder}`,
           height: '100%',
           display: 'flex',
           alignItems: 'center',
-          gap: '6px',
+          gap: '8px',
           flexShrink: 0,
         }}
       >
         <span
           style={{
-            width: 6,
-            height: 6,
+            width: 7,
+            height: 7,
             borderRadius: '50%',
             background: isLive ? C.green : C.whiteGhost,
             display: 'inline-block',
             animation: isLive ? 'pulseGlow 2s ease-in-out infinite' : 'none',
-            boxShadow: isLive ? `0 0 4px ${C.green}` : 'none',
+            boxShadow: isLive ? `0 0 6px ${C.greenGlow}, 0 0 12px ${C.greenGlow}` : 'none',
           }}
         />
-        <span
-          style={{
-            color: isLive ? C.green : C.whiteGhost,
-            fontSize: '9px',
-            fontWeight: 700,
-            letterSpacing: '0.08em',
-            fontFamily: C.fontBody,
-          }}
-        >
-          {isLive ? 'LIVE' : 'CLOSED'}
-        </span>
+        {!isCompact && (
+          <span
+            style={{
+              color: isLive ? C.green : C.whiteGhost,
+              fontSize: '9px',
+              fontWeight: 700,
+              letterSpacing: '0.1em',
+              fontFamily: C.fontDisplay,
+            }}
+          >
+            {isLive ? 'LIVE' : 'CLOSED'}
+          </span>
+        )}
       </div>
 
       {/* ── Center: scrolling ticker tape ── */}
@@ -251,9 +287,32 @@ const StatusBarV3: React.FC = () => {
           position: 'relative',
         }}
       >
+        {/* Tick pulse — sweeps across the tape each time indices refetch */}
+        {dataUpdatedAt > 0 && (
+          <span
+            key={dataUpdatedAt}
+            aria-hidden
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: 0,
+              width: '4px',
+              height: '4px',
+              borderRadius: '50%',
+              background: C.amberBright,
+              boxShadow: `0 0 6px ${C.amberGlow}, 0 0 14px ${C.amberGlow}`,
+              transform: 'translate(-10%, -50%)',
+              animation: 'tickPulse 3.2s linear 1',
+              pointerEvents: 'none',
+              zIndex: 3,
+              opacity: 0,
+            }}
+          />
+        )}
         {hasIndices ? (
           <div
             ref={marqueeRef}
+            className="bb-marquee-track"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -265,25 +324,24 @@ const StatusBarV3: React.FC = () => {
             {indices.map(q => (
               <IndexItem key={q.ticker} q={q} />
             ))}
-            {/* Duplicate for seamless loop */}
             {indices.map(q => (
               <IndexItem key={`${q.ticker}-dup`} q={q} />
             ))}
           </div>
         ) : (
-          <span style={{ color: C.whiteGhost, paddingLeft: '8px', fontFamily: C.fontBody, fontSize: '9px', letterSpacing: '0.08em' }}>
+          <span style={{ color: C.whiteGhost, paddingLeft: '10px', fontFamily: C.fontMono, fontSize: '9px', letterSpacing: '0.08em' }}>
             LOADING MARKET DATA...
           </span>
         )}
       </div>
 
-      {/* ── Right: clocks with thin separators + connection indicator ── */}
+      {/* ── Right: clocks + connection ── */}
       <div
         style={{
-          paddingLeft: '10px',
-          paddingRight: '10px',
+          paddingLeft: '12px',
+          paddingRight: '12px',
           whiteSpace: 'nowrap' as const,
-          borderLeft: `1px solid ${C.border1}`,
+          borderLeft: `1px solid ${C.glassBorder}`,
           height: '100%',
           display: 'flex',
           alignItems: 'center',
@@ -295,59 +353,71 @@ const StatusBarV3: React.FC = () => {
         <span style={{
           display: 'inline-flex',
           alignItems: 'center',
-          gap: '4px',
+          gap: '5px',
           fontVariantNumeric: 'tabular-nums' as const,
         }}>
-          <span style={{ color: C.whiteDim, fontSize: '9px', letterSpacing: '0.06em', fontFamily: C.fontBody, fontWeight: 500 }}>NY</span>
+          {!isCompact && (
+            <span style={{ color: C.whiteGhost, fontSize: '8px', letterSpacing: '0.08em', fontFamily: C.fontDisplay, fontWeight: 600 }}>
+              {isExpanded ? 'NYC' : 'NY'}
+            </span>
+          )}
           <span style={{ color: C.white, fontFamily: C.fontMono, fontSize: '10px', fontVariantNumeric: 'tabular-nums' as const }}>{nyTime}</span>
         </span>
 
-        {/* Thin separator */}
+        {/* LON — hidden on compact */}
+        {!isCompact && (
+          <>
+            <span style={{
+              width: '1px',
+              height: '14px',
+              background: C.glassBorder,
+              margin: '0 10px',
+              display: 'inline-block',
+            }} />
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
+              fontVariantNumeric: 'tabular-nums' as const,
+            }}>
+              <span style={{ color: C.whiteGhost, fontSize: '8px', letterSpacing: '0.08em', fontFamily: C.fontDisplay, fontWeight: 600 }}>
+                {isExpanded ? 'LDN' : 'LN'}
+              </span>
+              <span style={{ color: C.white, fontFamily: C.fontMono, fontSize: '10px', fontVariantNumeric: 'tabular-nums' as const }}>{lonTime}</span>
+            </span>
+          </>
+        )}
+
+        {/* HK — hidden on compact */}
+        {!isCompact && (
+          <>
+            <span style={{
+              width: '1px',
+              height: '14px',
+              background: C.glassBorder,
+              margin: '0 10px',
+              display: 'inline-block',
+            }} />
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
+              fontVariantNumeric: 'tabular-nums' as const,
+            }}>
+              <span style={{ color: C.whiteGhost, fontSize: '8px', letterSpacing: '0.08em', fontFamily: C.fontDisplay, fontWeight: 600 }}>
+                {isExpanded ? 'HKG' : 'HK'}
+              </span>
+              <span style={{ color: C.white, fontFamily: C.fontMono, fontSize: '10px', fontVariantNumeric: 'tabular-nums' as const }}>{hkTime}</span>
+            </span>
+          </>
+        )}
+
+        {/* Separator */}
         <span style={{
           width: '1px',
-          height: '12px',
-          background: C.border0,
-          margin: '0 8px',
-          display: 'inline-block',
-        }} />
-
-        {/* LON */}
-        <span style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '4px',
-          fontVariantNumeric: 'tabular-nums' as const,
-        }}>
-          <span style={{ color: C.whiteDim, fontSize: '9px', letterSpacing: '0.06em', fontFamily: C.fontBody, fontWeight: 500 }}>LON</span>
-          <span style={{ color: C.white, fontFamily: C.fontMono, fontSize: '10px', fontVariantNumeric: 'tabular-nums' as const }}>{lonTime}</span>
-        </span>
-
-        {/* Thin separator */}
-        <span style={{
-          width: '1px',
-          height: '12px',
-          background: C.border0,
-          margin: '0 8px',
-          display: 'inline-block',
-        }} />
-
-        {/* HK */}
-        <span style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '4px',
-          fontVariantNumeric: 'tabular-nums' as const,
-        }}>
-          <span style={{ color: C.whiteDim, fontSize: '9px', letterSpacing: '0.06em', fontFamily: C.fontBody, fontWeight: 500 }}>HK</span>
-          <span style={{ color: C.white, fontFamily: C.fontMono, fontSize: '10px', fontVariantNumeric: 'tabular-nums' as const }}>{hkTime}</span>
-        </span>
-
-        {/* Thin separator */}
-        <span style={{
-          width: '1px',
-          height: '12px',
-          background: C.border0,
-          margin: '0 8px',
+          height: '14px',
+          background: C.glassBorder,
+          margin: '0 10px',
           display: 'inline-block',
         }} />
 
@@ -355,7 +425,7 @@ const StatusBarV3: React.FC = () => {
         <span style={{
           display: 'inline-flex',
           alignItems: 'center',
-          gap: '4px',
+          gap: '5px',
         }}>
           <span
             style={{
@@ -365,18 +435,20 @@ const StatusBarV3: React.FC = () => {
               background: backendHealthy ? C.green : C.red,
               display: 'inline-block',
               animation: 'pulseGlow 2s ease-in-out infinite',
-              boxShadow: backendHealthy ? `0 0 4px ${C.green}` : `0 0 4px ${C.red}`,
+              boxShadow: backendHealthy ? `0 0 6px ${C.greenGlow}` : `0 0 6px ${C.redGlow}`,
             }}
           />
-          <span style={{
-            color: backendHealthy ? C.green : C.red,
-            fontSize: '9px',
-            fontWeight: 500,
-            letterSpacing: '0.06em',
-            fontFamily: C.fontBody,
-          }}>
-            {backendHealthy ? 'CONNECTED' : 'OFFLINE'}
-          </span>
+          {!isCompact && (
+            <span style={{
+              color: backendHealthy ? C.green : C.red,
+              fontSize: '8px',
+              fontWeight: 600,
+              letterSpacing: '0.08em',
+              fontFamily: C.fontDisplay,
+            }}>
+              {backendHealthy ? 'CONNECTED' : 'OFFLINE'}
+            </span>
+          )}
         </span>
       </div>
     </div>

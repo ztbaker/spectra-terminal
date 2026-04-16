@@ -31,7 +31,7 @@ def _fake_series(series_id, **kwargs):
 
 def test_ecst_returns_correct_shape(client):
     """GET /api/ecst returns entries list with required fields."""
-    with patch("routers.ecst.get_series", new=AsyncMock(side_effect=_fake_series)), \
+    with patch("providers.fred_provider.FredProvider.get_econ_series", new=AsyncMock(side_effect=_fake_series)), \
          patch("routers.ecst._get_release_date", new=AsyncMock(return_value="2024-04-05")):
         resp = client.get("/api/ecst")
     assert resp.status_code == 200
@@ -46,7 +46,7 @@ def test_ecst_returns_correct_shape(client):
 
 def test_ecst_change_is_latest_minus_prior(client):
     """change == value - prior for a normal series."""
-    with patch("routers.ecst.get_series", new=AsyncMock(side_effect=_fake_series)), \
+    with patch("providers.fred_provider.FredProvider.get_econ_series", new=AsyncMock(side_effect=_fake_series)), \
          patch("routers.ecst._get_release_date", new=AsyncMock(return_value=None)):
         resp = client.get("/api/ecst")
     # Pin to a known series rather than relying on order
@@ -58,7 +58,7 @@ def test_ecst_change_is_latest_minus_prior(client):
 
 def test_ecst_release_date_null_on_failure(client):
     """next_release_date is null when the FRED API call fails — no 500."""
-    with patch("routers.ecst.get_series", new=AsyncMock(side_effect=_fake_series)), \
+    with patch("providers.fred_provider.FredProvider.get_econ_series", new=AsyncMock(side_effect=_fake_series)), \
          patch("routers.ecst._get_release_date", new=AsyncMock(return_value=None)):
         resp = client.get("/api/ecst")
     assert resp.status_code == 200
@@ -68,13 +68,13 @@ def test_ecst_release_date_null_on_failure(client):
 
 def test_ecst_uses_cache_on_second_call(client):
     """Second call within 900s TTL does not call get_series again."""
-    with patch("routers.ecst.get_series", new=AsyncMock(side_effect=_fake_series)) as mock_series, \
+    with patch("providers.fred_provider.FredProvider.get_econ_series", new=AsyncMock(side_effect=_fake_series)) as mock_series, \
          patch("routers.ecst._get_release_date", new=AsyncMock(return_value=None)):
         client.get("/api/ecst")
         first_call_count = mock_series.call_count
     assert first_call_count > 0
     # Second request should use cache — no new calls to get_series
-    with patch("routers.ecst.get_series", new=AsyncMock(side_effect=_fake_series)) as mock2, \
+    with patch("providers.fred_provider.FredProvider.get_econ_series", new=AsyncMock(side_effect=_fake_series)) as mock2, \
          patch("routers.ecst._get_release_date", new=AsyncMock(return_value=None)):
         client.get("/api/ecst")
     assert mock2.call_count == 0
@@ -87,7 +87,7 @@ def test_ecst_entry_error_yields_null_values(client):
             raise RuntimeError("FRED timeout")
         return _fake_series(series_id)
 
-    with patch("routers.ecst.get_series", new=AsyncMock(side_effect=side_effect)), \
+    with patch("providers.fred_provider.FredProvider.get_econ_series", new=AsyncMock(side_effect=side_effect)), \
          patch("routers.ecst._get_release_date", new=AsyncMock(return_value=None)):
         resp = client.get("/api/ecst")
     assert resp.status_code == 200

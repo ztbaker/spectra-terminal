@@ -29,6 +29,7 @@ import {
 } from 'lightweight-charts'
 import { fetchChart } from '../../lib/api'
 import LoadingBar from '../shared/LoadingBar'
+import C from '../../lib/colors'
 
 // ─── Config types ─────────────────────────────────────────────────────────────
 
@@ -113,15 +114,15 @@ const OhlcvOverlay: React.FC<OhlcvState> = ({ open, high, low, close, volume }) 
   return (
     <div style={{
       position: 'absolute', top: 8, left: 8, zIndex: 10,
-      background: 'rgba(0,0,0,0.75)', border: '1px solid #2a2a2a',
-      padding: '4px 8px', fontSize: 11, color: '#cc7700',
+      background: `${C.surface0}BF`, border: `1px solid ${C.border1}`,
+      padding: '4px 8px', fontSize: 11, color: C.amberDim,
       pointerEvents: 'none', display: 'flex', gap: 10,
     }}>
       <span>O: {fmt(open)}</span>
       <span>H: {fmt(high)}</span>
       <span>L: {fmt(low)}</span>
-      <span style={{ color: isUp ? '#00ff41' : '#ff3333' }}>C: {fmt(close)}</span>
-      <span style={{ color: '#554400' }}>V: {fmtVol(volume)}</span>
+      <span style={{ color: isUp ? C.green : C.red }}>C: {fmt(close)}</span>
+      <span style={{ color: C.amberMute }}>V: {fmtVol(volume)}</span>
     </div>
   )
 }
@@ -138,8 +139,8 @@ const SlotCard: React.FC<SlotCardProps> = ({ id, config, onClick }) => (
   <button
     onClick={onClick}
     style={{
-      background:   config ? '#0a0a00' : '#070700',
-      border:       `1px solid ${config ? '#2a2a00' : '#1a1a00'}`,
+      background:   config ? C.surfaceGlow : C.surface0,
+      border:       `1px solid ${C.surfaceGlow}`,
       padding:      '12px 14px',
       textAlign:    'left',
       cursor:       'pointer',
@@ -150,15 +151,15 @@ const SlotCard: React.FC<SlotCardProps> = ({ id, config, onClick }) => (
       fontFamily:   'inherit',
       transition:   'border-color 0.1s',
     }}
-    onMouseEnter={e => (e.currentTarget.style.borderColor = '#554400')}
-    onMouseLeave={e => (e.currentTarget.style.borderColor = config ? '#2a2a00' : '#1a1a00')}
+    onMouseEnter={e => (e.currentTarget.style.borderColor = C.amberMute)}
+    onMouseLeave={e => (e.currentTarget.style.borderColor = C.surfaceGlow)}
   >
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <span style={{ color: '#ff9900', fontSize: 13, fontWeight: 700, letterSpacing: '0.05em' }}>
+      <span style={{ color: C.amber, fontSize: 13, fontWeight: 700, letterSpacing: '0.05em' }}>
         G{id}
       </span>
       {config && (
-        <span style={{ color: '#554400', fontSize: 9 }}>
+        <span style={{ color: C.amberMute, fontSize: 9 }}>
           {config.chartType}
         </span>
       )}
@@ -166,17 +167,17 @@ const SlotCard: React.FC<SlotCardProps> = ({ id, config, onClick }) => (
 
     {config ? (
       <>
-        <div style={{ color: '#ffcc00', fontSize: 12, fontWeight: 600 }}>
+        <div style={{ color: C.amberBright, fontSize: 12, fontWeight: 600 }}>
           {config.ticker}
         </div>
-        <div style={{ color: '#554400', fontSize: 10 }}>{config.name}</div>
-        <div style={{ color: '#2a2a2a', fontSize: 9, marginTop: 4 }}>
+        <div style={{ color: C.amberMute, fontSize: 10 }}>{config.name}</div>
+        <div style={{ color: C.border1, fontSize: 9, marginTop: 4 }}>
           {config.period}
           {config.indicators.length > 0 && ` · ${config.indicators.join(' ')}`}
         </div>
       </>
     ) : (
-      <div style={{ color: '#2a2a2a', fontSize: 11, marginTop: 4 }}>
+      <div style={{ color: C.border1, fontSize: 11, marginTop: 4 }}>
         (EMPTY)
       </div>
     )}
@@ -191,13 +192,13 @@ const GraphManager: React.FC<{ onNavigate: (cmd: string) => void }> = ({ onNavig
   const slots = SLOT_IDS.map(id => ({ id, config: loadSlot(id) }))
 
   return (
-    <div style={{ height: '100%', overflow: 'auto', background: '#000', padding: '20px 24px' }}>
+    <div style={{ height: '100%', overflow: 'auto', background: C.surface0, padding: '20px 24px' }}>
       {/* Header */}
       <div style={{ marginBottom: 20 }}>
-        <div style={{ color: '#ff9900', fontSize: 14, fontWeight: 700, letterSpacing: '0.1em', marginBottom: 4 }}>
+        <div style={{ color: C.amber, fontSize: 14, fontWeight: 700, letterSpacing: '0.1em', marginBottom: 4 }}>
           GRAPH PAGES
         </div>
-        <div style={{ color: '#554400', fontSize: 10 }}>
+        <div style={{ color: C.amberMute, fontSize: 10 }}>
           TYPE G1–G9 TO OPEN A GRAPH · CONFIGURE TICKER, PERIOD, AND INDICATORS · SAVE TO PRESERVE
         </div>
       </div>
@@ -221,15 +222,15 @@ const GraphManager: React.FC<{ onNavigate: (cmd: string) => void }> = ({ onNavig
       </div>
 
       {/* Keyboard hints */}
-      <div style={{ marginTop: 28, color: '#2a2a2a', fontSize: 10, lineHeight: 1.8 }}>
-        <div style={{ color: '#554400', marginBottom: 6 }}>QUICK ACCESS</div>
+      <div style={{ marginTop: 28, color: C.border1, fontSize: 10, lineHeight: 1.8 }}>
+        <div style={{ color: C.amberMute, marginBottom: 6 }}>QUICK ACCESS</div>
         {SLOT_IDS.map(id => {
           const c = loadSlot(id)
           return (
             <div key={id}>
-              <span style={{ color: '#cc7700' }}>G{id}</span>
+              <span style={{ color: C.amberDim }}>G{id}</span>
               {' → '}
-              <span style={{ color: '#e0e0e0' }}>{c ? `${c.ticker}  ${c.name}` : '(empty)'}</span>
+              <span style={{ color: C.white }}>{c ? `${c.ticker}  ${c.name}` : '(empty)'}</span>
             </div>
           )
         })}
@@ -279,15 +280,15 @@ const GraphSlotView: React.FC<GraphSlotViewProps> = ({ graphId, onNavigate }) =>
   })
 
   // ── Helpers ────────────────────────────────────────────────────────────────
-  const mark = () => setIsDirty(true)
+  const mark = useCallback(() => setIsDirty(true), [])
 
   const setPeriod = useCallback((p: PeriodKey) => {
     setConfig(c => ({ ...c, period: p })); mark()
-  }, [])
+  }, [mark])
 
   const setChartType = useCallback((t: ChartType) => {
     setConfig(c => ({ ...c, chartType: t })); mark()
-  }, [])
+  }, [mark])
 
   const toggleIndicator = useCallback((ind: IndicatorKey) => {
     setConfig(c => {
@@ -297,7 +298,7 @@ const GraphSlotView: React.FC<GraphSlotViewProps> = ({ graphId, onNavigate }) =>
       return { ...c, indicators: next }
     })
     mark()
-  }, [])
+  }, [mark])
 
   const applyTicker = () => {
     const t = tickerInput.trim().toUpperCase()
@@ -322,22 +323,22 @@ const GraphSlotView: React.FC<GraphSlotViewProps> = ({ graphId, onNavigate }) =>
     if (!containerRef.current) return
     const chart = createChart(containerRef.current, {
       layout: {
-        background: { color: '#000000' },
-        textColor:  '#cc7700',
+        background: { color: C.surface0 },
+        textColor:  C.amberDim,
         fontFamily: "'JetBrains Mono', 'IBM Plex Mono', 'Courier New', monospace",
         fontSize:   11,
       },
       grid: {
-        vertLines: { color: '#1a1a00' },
-        horzLines: { color: '#1a1a00' },
+        vertLines: { color: C.surfaceGlow },
+        horzLines: { color: C.surfaceGlow },
       },
       crosshair: {
         mode:     CrosshairMode.Normal,
-        vertLine: { color: '#ff9900', width: 1, style: 1, labelBackgroundColor: '#1a1a00' },
-        horzLine: { color: '#ff9900', width: 1, style: 1, labelBackgroundColor: '#1a1a00' },
+        vertLine: { color: C.amber, width: 1, style: 1, labelBackgroundColor: C.surfaceGlow },
+        horzLine: { color: C.amber, width: 1, style: 1, labelBackgroundColor: C.surfaceGlow },
       },
-      rightPriceScale: { borderColor: '#2a2a2a', textColor: '#cc7700' },
-      timeScale:        { borderColor: '#2a2a2a', timeVisible: true, secondsVisible: false },
+      rightPriceScale: { borderColor: C.border1, textColor: C.amberDim },
+      timeScale:        { borderColor: C.border1, timeVisible: true, secondsVisible: false },
       width:  containerRef.current.clientWidth,
       height: containerRef.current.clientHeight,
     })
@@ -381,9 +382,9 @@ const GraphSlotView: React.FC<GraphSlotViewProps> = ({ graphId, onNavigate }) =>
     // Main series
     if (config.chartType === 'CANDLE') {
       const s = addS(CandlestickSeries, {
-        upColor: '#00ff41', downColor: '#ff3333',
-        borderUpColor: '#00ff41', borderDownColor: '#ff3333',
-        wickUpColor: '#00ff41', wickDownColor: '#ff3333',
+        upColor: C.green, downColor: C.red,
+        borderUpColor: C.green, borderDownColor: C.red,
+        wickUpColor: C.green, wickDownColor: C.red,
         priceScaleId: 'right',
       })
       const d: CandlestickData[] = ohlcv.map(b => ({
@@ -391,13 +392,13 @@ const GraphSlotView: React.FC<GraphSlotViewProps> = ({ graphId, onNavigate }) =>
       }))
       s.setData(d); mainRef.current = s
     } else if (config.chartType === 'LINE') {
-      const s = addS(LineSeries, { color: '#ff9900', lineWidth: 2, priceScaleId: 'right' })
+      const s = addS(LineSeries, { color: C.amber, lineWidth: 2, priceScaleId: 'right' })
       const d: LineData[] = ohlcv.map(b => ({ time: toTime(b.time), value: b.close }))
       s.setData(d); mainRef.current = s
     } else {
       const s = addS(AreaSeries, {
         topColor: 'rgba(255,153,0,0.25)', bottomColor: 'rgba(255,153,0,0.0)',
-        lineColor: '#ff9900', lineWidth: 2, priceScaleId: 'right',
+        lineColor: C.amber, lineWidth: 2, priceScaleId: 'right',
       })
       const d: AreaData[] = ohlcv.map(b => ({ time: toTime(b.time), value: b.close }))
       s.setData(d); mainRef.current = s
@@ -405,7 +406,7 @@ const GraphSlotView: React.FC<GraphSlotViewProps> = ({ graphId, onNavigate }) =>
 
     // Volume
     const volS = addS(HistogramSeries, {
-      priceScaleId: 'vol', color: '#2a2a2a', priceFormat: { type: 'volume' },
+      priceScaleId: 'vol', color: C.border1, priceFormat: { type: 'volume' },
     })
     volS.priceScale().applyOptions({ scaleMargins: { top: 0.80, bottom: 0 } })
     const volData: HistogramData[] = ohlcv.map(b => ({
@@ -417,7 +418,7 @@ const GraphSlotView: React.FC<GraphSlotViewProps> = ({ graphId, onNavigate }) =>
 
     // SMAs
     const SMA_COLORS: Record<IndicatorKey, string> = {
-      SMA20: '#0088ff', SMA50: '#ffcc00', SMA200: '#cc7700',
+      SMA20: C.cyanBright, SMA50: C.amberBright, SMA200: C.amberDim,
     }
     const SMA_DATA: Record<IndicatorKey, (number | null)[]> = {
       SMA20: chartData.sma20, SMA50: chartData.sma50, SMA200: chartData.sma200,
@@ -447,7 +448,7 @@ const GraphSlotView: React.FC<GraphSlotViewProps> = ({ graphId, onNavigate }) =>
         setCrosshair({ open: null, high: null, low: null, close: null, volume: null })
         return
       }
-      const idx = ohlcv.findIndex(b => toTime(b.time) === param.time)
+      const idx = ohlcv.findIndex(b => JSON.stringify(toTime(b.time)) === JSON.stringify(param.time))
       if (idx === -1) return
       const b = ohlcv[idx]
       setCrosshair({ open: b.open, high: b.high, low: b.low, close: b.close, volume: b.volume })
@@ -460,12 +461,12 @@ const GraphSlotView: React.FC<GraphSlotViewProps> = ({ graphId, onNavigate }) =>
   const activeIndicators = new Set(config.indicators)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#000', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: C.surface0, overflow: 'hidden' }}>
       <LoadingBar loading={isLoading} />
 
       {/* ── Toolbar ─────────────────────────────────────────────────────── */}
       <div style={{
-        flexShrink: 0, background: '#0d0d0d', borderBottom: '1px solid #2a2a2a',
+        flexShrink: 0, background: C.surface1, borderBottom: `1px solid ${C.border1}`,
         padding: '5px 8px', display: 'flex', flexDirection: 'column', gap: 4,
       }}>
         {/* Row 1: slot ID + name + ticker + chart type + period + SAVE + BACK */}
@@ -477,7 +478,7 @@ const GraphSlotView: React.FC<GraphSlotViewProps> = ({ graphId, onNavigate }) =>
           </button>
 
           {/* Slot ID badge */}
-          <span style={{ color: '#ff9900', fontSize: 13, fontWeight: 700, letterSpacing: '0.05em', marginLeft: 2 }}>
+          <span style={{ color: C.amber, fontSize: 13, fontWeight: 700, letterSpacing: '0.05em', marginLeft: 2 }}>
             G{graphId}
           </span>
 
@@ -490,13 +491,13 @@ const GraphSlotView: React.FC<GraphSlotViewProps> = ({ graphId, onNavigate }) =>
               onBlur={() => setEditingName(false)}
               onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Escape') setEditingName(false) }}
               style={{
-                background: '#0d0d0d', border: '1px solid #ff9900', color: '#ff9900',
+                background: C.surface1, border: `1px solid ${C.amber}`, color: C.amber,
                 fontSize: 11, padding: '1px 6px', width: 140, fontFamily: 'inherit', outline: 'none',
               }}
             />
           ) : (
             <span
-              style={{ color: '#554400', fontSize: 11, cursor: 'pointer' }}
+              style={{ color: C.amberMute, fontSize: 11, cursor: 'pointer' }}
               onClick={() => setEditingName(true)}
               title="Click to rename"
             >
@@ -504,7 +505,7 @@ const GraphSlotView: React.FC<GraphSlotViewProps> = ({ graphId, onNavigate }) =>
             </span>
           )}
 
-          <span style={{ color: '#2a2a2a' }}>─</span>
+          <span style={{ color: C.border1 }}>─</span>
 
           {/* Ticker input */}
           <div style={{ display: 'flex', gap: 3 }}>
@@ -516,14 +517,14 @@ const GraphSlotView: React.FC<GraphSlotViewProps> = ({ graphId, onNavigate }) =>
               placeholder="TICKER"
               maxLength={5}
               style={{
-                background: '#0d0d0d', border: '1px solid #2a2a2a', color: '#ffcc00',
+                background: C.surface1, border: `1px solid ${C.border1}`, color: C.amberBright,
                 fontSize: 12, fontWeight: 700, padding: '1px 6px', width: 68,
                 fontFamily: 'inherit', outline: 'none', letterSpacing: '0.05em',
               }}
             />
           </div>
 
-          <span style={{ color: '#2a2a2a', margin: '0 2px' }}>|</span>
+          <span style={{ color: C.border1, margin: '0 2px' }}>|</span>
 
           {/* Chart type */}
           {CHART_TYPES.map(t => (
@@ -537,7 +538,7 @@ const GraphSlotView: React.FC<GraphSlotViewProps> = ({ graphId, onNavigate }) =>
             </button>
           ))}
 
-          <span style={{ color: '#2a2a2a', margin: '0 2px' }}>|</span>
+          <span style={{ color: C.border1, margin: '0 2px' }}>|</span>
 
           {/* Periods */}
           {PERIODS.map(p => (
@@ -558,8 +559,8 @@ const GraphSlotView: React.FC<GraphSlotViewProps> = ({ graphId, onNavigate }) =>
               marginLeft: 'auto',
               padding: '2px 12px',
               fontSize: 11,
-              color:   savedFlash ? '#00ff41' : isDirty ? '#ff9900' : '#554400',
-              borderColor: savedFlash ? '#00ff41' : isDirty ? '#ff9900' : '#2a2a2a',
+              color:   savedFlash ? C.green : isDirty ? C.amber : C.amberMute,
+              borderColor: savedFlash ? C.green : isDirty ? C.amber : C.border1,
             }}
             onClick={handleSave}
           >
@@ -569,7 +570,7 @@ const GraphSlotView: React.FC<GraphSlotViewProps> = ({ graphId, onNavigate }) =>
 
         {/* Row 2: indicators */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ color: '#554400', fontSize: 10, marginRight: 4 }}>INDICATORS:</span>
+          <span style={{ color: C.amberMute, fontSize: 10, marginRight: 4 }}>INDICATORS:</span>
           {INDICATORS.map(ind => (
             <button
               key={ind}
@@ -580,10 +581,10 @@ const GraphSlotView: React.FC<GraphSlotViewProps> = ({ graphId, onNavigate }) =>
               {ind}
             </button>
           ))}
-          {activeIndicators.has('SMA20')  && <span style={{ color: '#0088ff', fontSize: 10, marginLeft: 6 }}>━ SMA20</span>}
-          {activeIndicators.has('SMA50')  && <span style={{ color: '#ffcc00', fontSize: 10 }}>━ SMA50</span>}
-          {activeIndicators.has('SMA200') && <span style={{ color: '#cc7700', fontSize: 10 }}>╌ SMA200</span>}
-          <span style={{ marginLeft: 'auto', color: '#2a2a2a', fontSize: 10 }}>
+          {activeIndicators.has('SMA20')  && <span style={{ color: C.cyanBright, fontSize: 10, marginLeft: 6 }}>━ SMA20</span>}
+          {activeIndicators.has('SMA50')  && <span style={{ color: C.amberBright, fontSize: 10 }}>━ SMA50</span>}
+          {activeIndicators.has('SMA200') && <span style={{ color: C.amberDim, fontSize: 10 }}>╌ SMA200</span>}
+          <span style={{ marginLeft: 'auto', color: C.border1, fontSize: 10 }}>
             {period.toUpperCase()} · {interval}
             {chartData?.ohlcv?.length ? ` · ${chartData.ohlcv.length} bars` : ''}
           </span>
@@ -599,10 +600,10 @@ const GraphSlotView: React.FC<GraphSlotViewProps> = ({ graphId, onNavigate }) =>
           <div style={{
             position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center', gap: 8,
-            color: '#554400', fontSize: 12, zIndex: 5,
+            color: C.amberMute, fontSize: 12, zIndex: 5,
           }}>
             <div>ENTER A TICKER ABOVE TO BEGIN</div>
-            <div style={{ color: '#2a2a2a', fontSize: 10 }}>G{graphId} · {nameInput}</div>
+            <div style={{ color: C.border1, fontSize: 10 }}>G{graphId} · {nameInput}</div>
           </div>
         )}
 

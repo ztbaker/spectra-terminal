@@ -5,6 +5,7 @@ import type { CryptoAsset } from '../../types'
 import { usePolling } from '../../hooks/usePolling'
 import LoadingBar from '../shared/LoadingBar'
 import TickerBadge from '../shared/TickerBadge'
+import C from '../../lib/colors'
 
 // ─── Formatting helpers ───────────────────────────────────────────────────────
 
@@ -42,7 +43,7 @@ interface CryptoCardProps {
 
 const CryptoCard: React.FC<CryptoCardProps> = ({ asset }) => {
   const isPositive = (asset.change ?? 0) >= 0
-  const barColor = isPositive ? '#00ff41' : '#ff3333'
+  const barColor = isPositive ? C.green : C.red
   const decimals = getPriceDecimals(asset.price)
 
   return (
@@ -55,8 +56,8 @@ const CryptoCard: React.FC<CryptoCardProps> = ({ asset }) => {
         minHeight: '140px',
         padding: 0,
         boxSizing: 'border-box',
-        border: '1px solid #2a2a2a',
-        background: '#0d0d0d',
+        border: `1px solid ${C.border1}`,
+        background: C.surface1,
         overflow: 'hidden',
       }}
     >
@@ -64,18 +65,18 @@ const CryptoCard: React.FC<CryptoCardProps> = ({ asset }) => {
       <div
         style={{
           padding: '6px 10px 4px',
-          borderBottom: '1px solid #2a2a2a',
-          background: '#1a1a00',
+          borderBottom: `1px solid ${C.border1}`,
+          background: C.surfaceGlow,
           flexShrink: 0,
           display: 'flex',
           alignItems: 'baseline',
           gap: '6px',
         }}
       >
-        <span style={{ color: '#ff9900', fontSize: '16px', fontWeight: 700, letterSpacing: '0.04em' }}>
+        <span style={{ color: C.amber, fontSize: '16px', fontWeight: 700, letterSpacing: '0.04em' }}>
           {asset.symbol}
         </span>
-        <span style={{ color: '#554400', fontSize: '11px' }}>
+        <span style={{ color: C.amberMute, fontSize: '11px' }}>
           {asset.ticker}
         </span>
       </div>
@@ -91,7 +92,7 @@ const CryptoCard: React.FC<CryptoCardProps> = ({ asset }) => {
         }}
       >
         {/* Price */}
-        <div style={{ fontSize: '22px', color: '#e0e0e0', fontWeight: 500, lineHeight: 1.1 }}>
+        <div style={{ fontSize: '22px', color: C.white, fontWeight: 500, lineHeight: 1.1 }}>
           {formatPrice(asset.price, decimals)}
         </div>
 
@@ -103,14 +104,14 @@ const CryptoCard: React.FC<CryptoCardProps> = ({ asset }) => {
 
         {/* Market cap */}
         <div style={{ fontSize: '11px' }}>
-          <span style={{ color: '#554400' }}>MKT CAP </span>
-          <span style={{ color: '#cc7700' }}>{formatLarge(asset.market_cap)}</span>
+          <span style={{ color: C.amberMute }}>MKT CAP </span>
+          <span style={{ color: C.amberDim }}>{formatLarge(asset.market_cap)}</span>
         </div>
 
         {/* Volume */}
         <div style={{ fontSize: '11px' }}>
-          <span style={{ color: '#554400' }}>VOL&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>
-          <span style={{ color: '#cc7700' }}>{formatLarge(asset.volume)}</span>
+          <span style={{ color: C.amberMute }}>VOL&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>
+          <span style={{ color: C.amberDim }}>{formatLarge(asset.volume)}</span>
         </div>
       </div>
 
@@ -134,8 +135,8 @@ const CryptoCardSkeleton: React.FC = () => (
     style={{
       width: '200px',
       minHeight: '140px',
-      border: '1px solid #2a2a2a',
-      background: '#0d0d0d',
+      border: `1px solid ${C.border1}`,
+      background: C.surface1,
       padding: '10px',
       boxSizing: 'border-box',
       display: 'flex',
@@ -143,13 +144,13 @@ const CryptoCardSkeleton: React.FC = () => (
       gap: '8px',
     }}
   >
-    <div style={{ width: '60px', height: '16px', background: '#1a1a00', borderRadius: '2px' }} />
-    <div style={{ width: '130px', height: '22px', background: '#1a1200', borderRadius: '2px' }} />
-    <div style={{ width: '90px', height: '12px', background: '#0d0d00', borderRadius: '2px' }} />
-    <div style={{ width: '110px', height: '11px', background: '#0d0d00', borderRadius: '2px' }} />
-    <div style={{ width: '100px', height: '11px', background: '#0d0d00', borderRadius: '2px' }} />
+    <div style={{ width: '60px', height: '16px', background: C.surfaceGlow, borderRadius: '2px' }} />
+    <div style={{ width: '130px', height: '22px', background: C.surfaceGlow, borderRadius: '2px' }} />
+    <div style={{ width: '90px', height: '12px', background: C.surfaceGlow, borderRadius: '2px' }} />
+    <div style={{ width: '110px', height: '11px', background: C.surfaceGlow, borderRadius: '2px' }} />
+    <div style={{ width: '100px', height: '11px', background: C.surfaceGlow, borderRadius: '2px' }} />
     <div style={{ flex: 1 }} />
-    <div style={{ width: '100%', height: '3px', background: '#1a1a00', borderRadius: '1px' }} />
+    <div style={{ width: '100%', height: '3px', background: C.surfaceGlow, borderRadius: '1px' }} />
   </div>
 )
 
@@ -178,30 +179,30 @@ const SummaryRow: React.FC<SummaryRowProps> = ({ assets }) => {
         gap: '32px',
         alignItems: 'center',
         padding: '8px 12px',
-        borderBottom: '1px solid #2a2a2a',
+        borderBottom: `1px solid ${C.border1}`,
         flexShrink: 0,
         flexWrap: 'wrap',
         rowGap: '4px',
       }}
     >
       <div style={{ fontSize: '13px' }}>
-        <span style={{ color: '#554400' }}>TOTAL MARKET CAP: </span>
-        <span style={{ color: '#ff9900', fontWeight: 700, letterSpacing: '0.04em' }}>
+        <span style={{ color: C.amberMute }}>TOTAL MARKET CAP: </span>
+        <span style={{ color: C.amber, fontWeight: 700, letterSpacing: '0.04em' }}>
           {formatLarge(totalMarketCap)}
         </span>
       </div>
       <div style={{ fontSize: '12px' }}>
-        <span style={{ color: '#554400' }}>24H VOL: </span>
-        <span style={{ color: '#cc7700' }}>{formatLarge(totalVolume)}</span>
+        <span style={{ color: C.amberMute }}>24H VOL: </span>
+        <span style={{ color: C.amberDim }}>{formatLarge(totalVolume)}</span>
       </div>
       <div style={{ fontSize: '12px', marginLeft: 'auto', display: 'flex', gap: '12px' }}>
         <span>
           <span className="bb-gain">{gainers}</span>
-          <span style={{ color: '#554400' }}> UP</span>
+          <span style={{ color: C.amberMute }}> UP</span>
         </span>
         <span>
           <span className="bb-loss">{losers}</span>
-          <span style={{ color: '#554400' }}> DOWN</span>
+          <span style={{ color: C.amberMute }}> DOWN</span>
         </span>
       </div>
     </div>
@@ -231,7 +232,7 @@ const CryptoScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        background: '#000000',
+        background: C.surface0,
         overflow: 'hidden',
       }}
     >
@@ -250,10 +251,10 @@ const CryptoScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
         }}
       >
         <span>CRYPTO MONITOR</span>
-        <span style={{ color: '#554400', fontSize: '11px' }}>
-          AUTO-REFRESH 60s
+        <span style={{ color: C.amberMute, fontSize: '11px' }}>
+          AUTO-REFRESH 15s
           {data?.cached && (
-            <span style={{ color: '#2a2a2a', marginLeft: '8px' }}>CACHED</span>
+            <span style={{ color: C.border1, marginLeft: '8px' }}>CACHED</span>
           )}
         </span>
       </div>
@@ -263,9 +264,9 @@ const CryptoScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
         <div
           style={{
             padding: '8px 12px',
-            color: '#ff3333',
+            color: C.red,
             fontSize: '12px',
-            borderBottom: '1px solid #2a2a2a',
+            borderBottom: `1px solid ${C.border1}`,
             flexShrink: 0,
           }}
         >
@@ -281,14 +282,14 @@ const CryptoScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
         <div
           style={{
             padding: '8px 12px',
-            borderBottom: '1px solid #2a2a2a',
+            borderBottom: `1px solid ${C.border1}`,
             flexShrink: 0,
             display: 'flex',
             gap: '32px',
           }}
         >
-          <div style={{ width: '200px', height: '16px', background: '#1a1a00', borderRadius: '2px' }} />
-          <div style={{ width: '120px', height: '16px', background: '#0d0d00', borderRadius: '2px' }} />
+          <div style={{ width: '200px', height: '16px', background: C.surfaceGlow, borderRadius: '2px' }} />
+          <div style={{ width: '120px', height: '16px', background: C.surfaceGlow, borderRadius: '2px' }} />
         </div>
       )}
 

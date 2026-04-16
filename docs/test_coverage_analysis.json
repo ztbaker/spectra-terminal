@@ -1,0 +1,886 @@
+{
+  "analysis_metadata": {
+    "analyzed_date": "2026-03-24",
+    "total_routers": 15,
+    "routers_with_tests": 3,
+    "routers_without_tests": 12,
+    "test_coverage_percentage": 20
+  },
+  "routers_analysis": {
+    "equity.py": {
+      "test_file": "test_des_backend.py",
+      "endpoints": [
+        {
+          "path": "/equity/{ticker}",
+          "method": "GET",
+          "tested": true,
+          "test_coverage": {
+            "happy_path": true,
+            "cache_hit": false,
+            "null_fields": true,
+            "data_validation": true
+          }
+        },
+        {
+          "path": "/equity/{ticker}/financials",
+          "method": "GET",
+          "tested": true,
+          "test_coverage": {
+            "happy_path": true,
+            "cache_hit": true,
+            "null_fields": true,
+            "404_empty_info": true,
+            "502_service_error": true
+          }
+        },
+        {
+          "path": "/equity/{ticker}/live",
+          "method": "GET",
+          "tested": false,
+          "test_coverage": null
+        }
+      ],
+      "untested_functions": [
+        "_extract_ceo",
+        "_build_address",
+        "_parse_equity"
+      ],
+      "missing_edge_cases": [
+        "Invalid ticker format (special characters, too long)",
+        "Empty companyOfficers list",
+        "All address fields null",
+        "Division by zero when prev_close is 0",
+        "NaN or Inf values from yfinance",
+        "Live endpoint: no cache validation",
+        "Live endpoint: concurrent requests",
+        "Live endpoint: partial data scenarios"
+      ],
+      "missing_error_tests": [
+        "/equity/{ticker}: HTTPException 502 when service fails",
+        "/equity/{ticker}: HTTPException 404 when info is empty",
+        "/equity/{ticker}/live: HTTPException scenarios",
+        "Network timeout handling",
+        "Rate limiting scenarios"
+      ],
+      "missing_cache_tests": [
+        "/equity/{ticker}: cache hit scenario",
+        "/equity/{ticker}: cache expiration (TTL)",
+        "/equity/{ticker}/live: should never use cache",
+        "Cache invalidation on error"
+      ],
+      "missing_model_validation_tests": [
+        "EquityResponse: all fields validate correctly",
+        "EquityResponse: optional fields can be null",
+        "FinancialsData: all fields validate correctly",
+        "Invalid data types rejected by Pydantic"
+      ]
+    },
+    "fx.py": {
+      "test_file": "test_fx_rates.py",
+      "endpoints": [
+        {
+          "path": "/fx/rates",
+          "method": "GET",
+          "tested": true,
+          "test_coverage": {
+            "happy_path": true,
+            "cache_hit": true,
+            "null_price_handling": true,
+            "shape_validation": true
+          }
+        },
+        {
+          "path": "/fx",
+          "method": "GET",
+          "tested": false,
+          "test_coverage": null
+        }
+      ],
+      "untested_functions": [
+        "_safe_float",
+        "_df_to_chart",
+        "_fetch_pair"
+      ],
+      "missing_edge_cases": [
+        "/fx: Empty chart_data when history fails",
+        "/fx: All pairs fail to fetch",
+        "/fx: Mixed success/failure in asyncio.gather",
+        "/fx/rates: Exception in get_fast_quote",
+        "NaN/Inf handling in _safe_float",
+        "DataFrame with no rows in _df_to_chart",
+        "Timezone handling in chart timestamps",
+        "Invalid period parameter",
+        "change calculation when prev_close is 0"
+      ],
+      "missing_error_tests": [
+        "/fx: Service failure handling",
+        "/fx: Partial data scenarios",
+        "/fx/rates: All quotes fail",
+        "HTTP timeout scenarios"
+      ],
+      "missing_cache_tests": [
+        "/fx: cache hit scenario",
+        "/fx: cache expiration (15s TTL)",
+        "/fx/rates: 1s cache TTL validation",
+        "Cache key uniqueness"
+      ],
+      "missing_model_validation_tests": [
+        "FXPair: all fields validate",
+        "FXResponse: pairs list validation",
+        "FXRates: rates dict validation",
+        "Invalid float values rejected"
+      ]
+    },
+    "ecst.py": {
+      "test_file": "test_ecst.py",
+      "endpoints": [
+        {
+          "path": "/ecst",
+          "method": "GET",
+          "tested": true,
+          "test_coverage": {
+            "happy_path": true,
+            "cache_hit": true,
+            "null_release_date": true,
+            "error_yields_null": true
+          }
+        }
+      ],
+      "untested_functions": [
+        "_get_release_date"
+      ],
+      "missing_edge_cases": [
+        "_get_release_date: API returns empty seriess array",
+        "_get_release_date: No release_id in response",
+        "_get_release_date: No dates in release_dates",
+        "_get_release_date: HTTP timeout",
+        "_fetch_entry: Observations list empty",
+        "_fetch_entry: Only 1 observation (no prior)",
+        "_fetch_entry: value or prior is None",
+        "Sparkline with < 12 observations",
+        "FRED API rate limiting",
+        "Invalid series_id handling"
+      ],
+      "missing_error_tests": [
+        "FRED API key missing",
+        "FRED API returns 401/403",
+        "HTTP client timeout (8s)",
+        "Network connectivity issues"
+      ],
+      "missing_cache_tests": [
+        "Cache expiration (900s TTL)",
+        "Cache key uniqueness",
+        "Cache invalidation scenarios"
+      ],
+      "missing_model_validation_tests": [
+        "ECSTEntry: all fields validate",
+        "ECSTResponse: entries list validation",
+        "Optional fields can be null"
+      ]
+    },
+    "options.py": {
+      "test_file": null,
+      "endpoints": [
+        {
+          "path": "/options/{ticker}",
+          "method": "GET",
+          "tested": false,
+          "test_coverage": null
+        }
+      ],
+      "untested_functions": [
+        "_norm_cdf",
+        "_bs_delta",
+        "_safe_float",
+        "_safe_int",
+        "_process_chain"
+      ],
+      "missing_edge_cases": [
+        "No options data available (404)",
+        "Empty expiries list",
+        "get_options_chain raises exception",
+        "Black-Scholes delta calculation edge cases: T <= 0, sigma <= 0, S <= 0, K <= 0",
+        "Math domain errors in delta calculation",
+        "_norm_cdf: extreme x values",
+        "Invalid implied volatility (NaN, Inf, negative)",
+        "Risk-free rate fetch fails (fallback to 5.25%)",
+        "FRED FEDFUNDS unavailable",
+        "DataFrame rows with missing columns",
+        "inTheMoney field missing or wrong type",
+        "More than 4 expiries available",
+        "Concurrent info and expiries fetch failures"
+      ],
+      "missing_error_tests": [
+        "HTTPException 404 when no options data",
+        "Service failure in get_ticker_info",
+        "Service failure in get_option_expiries",
+        "Service failure in get_options_chain",
+        "Network timeout scenarios",
+        "Invalid ticker format"
+      ],
+      "missing_cache_tests": [
+        "No cache tests (options endpoint doesn't use cache)",
+        "Should validate that fresh data is always fetched"
+      ],
+      "missing_model_validation_tests": [
+        "OptionsExpiry: calls and puts lists validate",
+        "OptionsResponse: expiries list validates",
+        "Contract dict fields validate",
+        "Optional delta can be null",
+        "Strike, bid, ask validation"
+      ]
+    },
+    "earnings.py": {
+      "test_file": null,
+      "endpoints": [
+        {
+          "path": "/earnings/calendar",
+          "method": "GET",
+          "tested": false,
+          "test_coverage": null
+        }
+      ],
+      "untested_functions": [
+        "_safe_float",
+        "_fetch_calendar_sync",
+        "_fetch_calendar",
+        "_get_watchlist_tickers"
+      ],
+      "missing_edge_cases": [
+        "lookahead_days boundary: 1 day, 90 days",
+        "lookahead_days invalid: <1, >90 (validation)",
+        "Watchlist DB query fails",
+        "yfinance calendar is None",
+        "yfinance calendar is DataFrame (not dict)",
+        "Earnings Date is single Timestamp (not list)",
+        "Earnings Date list is empty",
+        "Date parsing fails",
+        "Date outside lookahead range",
+        "hour attribute missing for BMO/AMC detection",
+        "_safe_float: NaN detection",
+        "No earnings in date range",
+        "All tickers fail to fetch",
+        "Mixed success/failure in asyncio.gather",
+        "Duplicate tickers in watchlist + SP500_UNIVERSE"
+      ],
+      "missing_error_tests": [
+        "Database connection failure",
+        "yfinance Ticker() raises exception",
+        "Thread executor timeout",
+        "Invalid ticker format in watchlist"
+      ],
+      "missing_cache_tests": [
+        "Cache hit for same lookahead_days",
+        "Cache miss for different lookahead_days",
+        "Cache expiration (TTL['daily'] = 3600s)",
+        "Cache key uniqueness per lookahead_days"
+      ],
+      "missing_model_validation_tests": [
+        "EarningsEntry: all fields validate",
+        "EarningsDay: date and entries validate",
+        "EarningsResponse: days list validates",
+        "when_market enum: BMO, AMC, unknown"
+      ]
+    },
+    "screener.py": {
+      "test_file": null,
+      "endpoints": [
+        {
+          "path": "/screener",
+          "method": "GET",
+          "tested": false,
+          "test_coverage": null
+        }
+      ],
+      "untested_functions": [
+        "_safe_float",
+        "_safe_int",
+        "_get_watchlist_tickers",
+        "_parse_result",
+        "_passes_filters",
+        "_fetch_with_semaphore"
+      ],
+      "missing_edge_cases": [
+        "All query parameters are None (no filtering)",
+        "All filters applied simultaneously",
+        "No results match filters",
+        "More than 100 results (pagination test)",
+        "Watchlist DB query fails",
+        "All tickers fail to fetch (empty info)",
+        "_parse_result returns None for empty info",
+        "prev_close is 0 (division by zero)",
+        "change_pct calculation edge cases",
+        "_passes_filters: all filter combinations",
+        "Sector filter case sensitivity",
+        "52w_change calculation",
+        "Beta range filters",
+        "Semaphore limiting (_CONCURRENCY = 20)",
+        "Cache key MD5 hash collision (unlikely but testable)",
+        "Duplicate tickers in watchlist + SP500"
+      ],
+      "missing_error_tests": [
+        "Database connection failure",
+        "Service failure in get_ticker_info",
+        "Timeout in semaphore-controlled fetch",
+        "Invalid query parameter types"
+      ],
+      "missing_cache_tests": [
+        "Cache hit for same parameters",
+        "Cache miss for different parameters",
+        "Cache key uniqueness (MD5 hash)",
+        "Cache expiration (TTL['screener'] = 3600s)"
+      ],
+      "missing_model_validation_tests": [
+        "ScreenerResult: all fields validate",
+        "ScreenerResponse: results and total validate",
+        "Query parameter validation (ge, le constraints)",
+        "Optional fields can be null"
+      ]
+    },
+    "chart.py": {
+      "test_file": null,
+      "endpoints": [
+        {
+          "path": "/chart/{ticker}",
+          "method": "GET",
+          "tested": false,
+          "test_coverage": null
+        },
+        {
+          "path": "/chart/spread",
+          "method": "GET",
+          "tested": false,
+          "test_coverage": null
+        }
+      ],
+      "untested_functions": [
+        "_cache_ttl",
+        "_sma",
+        "_rsi",
+        "_macd",
+        "_bollinger",
+        "_df_to_ohlcv"
+      ],
+      "missing_edge_cases": [
+        "Invalid period (not in VALID_PERIODS)",
+        "Invalid interval (not in VALID_INTERVALS)",
+        "DataFrame is None or empty (404)",
+        "_sma: window larger than series",
+        "_rsi: period larger than series",
+        "_rsi: all gains or all losses (division by zero)",
+        "_macd: series too short for EMA26",
+        "_bollinger: window larger than series, std = 0",
+        "_df_to_ohlcv: timestamp without timezone",
+        "_df_to_ohlcv: Volume is NaN",
+        "Intraday vs daily time format",
+        "/chart/spread: ticker1 or ticker2 not found",
+        "/chart/spread: DataFrames don't overlap (no common dates)",
+        "/chart/spread: spread calculation edge cases",
+        "Cache TTL logic for intraday vs daily",
+        "Service failure in get_history"
+      ],
+      "missing_error_tests": [
+        "HTTPException 502 when service fails",
+        "HTTPException 404 when no data",
+        "Invalid ticker format",
+        "Network timeout"
+      ],
+      "missing_cache_tests": [
+        "Cache hit for same ticker/period/interval",
+        "Cache miss for different parameters",
+        "TTL validation: intraday (300s) vs daily (3600s)",
+        "Cache key uniqueness"
+      ],
+      "missing_model_validation_tests": [
+        "ChartResponse: all fields validate",
+        "SpreadData: all fields validate",
+        "SpreadPoint: time and value validate",
+        "OHLCV dict structure validation"
+      ]
+    },
+    "watchlist.py": {
+      "test_file": null,
+      "endpoints": [
+        {
+          "path": "/watchlist",
+          "method": "GET",
+          "tested": false
+        },
+        {
+          "path": "/watchlist",
+          "method": "POST",
+          "tested": false
+        },
+        {
+          "path": "/watchlist/{ticker}",
+          "method": "DELETE",
+          "tested": false
+        },
+        {
+          "path": "/watchlist/quotes",
+          "method": "GET",
+          "tested": false
+        }
+      ],
+      "untested_functions": [],
+      "missing_edge_cases": [
+        "GET /watchlist: empty table",
+        "POST /watchlist: duplicate ticker (409 conflict)",
+        "POST /watchlist: ticker case handling (lowercase to uppercase)",
+        "POST /watchlist: notes field is None",
+        "DELETE /watchlist/{ticker}: ticker doesn't exist (silent success)",
+        "DELETE /watchlist/{ticker}: case sensitivity",
+        "GET /watchlist/quotes: empty watchlist",
+        "GET /watchlist/quotes: some quotes fail to fetch",
+        "GET /watchlist/quotes: all quotes fail",
+        "GET /watchlist/quotes: prev_close is 0 or None",
+        "GET /watchlist/quotes: asyncio.gather with exceptions",
+        "Database unique constraint violation handling"
+      ],
+      "missing_error_tests": [
+        "Database connection failure",
+        "POST: HTTPException 409 for duplicate",
+        "Service failures in get_fast_quote",
+        "Service failures in get_ticker_info",
+        "Network timeout"
+      ],
+      "missing_cache_tests": [
+        "No cache used (validate always fresh data)"
+      ],
+      "missing_model_validation_tests": [
+        "WatchlistItem: ticker and notes validate",
+        "WatchlistRow: all fields validate",
+        "WatchlistQuote: all fields validate",
+        "Optional fields can be null"
+      ]
+    },
+    "crypto.py": {
+      "test_file": null,
+      "endpoints": [
+        {
+          "path": "/crypto",
+          "method": "GET",
+          "tested": false
+        }
+      ],
+      "untested_functions": [
+        "_safe_float",
+        "_fetch_asset",
+        "_safe_get_fast_quote",
+        "_safe_get_ticker_info"
+      ],
+      "missing_edge_cases": [
+        "All assets fail to fetch",
+        "Some assets fail (partial data)",
+        "_safe_float: NaN and Inf handling",
+        "market_cap from quote vs info fallback",
+        "volume from quote vs info fallback",
+        "volume24Hr, regularMarketVolume fallback chain",
+        "prev_close is 0 (division by zero)",
+        "change calculation edge cases",
+        "asyncio.gather exception handling",
+        "Empty CRYPTO_TICKERS dict"
+      ],
+      "missing_error_tests": [
+        "Service failure in get_fast_quote",
+        "Service failure in get_ticker_info",
+        "Network timeout",
+        "Invalid ticker format in CRYPTO_TICKERS"
+      ],
+      "missing_cache_tests": [
+        "Cache hit scenario",
+        "Cache expiration (TTL['price'] = 15s)",
+        "Cache key uniqueness"
+      ],
+      "missing_model_validation_tests": [
+        "CryptoAsset: all fields validate",
+        "CryptoResponse: assets list validates",
+        "Optional fields can be null"
+      ]
+    },
+    "filings.py": {
+      "test_file": null,
+      "endpoints": [
+        {
+          "path": "/filings/{ticker}",
+          "method": "GET",
+          "tested": false
+        }
+      ],
+      "untested_functions": [],
+      "missing_edge_cases": [
+        "type query param: various form types (10-Q, 8-K, etc)",
+        "limit query param: boundary values (1, 50)",
+        "limit validation: <1, >50 (should fail validation)",
+        "ticker case handling (uppercase conversion)",
+        "EDGAR service returns None",
+        "EDGAR service returns empty list",
+        "Cache hit with different form types",
+        "Cache key uniqueness per ticker + form_type",
+        "Invalid form type format"
+      ],
+      "missing_error_tests": [
+        "HTTPException 502 when EDGAR service fails",
+        "Service timeout",
+        "Invalid ticker format",
+        "Network connectivity issues"
+      ],
+      "missing_cache_tests": [
+        "Cache hit scenario",
+        "Cache miss for different ticker or form_type",
+        "Cache expiration (TTL['econ'] = 3600s)",
+        "Cache key includes both ticker and form_type"
+      ],
+      "missing_model_validation_tests": [
+        "Filing: all fields validate",
+        "FilingsResponse: ticker and filings validate",
+        "Query parameter validation (limit ge=1, le=50)",
+        "Date string format validation"
+      ]
+    },
+    "indices.py": {
+      "test_file": null,
+      "endpoints": [
+        {
+          "path": "/indices",
+          "method": "GET",
+          "tested": false
+        },
+        {
+          "path": "/indices/world",
+          "method": "GET",
+          "tested": false
+        },
+        {
+          "path": "/indices/world/members",
+          "method": "GET",
+          "tested": false
+        }
+      ],
+      "untested_functions": [
+        "_safe_float",
+        "_fetch_index_sync",
+        "_fetch_index"
+      ],
+      "missing_edge_cases": [
+        "GET /indices: all tickers fail to fetch",
+        "GET /indices: some tickers fail (partial data)",
+        "GET /indices: prev_close is 0 or None",
+        "GET /indices/world: cache hit vs miss",
+        "GET /indices/world: timeout in _fetch_index (8s)",
+        "GET /indices/world: yfinance Ticker() raises",
+        "_fetch_index_sync: fast_info attributes missing",
+        "_safe_float: NaN detection",
+        "GET /indices/world/members: ticker not in CONSTITUENTS",
+        "GET /indices/world/members: empty constituents list",
+        "GET /indices/world/members: get_bulk_quotes fails",
+        "Cache expiration (_WORLD_CACHE_TTL = 60s)",
+        "_MEMBERS_CACHE_TTL validation",
+        "asyncio.TimeoutError handling"
+      ],
+      "missing_error_tests": [
+        "Service failure in get_fast_quote",
+        "Service failure in get_bulk_quotes",
+        "Thread executor timeout",
+        "Network timeout",
+        "Invalid ticker in query param"
+      ],
+      "missing_cache_tests": [
+        "/indices: no cache (validate fresh data)",
+        "/indices/world: global cache hit/miss",
+        "/indices/world: cache expiration (60s)",
+        "/indices/world/members: per-ticker cache",
+        "/indices/world/members: cache expiration (60s)"
+      ],
+      "missing_model_validation_tests": [
+        "IndexQuote: all fields validate",
+        "WorldIndexEntry: all fields validate",
+        "WorldIndicesResponse: indices and fetched_at validate",
+        "IndexMember: all fields validate",
+        "IndexMembersResponse: index_ticker, index_name, members validate"
+      ]
+    },
+    "news.py": {
+      "test_file": null,
+      "endpoints": [
+        {
+          "path": "/news",
+          "method": "GET",
+          "tested": false
+        }
+      ],
+      "untested_functions": [],
+      "missing_edge_cases": [
+        "ticker query param: default 'MARKET'",
+        "ticker case handling (uppercase)",
+        "limit query param: default 50, max 100",
+        "limit validation: >100 (should fail validation)",
+        "get_aggregated_news returns empty list",
+        "get_aggregated_news raises exception",
+        "Cache hit scenario",
+        "Cache key uniqueness per ticker"
+      ],
+      "missing_error_tests": [
+        "Service failure in get_aggregated_news",
+        "Network timeout",
+        "Invalid ticker format"
+      ],
+      "missing_cache_tests": [
+        "Cache hit scenario",
+        "Cache expiration (TTL['news'] = 300s)",
+        "Cache key uniqueness per ticker"
+      ],
+      "missing_model_validation_tests": [
+        "NewsItem: all fields validate",
+        "NewsResponse: ticker and items validate",
+        "Query parameter validation (limit le=100)",
+        "sentiment field validation"
+      ]
+    },
+    "macro.py": {
+      "test_file": null,
+      "endpoints": [
+        {
+          "path": "/macro/dashboard",
+          "method": "GET",
+          "tested": false
+        }
+      ],
+      "untested_functions": [],
+      "missing_edge_cases": [
+        "get_macro_dashboard returns empty list",
+        "get_macro_dashboard raises exception",
+        "Cache hit scenario",
+        "Individual card with error field set"
+      ],
+      "missing_error_tests": [
+        "Service failure in get_macro_dashboard",
+        "FRED API timeout",
+        "Network connectivity issues"
+      ],
+      "missing_cache_tests": [
+        "Cache hit scenario",
+        "Cache expiration (TTL['econ'] = 3600s)",
+        "Cache key: 'macro_dashboard'"
+      ],
+      "missing_model_validation_tests": [
+        "MacroCard: all fields validate",
+        "MacroDashboardResponse: cards list validates",
+        "Optional error field validation",
+        "sparkline list validation"
+      ]
+    },
+    "portfolio.py": {
+      "test_file": null,
+      "endpoints": [
+        {
+          "path": "/portfolio",
+          "method": "GET",
+          "tested": false
+        },
+        {
+          "path": "/portfolio",
+          "method": "POST",
+          "tested": false
+        },
+        {
+          "path": "/portfolio/{item_id}",
+          "method": "DELETE",
+          "tested": false
+        },
+        {
+          "path": "/portfolio/performance",
+          "method": "GET",
+          "tested": false
+        }
+      ],
+      "untested_functions": [],
+      "missing_edge_cases": [
+        "GET /portfolio: empty table",
+        "POST /portfolio: ticker case handling",
+        "POST /portfolio: shares = 0 or negative",
+        "POST /portfolio: avg_cost = 0 or negative",
+        "DELETE /portfolio/{item_id}: ID doesn't exist",
+        "GET /portfolio/performance: empty portfolio",
+        "GET /portfolio/performance: some quotes fail",
+        "GET /portfolio/performance: all quotes fail",
+        "GET /portfolio/performance: price is None (no market_value)",
+        "GET /portfolio/performance: cost_basis = 0 (division by zero)",
+        "GET /portfolio/performance: duplicate tickers (set deduplication)",
+        "pnl and pnl_pct calculation edge cases"
+      ],
+      "missing_error_tests": [
+        "Database connection failure",
+        "Service failure in get_fast_quote",
+        "Network timeout",
+        "Invalid item_id type"
+      ],
+      "missing_cache_tests": [
+        "No cache used (validate always fresh data)"
+      ],
+      "missing_model_validation_tests": [
+        "PortfolioItem: ticker, shares, avg_cost validate",
+        "PortfolioRow: all fields validate",
+        "PortfolioPerformance: all fields validate",
+        "Optional fields can be null",
+        "Numeric field constraints (positive values)"
+      ]
+    },
+    "econ.py": {
+      "test_file": null,
+      "endpoints": [
+        {
+          "path": "/econ/{series_id}",
+          "method": "GET",
+          "tested": false
+        }
+      ],
+      "untested_functions": [],
+      "missing_edge_cases": [
+        "series_id case handling (uppercase)",
+        "start query param: default '2010-01-01'",
+        "start param: invalid date format",
+        "get_series raises exception",
+        "get_series returns empty observations",
+        "Cache hit scenario",
+        "Cache key uniqueness per series_id and start"
+      ],
+      "missing_error_tests": [
+        "HTTPException 502 when get_series fails",
+        "FRED API timeout",
+        "Invalid series_id",
+        "Network connectivity issues"
+      ],
+      "missing_cache_tests": [
+        "Cache hit scenario",
+        "Cache expiration (TTL['econ'] = 3600s)",
+        "Cache key includes both series_id and start"
+      ],
+      "missing_model_validation_tests": [
+        "Observation: date and value validate",
+        "EconResponse: all fields validate",
+        "Query parameter validation",
+        "observations list validation"
+      ]
+    }
+  },
+  "critical_gaps_summary": {
+    "untested_routers": [
+      "options.py",
+      "earnings.py",
+      "screener.py",
+      "chart.py",
+      "watchlist.py",
+      "crypto.py",
+      "filings.py",
+      "indices.py",
+      "news.py",
+      "macro.py",
+      "portfolio.py",
+      "econ.py"
+    ],
+    "high_priority_missing_tests": [
+      {
+        "router": "watchlist.py",
+        "reason": "Database CRUD operations, no validation tests, unique constraint handling untested"
+      },
+      {
+        "router": "portfolio.py",
+        "reason": "Financial calculations (P&L, percentages), division by zero risks, DB operations untested"
+      },
+      {
+        "router": "options.py",
+        "reason": "Complex Black-Scholes math, delta calculations, multiple edge cases in finance formulas"
+      },
+      {
+        "router": "screener.py",
+        "reason": "Complex filtering logic, cache key hashing, semaphore concurrency, no validation"
+      },
+      {
+        "router": "chart.py",
+        "reason": "Technical indicators (SMA, RSI, MACD, Bollinger), DataFrame processing, many edge cases"
+      }
+    ],
+    "common_missing_patterns": {
+      "error_handling": [
+        "HTTPException 502 on service failures",
+        "HTTPException 404 on missing data",
+        "Network timeout handling",
+        "Database connection failures",
+        "Service-specific API errors (FRED, yfinance, EDGAR)"
+      ],
+      "edge_cases": [
+        "Division by zero (prev_close, cost_basis)",
+        "NaN and Inf value handling",
+        "Empty DataFrames or lists",
+        "Null/None value propagation",
+        "Concurrent request handling (asyncio.gather exceptions)",
+        "Case sensitivity (ticker symbols)",
+        "Boundary value testing (limits, dates, windows)"
+      ],
+      "cache_validation": [
+        "Cache hit scenarios",
+        "Cache expiration (TTL validation)",
+        "Cache key uniqueness",
+        "Cache miss scenarios",
+        "Different cache tables (price, econ, chart, news, financials)"
+      ],
+      "pydantic_validation": [
+        "All model fields validate correctly",
+        "Optional fields accept null",
+        "Type constraints enforced",
+        "Query parameter validation (ge, le, enum)"
+      ],
+      "database_operations": [
+        "Empty tables",
+        "Duplicate records (UNIQUE constraints)",
+        "DELETE on non-existent records",
+        "Connection failures",
+        "Transaction rollback scenarios"
+      ]
+    }
+  },
+  "recommendations": {
+    "immediate_actions": [
+      "Create test files for all 12 untested routers",
+      "Add comprehensive error handling tests (502, 404, timeouts)",
+      "Add cache validation tests for all cached endpoints",
+      "Add Pydantic model validation tests"
+    ],
+    "test_structure": {
+      "per_router_minimum": [
+        "Happy path test for each endpoint",
+        "Error scenario tests (502, 404)",
+        "Edge case tests (null, empty, boundary values)",
+        "Cache behavior tests (if applicable)",
+        "Model validation tests",
+        "Database operation tests (if applicable)"
+      ]
+    },
+    "testing_tools": [
+      "pytest with async support",
+      "unittest.mock (AsyncMock for async functions)",
+      "FastAPI TestClient",
+      "pytest.approx for float comparisons",
+      "Fixtures for DB and client setup (already in conftest.py)"
+    ],
+    "estimated_test_count": {
+      "equity.py": 5,
+      "fx.py": 8,
+      "ecst.py": 5,
+      "options.py": 20,
+      "earnings.py": 15,
+      "screener.py": 18,
+      "chart.py": 25,
+      "watchlist.py": 12,
+      "crypto.py": 10,
+      "filings.py": 8,
+      "indices.py": 15,
+      "news.py": 6,
+      "macro.py": 5,
+      "portfolio.py": 12,
+      "econ.py": 6,
+      "total_needed": 170
+    }
+  }
+}

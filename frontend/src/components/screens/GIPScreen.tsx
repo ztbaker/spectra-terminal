@@ -15,10 +15,16 @@ import {
   type LineData,
   type HistogramData,
   type MouseEventParams,
+  type LogicalRange,
 } from 'lightweight-charts'
 import { fetchChart, fetchEquity } from '../../lib/api'
+import { useChartHistory } from '../../hooks/useChartHistory'
+import { useLivePrice } from '../../hooks/useLivePrice'
+import { useLiveBarUpdater } from '../../hooks/useLiveBarUpdater'
 import type { OhlcvBar } from '../../types'
 import LoadingBar from '../shared/LoadingBar'
+import ExtendedHoursBadge from '../shared/ExtendedHoursBadge'
+import C from '../../lib/colors'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -104,22 +110,22 @@ const BarOverlay: React.FC<BarInfo> = ({ time, price, vwap, volume, open, high, 
       top:           '8px',
       left:          '8px',
       zIndex:        10,
-      background:    'rgba(0,0,0,0.8)',
-      border:        '1px solid #2a2a2a',
+      background:    `${C.surface0}CC`,
+      border: `1px solid ${C.border1}`,
       padding:       '4px 10px',
       fontSize:      '11px',
-      color:         '#cc7700',
+      color:         C.amberDim,
       pointerEvents: 'none',
       display:       'flex',
       gap:           '12px',
     }}>
-      {time && <span style={{ color: '#554400' }}>{time}</span>}
-      <span>O: <span style={{ color: '#ff9900' }}>{fmt(open)}</span></span>
-      <span>H: <span style={{ color: '#ff9900' }}>{fmt(high)}</span></span>
-      <span>L: <span style={{ color: '#ff9900' }}>{fmt(low)}</span></span>
-      <span>C: <span style={{ color: '#ff9900' }}>{fmt(price)}</span></span>
-      {vwap != null && <span>VWAP: <span style={{ color: '#00ccff' }}>{fmt(vwap)}</span></span>}
-      {volume != null && <span>V: <span style={{ color: '#554400' }}>{fmtVol(volume)}</span></span>}
+      {time && <span style={{ color: C.amberMute }}>{time}</span>}
+      <span>O: <span style={{ color: C.amber }}>{fmt(open)}</span></span>
+      <span>H: <span style={{ color: C.amber }}>{fmt(high)}</span></span>
+      <span>L: <span style={{ color: C.amber }}>{fmt(low)}</span></span>
+      <span>C: <span style={{ color: C.amber }}>{fmt(price)}</span></span>
+      {vwap != null && <span>VWAP: <span style={{ color: C.cyanBright }}>{fmt(vwap)}</span></span>}
+      {volume != null && <span>V: <span style={{ color: C.amberMute }}>{fmtVol(volume)}</span></span>}
     </div>
   )
 }
@@ -143,8 +149,11 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   type AnySeries = ISeriesApi<any> | null
   const priceSeriesRef  = useRef<AnySeries>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const prevCloseLineRef = useRef<any>(null)
   const vwapSeriesRef   = useRef<AnySeries>(null)
   const volSeriesRef    = useRef<AnySeries>(null)
+  const lastBarTimeRef = useRef<number>(0)
 
   const { period, interval } = PERIOD_MAP[activePeriod]
 
@@ -154,16 +163,37 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
     staleTime: 30_000,
   })
 
+  const {
+    ohlcv: accumulatedOhlcv,
+    hasMore,
+    isLoadingOlder,
+    loadOlder,
+  } = useChartHistory(ticker, period, interval, chartData ?? null)
+
   const { data: equityData } = useQuery({
     queryKey:  ['equity', ticker],
     queryFn:   () => fetchEquity(ticker),
     staleTime: 60_000,
   })
 
+  const { data: livePriceData } = useLivePrice(ticker, 1000, true)
+
+  useLiveBarUpdater({
+    series: priceSeriesRef.current,
+    chartType: 'LINE',
+    lastBarTimeRef,
+    interval,
+    livePrice: livePriceData,
+    marketState: livePriceData?.market_state,
+    allowPrePost: true,
+  })
+
   const isLoading = chartLoading
 
+  const displayBars = accumulatedOhlcv.length > 0 ? accumulatedOhlcv : (chartData?.ohlcv ?? [])
+
   // ── Derived stats ──────────────────────────────────────────────────────────
-  const ohlcv     = chartData?.ohlcv ?? []
+  const ohlcv     = displayBars
   const vwapSeries = ohlcv.length ? computeVwap(ohlcv) : []
   const lastBar   = ohlcv[ohlcv.length - 1]
   const firstBar  = ohlcv[0]
@@ -183,26 +213,26 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
 
     const chart = createChart(containerRef.current, {
       layout: {
-        background:  { color: '#000000' },
-        textColor:   '#cc7700',
+        background:  { color: C.surface0 },
+        textColor:   C.amberDim,
         fontFamily:  "'JetBrains Mono', 'IBM Plex Mono', 'Courier New', monospace",
         fontSize:    11,
       },
       grid: {
-        vertLines: { color: '#1a1a00' },
-        horzLines: { color: '#1a1a00' },
+        vertLines: { color: C.surfaceGlow },
+        horzLines: { color: C.surfaceGlow },
       },
       crosshair: {
         mode:     CrosshairMode.Normal,
-        vertLine: { color: '#ff9900', width: 1, style: 1, labelBackgroundColor: '#1a1a00' },
-        horzLine: { color: '#ff9900', width: 1, style: 1, labelBackgroundColor: '#1a1a00' },
+        vertLine: { color: C.amber, width: 1, style: 1, labelBackgroundColor: C.surfaceGlow },
+        horzLine: { color: C.amber, width: 1, style: 1, labelBackgroundColor: C.surfaceGlow },
       },
       rightPriceScale: {
-        borderColor: '#2a2a2a',
-        textColor:   '#cc7700',
+        borderColor: C.border1,
+        textColor:   C.amberDim,
       },
       timeScale: {
-        borderColor:    '#2a2a2a',
+        borderColor:    C.border1,
         timeVisible:    true,
         secondsVisible: false,
       },
@@ -212,6 +242,19 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
 
     chartRef.current = chart
 
+    let panDebounceTimer: ReturnType<typeof setTimeout> | null = null
+    const ts = chart.timeScale()
+    const rangeHandler = (range: LogicalRange | null) => {
+      if (!range) return
+      if (range.from < 10) {
+        if (panDebounceTimer) clearTimeout(panDebounceTimer)
+        panDebounceTimer = setTimeout(() => {
+          loadOlder()
+        }, 250)
+      }
+    }
+    ts.subscribeVisibleLogicalRangeChange(rangeHandler)
+
     const ro = new ResizeObserver(entries => {
       for (const e of entries) {
         chart.applyOptions({ width: e.contentRect.width, height: e.contentRect.height })
@@ -220,10 +263,13 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
     ro.observe(containerRef.current)
 
     return () => {
+      if (panDebounceTimer) clearTimeout(panDebounceTimer)
+      try { ts.unsubscribeVisibleLogicalRangeChange(rangeHandler) } catch { /* chart already disposed */ }
       ro.disconnect()
       chart.remove()
       chartRef.current = null
       priceSeriesRef.current = null
+      prevCloseLineRef.current = null
       vwapSeriesRef.current  = null
       volSeriesRef.current   = null
     }
@@ -235,7 +281,7 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
     if (!chart || !chartData?.ohlcv?.length) return
 
     try {
-    const bars = chartData.ohlcv
+    const bars = displayBars
     const vwap = computeVwap(bars)
 
     // Remove old series
@@ -267,7 +313,7 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
     const priceSeries = addS(AreaSeries, {
       topColor:     'rgba(255, 153, 0, 0.20)',
       bottomColor:  'rgba(255, 153, 0, 0.0)',
-      lineColor:    '#ff9900',
+      lineColor:    C.amber,
       lineWidth:    2,
       priceScaleId: 'right',
     }, 0)
@@ -277,35 +323,22 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
     }))
     priceSeries.setData(priceData)
 
-    // Prev close reference line
-    if (prevClose != null) {
-      priceSeries.createPriceLine({
-        price:               prevClose,
-        color:               '#555555',
-        lineWidth:           1,
-        lineStyle:           LineStyle.Dashed,
-        axisLabelVisible:    true,
-        title:               'PREV',
-      })
-    }
-
-    // Day open reference line
-    if (firstBar?.open != null) {
-      priceSeries.createPriceLine({
-        price:               firstBar.open,
-        color:               '#cc7700',
-        lineWidth:           1,
-        lineStyle:           LineStyle.Dashed,
-        axisLabelVisible:    true,
-        title:               'OPEN',
-      })
-    }
-
     priceSeriesRef.current = priceSeries
+
+    const lb = bars[bars.length - 1]
+    if (lb) {
+      const t = lb.time
+      if (typeof t === 'number') {
+        lastBarTimeRef.current = t
+      } else {
+        const [y, m, d] = t.split('-').map(Number)
+        lastBarTimeRef.current = Date.UTC(y, m - 1, d, 0, 0, 0) / 1000
+      }
+    }
 
     // ── VWAP ──────────────────────────────────────────────────────────────
     const vwapSer = addS(LineSeries, {
-      color:        '#00ccff',
+      color:        C.cyanBright,
       lineWidth:    1,
       lineStyle:    LineStyle.Solid,
       priceScaleId: 'right',
@@ -320,7 +353,7 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
     const volSer = addS(HistogramSeries, {
       priceScaleId: 'vol',
       priceFormat:  { type: 'volume' },
-      color:        '#2a2a2a',
+      color:        C.border1,
     }, 0)
     volSer.priceScale().applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } })
     const volData: HistogramData[] = bars.map(b => ({
@@ -363,7 +396,88 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
       console.error('[GIPScreen] chart error:', msg, err)
       setChartError(msg)
     }
-  }, [chartData, prevClose])
+  }, [chartData, displayBars])
+
+  // ── Prepend older bars without full series recreate ──────────────────────
+  const prevBarsLenRef = useRef(0)
+  useEffect(() => {
+    const chart = chartRef.current
+    if (!chart || !chartData) return
+    const bars = displayBars
+    if (bars.length === 0) return
+
+    const initialLen = chartData.ohlcv?.length ?? 0
+    if (bars.length <= initialLen && bars.length <= prevBarsLenRef.current) {
+      prevBarsLenRef.current = bars.length
+      return
+    }
+
+    const prevRange = chart.timeScale().getVisibleLogicalRange()
+    prevBarsLenRef.current = bars.length
+
+    const toTime = (t: string | number): Time => {
+      if (typeof t === 'number') return t as UTCTimestamp
+      const [year, month, day] = t.split('-').map(Number)
+      return (Date.UTC(year, month - 1, day, 0, 0, 0, 0) / 1000) as UTCTimestamp
+    }
+
+    const vwap = computeVwap(bars)
+
+    if (priceSeriesRef.current) {
+      const priceData: AreaData[] = bars.map(b => ({
+        time: toTime(b.time), value: b.close,
+      }))
+      priceSeriesRef.current.setData(priceData as any)
+    }
+
+    if (vwapSeriesRef.current) {
+      const vwapData: LineData[] = bars
+        .map((b, i) => ({ time: toTime(b.time), value: vwap[i] }))
+        .filter((p): p is LineData => p.value != null)
+      vwapSeriesRef.current.setData(vwapData as any)
+    }
+
+    if (volSeriesRef.current) {
+      const volData: HistogramData[] = bars.map(b => ({
+        time: toTime(b.time), value: b.volume,
+        color: b.close >= b.open ? 'rgba(0,255,65,0.25)' : 'rgba(255,51,51,0.25)',
+      }))
+      volSeriesRef.current.setData(volData as any)
+    }
+
+    if (prevRange) {
+      chart.timeScale().setVisibleLogicalRange(prevRange)
+    }
+  }, [displayBars, chartData])
+
+  useEffect(() => {
+    const series = priceSeriesRef.current
+    if (!series || prevClose == null) return
+    if (prevCloseLineRef.current) {
+      try { series.removePriceLine(prevCloseLineRef.current) } catch { /* ignore */ }
+    }
+    prevCloseLineRef.current = series.createPriceLine({
+      price:               prevClose,
+      color:               C.whiteGhost,
+      lineWidth:           1,
+      lineStyle:           LineStyle.Dashed,
+      axisLabelVisible:    true,
+      title:               'PREV',
+    })
+  }, [prevClose])
+
+  useEffect(() => {
+    const series = priceSeriesRef.current
+    if (!series || firstBar?.open == null) return
+    series.createPriceLine({
+      price:               firstBar.open,
+      color:               C.amberDim,
+      lineWidth:           1,
+      lineStyle:           LineStyle.Dashed,
+      axisLabelVisible:    true,
+      title:               'OPEN',
+    })
+  }, [firstBar?.open])
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
@@ -371,7 +485,7 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
       display:       'flex',
       flexDirection: 'column',
       height:        '100%',
-      background:    '#000',
+      background:    C.surface0,
       overflow:      'hidden',
     }}>
       <LoadingBar loading={isLoading} />
@@ -379,8 +493,8 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
       {/* ── Header ────────────────────────────────────────────────────────── */}
       <div style={{
         flexShrink:   0,
-        background:   '#0d0d0d',
-        borderBottom: '1px solid #2a2a2a',
+        background:   C.surface1,
+        borderBottom: `1px solid ${C.border1}`,
         padding:      '5px 10px',
         display:      'flex',
         flexDirection: 'column',
@@ -389,24 +503,24 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
         {/* Row 1: Ticker + stats */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
           <span style={{
-            color:         '#ff9900',
+            color:         C.amber,
             fontSize:      '14px',
             fontWeight:    700,
             letterSpacing: '0.05em',
           }}>
             {ticker}{' '}
-            <span style={{ color: '#554400', fontSize: '10px', fontWeight: 400 }}>INTRADAY</span>
+            <span style={{ color: C.amberMute, fontSize: '10px', fontWeight: 400 }}>INTRADAY</span>
           </span>
 
           {lastPrice != null && (
-            <span style={{ color: '#e0e0e0', fontSize: '14px', fontWeight: 700 }}>
+            <span style={{ color: C.white, fontSize: '14px', fontWeight: 700 }}>
               {lastPrice.toFixed(2)}
             </span>
           )}
 
           {changeAbs != null && changePct != null && (
             <span style={{
-              color:    isUp ? '#00ff41' : '#ff3333',
+              color:    isUp ? C.green : C.red,
               fontSize: '12px',
               fontWeight: 600,
             }}>
@@ -414,25 +528,53 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
             </span>
           )}
 
-          <span style={{ color: '#cc7700', fontSize: '11px' }}>
-            OPEN <span style={{ color: '#ff9900' }}>{fmt(firstBar?.open)}</span>
+          <span style={{ color: C.amberDim, fontSize: '11px' }}>
+            OPEN <span style={{ color: C.amber }}>{fmt(firstBar?.open)}</span>
           </span>
 
           {prevClose != null && (
-            <span style={{ color: '#cc7700', fontSize: '11px' }}>
-              PREV <span style={{ color: '#cc7700' }}>{prevClose.toFixed(2)}</span>
+            <span style={{ color: C.amberDim, fontSize: '11px' }}>
+              PREV <span style={{ color: C.amberDim }}>{prevClose.toFixed(2)}</span>
+            </span>
+          )}
+
+          {livePriceData?.market_state === 'PRE' && livePriceData.pre_market_price != null && (
+            <span style={{ color: C.amber, fontSize: '11px' }}>
+              PRE <span style={{ fontWeight: 600 }}>{livePriceData.pre_market_price.toFixed(2)}</span>
+              {livePriceData.pre_market_change_pct != null && (
+                <span style={{ color: livePriceData.pre_market_change_pct >= 0 ? C.green : C.red, marginLeft: 4 }}>
+                  ({livePriceData.pre_market_change_pct >= 0 ? '+' : ''}{livePriceData.pre_market_change_pct.toFixed(2)}%)
+                </span>
+              )}
+            </span>
+          )}
+
+          {livePriceData?.market_state === 'POST' && livePriceData.post_market_price != null && (
+            <span style={{ color: C.cyanBright, fontSize: '11px' }}>
+              POST <span style={{ fontWeight: 600 }}>{livePriceData.post_market_price.toFixed(2)}</span>
+              {livePriceData.post_market_change_pct != null && (
+                <span style={{ color: livePriceData.post_market_change_pct >= 0 ? C.green : C.red, marginLeft: 4 }}>
+                  ({livePriceData.post_market_change_pct >= 0 ? '+' : ''}{livePriceData.post_market_change_pct.toFixed(2)}%)
+                </span>
+              )}
+            </span>
+          )}
+
+          {livePriceData?.regular_close != null && (livePriceData?.market_state === 'PRE' || livePriceData?.market_state === 'POST' || livePriceData?.market_state === 'CLOSED') && (
+            <span style={{ color: C.amberDim, fontSize: '11px' }}>
+              RTH <span style={{ color: C.amberDim }}>{livePriceData.regular_close.toFixed(2)}</span>
             </span>
           )}
 
           {lastVwap != null && (
-            <span style={{ color: '#00ccff', fontSize: '11px' }}>
+            <span style={{ color: C.cyanBright, fontSize: '11px' }}>
               VWAP <span style={{ fontWeight: 600 }}>{fmt(lastVwap)}</span>
             </span>
           )}
 
           {totalVol > 0 && (
-            <span style={{ color: '#554400', fontSize: '11px' }}>
-              VOL <span style={{ color: '#cc7700' }}>{fmtVol(totalVol)}</span>
+            <span style={{ color: C.amberMute, fontSize: '11px' }}>
+              VOL <span style={{ color: C.amberDim }}>{fmtVol(totalVol)}</span>
             </span>
           )}
 
@@ -452,14 +594,14 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
         </div>
 
         {/* Row 2: interval info */}
-        <div style={{ color: '#554400', fontSize: '10px', display: 'flex', gap: '16px' }}>
+        <div style={{ color: C.amberMute, fontSize: '10px', display: 'flex', gap: '16px' }}>
           <span>{interval} BARS</span>
           {chartData?.ohlcv?.length && (
             <span>{chartData.ohlcv.length} BARS · {period.toUpperCase()}</span>
           )}
-          <span style={{ color: '#00ccff', opacity: 0.7 }}>━ VWAP (daily anchored)</span>
-          <span style={{ color: '#cc7700', opacity: 0.7 }}>╌ OPEN</span>
-          <span style={{ color: '#555555', opacity: 0.7 }}>╌ PREV CLOSE</span>
+          <span style={{ color: C.cyanBright, opacity: 0.7 }}>━ VWAP (daily anchored)</span>
+          <span style={{ color: C.amberDim, opacity: 0.7 }}>╌ OPEN</span>
+          <span style={{ color: C.whiteGhost, opacity: 0.7 }}>╌ PREV CLOSE</span>
         </div>
       </div>
 
@@ -469,15 +611,34 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
           <div style={{
             position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center',
-            background: '#000', color: '#ff3333', fontSize: '12px', padding: '24px',
+            background: C.surface0, color: C.red, fontSize: '12px', padding: '24px',
             fontFamily: 'monospace', textAlign: 'center', gap: '8px',
           }}>
             <div>CHART ERROR</div>
-            <div style={{ color: '#cc3333', fontSize: '11px', maxWidth: '600px', wordBreak: 'break-all' }}>{chartError}</div>
+            <div style={{ color: C.red, fontSize: '11px', maxWidth: '600px', wordBreak: 'break-all' }}>{chartError}</div>
           </div>
         ) : (
           <>
             <BarOverlay {...barInfo} />
+            <ExtendedHoursBadge marketState={livePriceData?.market_state} />
+            {isLoadingOlder && (
+              <div style={{
+                position: 'absolute', bottom: 32, left: '50%', transform: 'translateX(-50%)',
+                zIndex: 12, background: `${C.surface0}CC`, border: `1px solid ${C.border1}`,
+                borderRadius: '4px', padding: '4px 12px',
+                fontSize: '10px', color: C.amber, letterSpacing: '0.05em', pointerEvents: 'none',
+              }}>
+                LOADING OLDER BARS...
+              </div>
+            )}
+            {!hasMore && !isLoadingOlder && (
+              <div style={{
+                position: 'absolute', bottom: 32, left: 8,
+                zIndex: 12, fontSize: '9px', color: C.amberMute, letterSpacing: '0.05em',
+              }}>
+                EARLIEST INTRADAY DATA AVAILABLE (60-DAY LIMIT)
+              </div>
+            )}
             <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
           </>
         )}

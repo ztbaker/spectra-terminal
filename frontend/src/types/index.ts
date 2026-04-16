@@ -40,6 +40,9 @@ export interface EquityData {
   price_to_book?: number | null
   employees?: number | null
   website?: string | null
+  target_price?: number | null
+  recommendation?: string | null
+  next_earnings?: string | null
 }
 
 // ─── Chart ───────────────────────────────────────────────────────────────────
@@ -68,6 +71,8 @@ export interface ChartData {
   bb_mid: (number | null)[]
   bb_lower: (number | null)[]
   cached?: boolean
+  has_more?: boolean
+  truncated?: boolean
 }
 
 // ─── Options ─────────────────────────────────────────────────────────────────
@@ -116,6 +121,17 @@ export interface NewsResponse {
   ticker: string | null
   items: NewsItem[]
   cached?: boolean
+}
+
+export interface ReaderArticle {
+  url: string
+  title: string | null
+  author: string | null
+  published: string | null
+  site: string | null
+  text: string
+  word_count: number
+  error: string | null
 }
 
 // ─── Indices ─────────────────────────────────────────────────────────────────
@@ -819,7 +835,7 @@ export type ScreenType =
   | 'screener' | 'fx' | 'crypto' | 'macro' | 'home' | 'des'
   | 'graph' | 'gpo' | 'gip' | 'wei' | 'hs'
   | 'ecst' | 'fxc' | 'quit'
-  | 'etf' | 'bond' | 'comd' | 'cong' | 'quant' | 'ask'
+  | 'fa' | 'etf' | 'bond' | 'comd' | 'cong' | 'quant' | 'ask' | 'help' | 'back'
 
 export interface ParsedCommand {
   screen: ScreenType
@@ -832,16 +848,154 @@ export interface ParsedCommand {
 
 export type WorkspaceLayoutType = '1P' | '2P' | '2PT' | '3P' | '4P' | '1P+1S'
 
+export interface PanelSnapshot {
+  screen: ScreenType
+  ticker?: string
+  sub?: string
+}
+
 export interface PanelConfig {
   id: string
   screen: ScreenType
   ticker?: string
   sub?: string
   focused: boolean
+  history?: PanelSnapshot[]
 }
 
 export interface WorkspaceState {
   layout: WorkspaceLayoutType
   panels: PanelConfig[]
   focusedPanelId: string | null
+  sizes: number[]
+}
+
+// ─── FA (Fundamental Analysis) ─────────────────────────────────────────────────
+export interface FAPeriod {
+  date: string
+  total_revenue: number | null
+  cost_of_revenue: number | null
+  gross_profit: number | null
+  operating_expense: number | null
+  operating_income: number | null
+  ebitda: number | null
+  interest_expense: number | null
+  pretax_income: number | null
+  tax_provision: number | null
+  net_income: number | null
+  diluted_eps: number | null
+  basic_eps: number | null
+  total_assets: number | null
+  current_assets: number | null
+  cash_and_equivalents: number | null
+  inventory: number | null
+  receivables: number | null
+  ppe: number | null
+  goodwill: number | null
+  total_liabilities: number | null
+  current_liabilities: number | null
+  long_term_debt: number | null
+  total_debt: number | null
+  total_equity: number | null
+  shares_outstanding: number | null
+  operating_cash_flow: number | null
+  investing_cash_flow: number | null
+  financing_cash_flow: number | null
+  capex: number | null
+  free_cash_flow: number | null
+  dividends_paid: number | null
+  share_repurchases: number | null
+}
+
+export interface FARatios {
+  date: string
+  gross_margin: number | null
+  operating_margin: number | null
+  net_margin: number | null
+  ebitda_margin: number | null
+  roe: number | null
+  roa: number | null
+  roic: number | null
+  current_ratio: number | null
+  quick_ratio: number | null
+  cash_ratio: number | null
+  debt_to_equity: number | null
+  debt_to_assets: number | null
+  interest_coverage: number | null
+  asset_turnover: number | null
+  inventory_turnover: number | null
+  receivables_turnover: number | null
+  fcf_margin: number | null
+  fcf_to_net_income: number | null
+}
+
+export interface FAValuation {
+  market_cap: number | null
+  enterprise_value: number | null
+  pe_ratio: number | null
+  forward_pe: number | null
+  peg_ratio: number | null
+  price_to_book: number | null
+  price_to_sales: number | null
+  ev_ebitda: number | null
+  ev_revenue: number | null
+  dividend_yield: number | null
+  payout_ratio: number | null
+  fcf_yield: number | null
+}
+
+export interface FAGrowth {
+  revenue_yoy: number | null
+  revenue_3y_cagr: number | null
+  revenue_5y_cagr: number | null
+  net_income_yoy: number | null
+  eps_yoy: number | null
+  fcf_yoy: number | null
+  operating_income_yoy: number | null
+}
+
+export interface FAOverview {
+  company_name: string | null
+  sector: string | null
+  industry: string | null
+  employees: number | null
+  description: string | null
+  exchange: string | null
+  shares_outstanding: number | null
+  beta: number | null
+  week52_high: number | null
+  week52_low: number | null
+  current_price: number | null
+}
+
+export interface FAResponse {
+  ticker: string
+  period: string
+  currency: string
+  as_of: string
+  overview: FAOverview
+  income_statement: FAPeriod[]
+  balance_sheet: FAPeriod[]
+  cash_flow: FAPeriod[]
+  ratios: FARatios[]
+  valuation: FAValuation
+  growth: FAGrowth
+  cached?: boolean
+}
+
+// ─── Extended Hours ──────────────────────────────────────────────────────────
+export type MarketSession = 'PRE' | 'OPEN' | 'POST' | 'CLOSED'
+
+export interface ExtendedHoursData {
+  market_state: MarketSession
+  pre_market_price: number | null
+  pre_market_change: number | null
+  pre_market_change_pct: number | null
+  pre_market_time: number | null
+  post_market_price: number | null
+  post_market_change: number | null
+  post_market_change_pct: number | null
+  post_market_time: number | null
+  regular_close: number | null
+  regular_close_time: number | null
 }

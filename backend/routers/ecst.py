@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 from cache import cache_get, cache_set
 from config import settings
-from services.fred_service import get_series
+from providers.registry import get_provider
 
 router = APIRouter()
 
@@ -107,14 +107,8 @@ async def _get_release_date(series_id: str, http_client: httpx.AsyncClient) -> O
 
 async def _fetch_entry(category: str, series_id: str, label: str, http_client: httpx.AsyncClient) -> dict:
     """Fetch series data and release date concurrently; never raises."""
-    series_task = get_series(series_id, start="2020-01-01")
-    release_task = _get_release_date(series_id, http_client)
-
-    series_result, release_date = await asyncio.gather(
-        series_task, release_task, return_exceptions=True
-    )
-
-    if isinstance(series_result, Exception):
+    fred_provider = get_provider("fred")
+    if not fred_provider:
         return {
             "series_id": series_id,
             "category": category,
@@ -128,11 +122,48 @@ async def _fetch_entry(category: str, series_id: str, label: str, http_client: h
             "sparkline": [],
         }
 
-    obs = series_result.get("observations", [])
-    value = obs[-1]["value"] if obs else None
-    prior = obs[-2]["value"] if len(obs) >= 2 else None
+    series_task = fred_provider.get_econ_series(series_id, start="2020-01-01")
+    release_task = _get_release_date(series_id, http_client)
+
+    series_result, release_date = await asyncio.gather(
+        series_task, release_task, return_exceptions=True
+    )
+
+    if isinstance(series_result, Exception) or series_result is None:
+        return {
+            "series_id": series_id,
+            "category": category,
+            "label": label,
+            "value": None,
+            "prior": None,
+            "change": None,
+            "units": "",
+            "frequency": "",
+            "next_release_date": None,
+            "sparkline": [],
+        }
+
+    # series_result may be an EconSeries Pydantic object OR a dict (tests mock as dict).
+    def _get(o, key):
+        if hasattr(o, key):
+            return getattr(o, key)
+        if isinstance(o, dict):
+            return o.get(key)
+        return None
+
+    obs = _get(series_result, "observations") or []
+
+    def _obs_val(o):
+        if hasattr(o, "value"):
+            return o.value
+        if isinstance(o, dict):
+            return o.get("value")
+        return None
+
+    value = _obs_val(obs[-1]) if obs else None
+    prior = _obs_val(obs[-2]) if len(obs) >= 2 else None
     change = round(value - prior, 4) if value is not None and prior is not None else None
-    sparkline = [o["value"] for o in obs[-12:]]
+    sparkline = [_obs_val(o) for o in obs[-12:] if isinstance(_obs_val(o), (int, float))]
 
     return {
         "series_id": series_id,
@@ -141,8 +172,8 @@ async def _fetch_entry(category: str, series_id: str, label: str, http_client: h
         "value": value,
         "prior": prior,
         "change": change,
-        "units": series_result.get("units", ""),
-        "frequency": series_result.get("frequency", ""),
+        "units": _get(series_result, "units") or "",
+        "frequency": _get(series_result, "frequency") or "",
         "next_release_date": release_date if not isinstance(release_date, Exception) else None,
         "sparkline": sparkline,
     }

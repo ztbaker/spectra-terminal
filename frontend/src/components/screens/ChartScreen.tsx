@@ -15,12 +15,17 @@ import {
   type CandlestickData,
   type LineData,
   type HistogramData,
-  type AreaData,
   type MouseEventParams,
+  type LogicalRange,
 } from 'lightweight-charts'
 import { fetchChart } from '../../lib/api'
+import { useChartHistory } from '../../hooks/useChartHistory'
 import { useLivePrice } from '../../hooks/useLivePrice'
+import { useLiveBarUpdater, getActivePrice } from '../../hooks/useLiveBarUpdater'
 import LoadingBar from '../shared/LoadingBar'
+import ExtendedHoursBadge from '../shared/ExtendedHoursBadge'
+import OdometerNumber from '../shared/OdometerNumber'
+import C from '../../lib/colors'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -84,11 +89,14 @@ const OhlcvOverlay: React.FC<OhlcvOverlayProps> = ({ open, high, low, close, vol
         top: '8px',
         left: '8px',
         zIndex: 10,
-        background: 'rgba(0,0,0,0.75)',
-        border: '1px solid #2a2a2a',
+        background: C.glass,
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+        border: `1px solid ${C.glassBorder}`,
+        borderRadius: '4px',
         padding: '4px 8px',
         fontSize: '11px',
-        color: '#cc7700',
+        color: C.amberDim,
         pointerEvents: 'none',
         display: 'flex',
         gap: '10px',
@@ -100,7 +108,7 @@ const OhlcvOverlay: React.FC<OhlcvOverlayProps> = ({ open, high, low, close, vol
       <span><span className="bb-label">L: </span><span className="bb-value">{fmt(low)}</span></span>
       <span>
         <span className="bb-label">C: </span>
-        <span style={{ color: isUp ? '#00ff41' : '#ff3333' }}>{fmt(close)}</span>
+        <span style={{ color: isUp ? C.green : C.red }}>{fmt(close)}</span>
       </span>
       <span><span className="bb-label">V: </span><span className="bb-value">{fmtVol(volume)}</span></span>
     </div>
@@ -118,6 +126,92 @@ function formatStatDate(t: string | number): string {
   return `${mo}/${dy}/${yr.slice(2)}`
 }
 
+// ─── Session shading ────────────────────────────────────────────────────────────
+
+const INTRADAY_INTERVALS_SET = new Set(['1m', '5m', '15m', '30m', '1h'])
+
+interface SessionShadingProps {
+  chart: IChartApi | null
+  ohlcv: { time: string | number; close: number }[]
+  interval: string
+}
+
+const SessionShading: React.FC<SessionShadingProps> = ({ chart, ohlcv, interval }) => {
+  const [shades, setShades] = useState<{ left: number; width: number }[]>([])
+
+  useEffect(() => {
+    if (!chart || !ohlcv.length || !INTRADAY_INTERVALS_SET.has(interval)) {
+      setShades([])
+      return
+    }
+
+    const compute = () => {
+      const ts = chart.timeScale()
+      const result: { left: number; width: number }[] = []
+
+      for (let i = 0; i < ohlcv.length; i++) {
+        const bar = ohlcv[i]
+        const nextBar = ohlcv[i + 1]
+
+        const barTime = typeof bar.time === 'number' ? bar.time * 1000 : new Date(String(bar.time)).getTime()
+        const d = new Date(barTime)
+        const hour = d.getHours()
+        const minute = d.getMinutes()
+        const totalMin = hour * 60 + minute
+
+        const isExtended = totalMin < 570 || totalMin >= 960
+
+        if (!isExtended) continue
+
+        const x1 = ts.timeToCoordinate((typeof bar.time === 'number' ? bar.time : bar.time) as unknown as Time)
+        let x2: number | null
+        if (nextBar) {
+          x2 = ts.timeToCoordinate((typeof nextBar.time === 'number' ? nextBar.time : nextBar.time) as unknown as Time)
+        } else {
+          x2 = x1 != null ? x1 + 4 : null
+        }
+
+        if (x1 == null || x2 == null) continue
+        const left = Math.min(x1, x2)
+        const width = Math.abs(x2 - x1) || 2
+        result.push({ left, width })
+      }
+
+      setShades(result)
+    }
+
+    compute()
+
+    const ts = chart.timeScale()
+    const handler = () => compute()
+    ts.subscribeVisibleTimeRangeChange(handler)
+    return () => { try { ts.unsubscribeVisibleTimeRangeChange(handler) } catch { /* chart already disposed */ } }
+  }, [chart, ohlcv, interval])
+
+  if (!shades.length) return null
+
+  return (
+    <div style={{
+      position: 'absolute',
+      inset: 0,
+      pointerEvents: 'none',
+      zIndex: 1,
+      overflow: 'hidden',
+    }}>
+      {shades.map((s, i) => (
+        <div key={i} style={{
+          position: 'absolute',
+          top: 0,
+          bottom: 0,
+          left: s.left,
+          width: s.width,
+          background: 'rgba(245,158,11,0.04)',
+        }} />
+      ))}
+    </div>
+  )
+}
+
 interface ChartStats {
   last:  number
   prev:  number
@@ -130,6 +224,14 @@ interface LivePrice {
   price: number | null
   change: number | null
   change_pct: number | null
+  market_state?: 'PRE' | 'OPEN' | 'POST' | 'CLOSED'
+  pre_market_price?: number | null
+  pre_market_change?: number | null
+  pre_market_change_pct?: number | null
+  post_market_price?: number | null
+  post_market_change?: number | null
+  post_market_change_pct?: number | null
+  regular_close?: number | null
 }
 
 // ─── Price sidebar ────────────────────────────────────────────────────────────
@@ -150,17 +252,27 @@ const PriceSidebar: React.FC<SidebarProps> = ({ stats, crosshair, period, livePr
   const chg    = livePrice?.change ?? (last - prev)
   const pct    = livePrice?.change_pct ?? (chg / prev * 100)
   const isUp   = chg >= 0
-  const chgCol = isUp ? '#00ff41' : '#ff3333'
+  const chgCol = isUp ? C.green : C.red
+
+  const ms = livePrice?.market_state
+  const regularClose   = livePrice?.regular_close ?? null
+  const prePrice       = livePrice?.pre_market_price ?? null
+  const preChgPct      = livePrice?.pre_market_change_pct ?? null
+  const postPrice      = livePrice?.post_market_price ?? null
+  const postChgPct     = livePrice?.post_market_change_pct ?? null
 
   const fv = (n: number, decimals = dp): string => n.toFixed(decimals)
   const fvSigned = (n: number, decimals = dp): string => `${n >= 0 ? '+' : ''}${n.toFixed(decimals)}`
 
-  const Row = ({ label, value, color = '#cccccc' }: { label: string; value: string; color?: string }) => (
+  const Row = ({ label, value, color = C.white }: { label: string; value: string; color?: string }) => (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-      <span style={{ color: '#554400', fontSize: 9, letterSpacing: '0.05em' }}>{label}</span>
+      <span style={{ color: C.amberMute, fontSize: 9, letterSpacing: '0.05em' }}>{label}</span>
       <span style={{ color, fontSize: 12, fontWeight: 600, fontFamily: 'inherit' }}>{value}</span>
     </div>
   )
+
+  const showRthRow = regularClose != null && (ms === 'PRE' || ms === 'POST' || ms === 'CLOSED')
+  const showExtRow = (ms === 'PRE' && prePrice != null) || (ms === 'POST' && postPrice != null)
 
   return (
     <div style={{
@@ -169,8 +281,11 @@ const PriceSidebar: React.FC<SidebarProps> = ({ stats, crosshair, period, livePr
       right:         8,
       zIndex:        5,
       width:         148,
-      background:    'rgba(8,8,8,0.88)',
-      border:        '1px solid #2a2a2a',
+      background:    C.glass,
+      backdropFilter: 'blur(8px)',
+      WebkitBackdropFilter: 'blur(8px)',
+      border: `1px solid ${C.glassBorder}`,
+      borderRadius:  '4px',
       padding:       '8px 10px',
       fontFamily:    "'JetBrains Mono','Courier New',monospace",
       display:       'flex',
@@ -179,35 +294,64 @@ const PriceSidebar: React.FC<SidebarProps> = ({ stats, crosshair, period, livePr
     }}>
       {/* Title */}
       <div style={{
-        color:         '#ff9900',
+        color:         C.amber,
         fontSize:      10,
         letterSpacing: '0.1em',
         marginBottom:  10,
         paddingBottom: 6,
-        borderBottom:  '1px solid #2a2a2a',
+        borderBottom: `1px solid ${C.border1}`,
       }}>
         PRICE SUMMARY
       </div>
 
       {/* Last */}
       <div style={{ marginBottom: 12 }}>
-        <div style={{ color: '#554400', fontSize: 9, letterSpacing: '0.08em', marginBottom: 3 }}>LAST</div>
+        <div style={{ color: C.amberMute, fontSize: 9, letterSpacing: '0.08em', marginBottom: 3 }}>LAST</div>
         <div style={{ color: chgCol, fontSize: 22, fontWeight: 700, lineHeight: 1 }}>
-          {fv(last)}
+          {crosshair.close != null ? fv(last) : <OdometerNumber value={last} decimals={dp} />}
         </div>
       </div>
 
       {/* Stats rows */}
-      <div style={{ borderTop: '1px solid #1a1a1a', paddingTop: 8 }}>
+      <div style={{ borderTop: `1px solid ${C.border0}`, paddingTop: 8 }}>
         <Row label="Chg"  value={fvSigned(chg)}          color={chgCol} />
         <Row label="Chg%" value={fvSigned(pct, 2) + '%'} color={chgCol} />
-        <Row label="High" value={fv(stats.high.value)}    color="#e0e0e0" />
-        <Row label="Low"  value={fv(stats.low.value)}     color="#e0e0e0" />
-        <Row label="Avg"  value={fv(stats.avg)}           color="#cc7700" />
+        <Row label="High" value={fv(stats.high.value)}    color={C.white} />
+        <Row label="Low"  value={fv(stats.low.value)}     color={C.white} />
+        <Row label="Avg"  value={fv(stats.avg)}           color={C.amberDim} />
       </div>
 
+      {/* RTH Close row */}
+      {showRthRow && regularClose != null && (
+        <div style={{ borderTop: `1px solid ${C.border0}`, paddingTop: 6, marginTop: 4 }}>
+          <Row label="RTH CLOSE" value={fv(regularClose)} color={C.amberDim} />
+        </div>
+      )}
+
+      {/* Extended-hours price row */}
+      {showExtRow && (
+        <div>
+          {ms === 'PRE' && prePrice != null && (
+            <>
+              <Row label="PRE" value={fv(prePrice)} color={C.amber} />
+              {preChgPct != null && regularClose != null && (
+                <Row label="PRE Δ%" value={fvSigned((prePrice - regularClose) / regularClose * 100, 2) + '%'} color={C.amber} />
+              )}
+            </>
+          )}
+          {ms === 'POST' && postPrice != null && (
+            <>
+              <Row label="POST" value={fv(postPrice)} color={C.cyanBright} />
+              {postChgPct != null && regularClose != null && (
+                <Row label="POST Δ%" value={fvSigned((postPrice - regularClose) / regularClose * 100, 2) + '%'} color={C.cyanBright} />
+              )}
+            </>
+          )}
+        </div>
+      )}
+
       {/* Period label */}
-      <div style={{ marginTop: 'auto', paddingTop: 8, color: '#2a2a2a', fontSize: 9 }}>
+      <div style={{ marginTop: 'auto', paddingTop: 8, color: C.border1, fontSize: 9 }}>
         {period.toUpperCase()} PERIOD
       </div>
     </div>
@@ -217,22 +361,25 @@ const PriceSidebar: React.FC<SidebarProps> = ({ stats, crosshair, period, livePr
 // ─── Toolbar button styles ────────────────────────────────────────────────────
 
 const TAB_ACTIVE: React.CSSProperties = {
-  background: '#ff9900', color: '#000', border: 'none',
+  background: C.amber, color: C.surface0, border: 'none',
   fontWeight: 700, padding: '2px 8px', fontSize: '11px',
   fontFamily: 'inherit', cursor: 'pointer', letterSpacing: '0.04em',
+  borderBottom: `2px solid ${C.amber}`,
+  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
 }
 const TAB_INACTIVE: React.CSSProperties = {
-  background: 'transparent', color: '#554400', border: 'none',
+  background: 'transparent', color: C.amberMute, border: 'none',
   padding: '2px 8px', fontSize: '11px',
   fontFamily: 'inherit', cursor: 'pointer',
+  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
 }
 const IND_ACTIVE: React.CSSProperties = {
-  background: '#ff9900', color: '#000', border: 'none',
+  background: C.amber, color: C.surface0, border: 'none',
   fontWeight: 700, padding: '1px 6px', fontSize: '10px',
   fontFamily: 'inherit', cursor: 'pointer',
 }
 const IND_INACTIVE: React.CSSProperties = {
-  background: 'transparent', color: '#554400', border: 'none',
+  background: 'transparent', color: C.amberMute, border: 'none',
   padding: '1px 6px', fontSize: '10px',
   fontFamily: 'inherit', cursor: 'pointer',
 }
@@ -246,7 +393,7 @@ interface Props {
 
 const ChartScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
   const [activePeriod, setActivePeriod] = useState<PeriodKey>('1Y')
-  const [chartType, setChartType] = useState<ChartType>('LINE')
+  const [chartType, setChartType] = useState<ChartType>('AREA')
   const [activeIndicators, setActiveIndicators] = useState<Set<IndicatorKey>>(
     new Set(['SMA20', 'SMA50'])
   )
@@ -275,6 +422,11 @@ const ChartScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
   const macdLineRef     = useRef<AnySeries>(null)
   const macdSignalRef   = useRef<AnySeries>(null)
   const macdHistRef     = useRef<AnySeries>(null)
+  const lastBarTimeRef = useRef<number>(0)
+  const didFitRef     = useRef(false)
+  const firstBarTimeRef = useRef<string | number | null>(null)
+  const suppressRangeHandlerRef = useRef(false)
+  const prevBarsLenRef = useRef(0)
 
   const { period, interval } = PERIOD_MAP[activePeriod]
 
@@ -284,11 +436,37 @@ const ChartScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
     staleTime: 60_000,
   })
 
+  const {
+    ohlcv: accumulatedOhlcv,
+    hasMore,
+    isLoadingOlder,
+    loadOlder,
+  } = useChartHistory(ticker, period, interval, chartData ?? null)
+
+  const loadOlderRef = useRef(loadOlder)
+  useEffect(() => { loadOlderRef.current = loadOlder }, [loadOlder])
+
+  useEffect(() => {
+    didFitRef.current = false
+    firstBarTimeRef.current = null
+    prevBarsLenRef.current = 0
+  }, [ticker, period, interval])
+
   const { data: livePriceData } = useLivePrice(ticker, 500, true)
+
+  useLiveBarUpdater({
+    series: mainSeriesRef.current,
+    chartType,
+    lastBarTimeRef,
+    interval,
+    livePrice: livePriceData,
+    marketState: livePriceData?.market_state,
+    allowPrePost: true,
+  })
 
   // ── Period stats derived from chart data ──────────────────────────────────
   const chartStats = useMemo<ChartStats | null>(() => {
-    const bars = chartData?.ohlcv
+    const bars = accumulatedOhlcv.length > 0 ? accumulatedOhlcv : (chartData?.ohlcv ?? [])
     if (!bars?.length) return null
     const last = bars[bars.length - 1].close
     const prev = bars.length > 1 ? bars[bars.length - 2].close : last
@@ -300,28 +478,32 @@ const ChartScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
       high: { value: highBar.high, date: formatStatDate(highBar.time) },
       low:  { value: lowBar.low,   date: formatStatDate(lowBar.time)  },
     }
-  }, [chartData])
+  }, [chartData, accumulatedOhlcv])
 
   // ── Update live price line when live price changes ───────────────────────────
   useEffect(() => {
-    if (!livePriceData?.price) return
+    if (!livePriceData) return
+    const activePrice = getActivePrice(livePriceData).price
+    if (!activePrice) return
     const series = mainSeriesRef.current
     if (!series) return
-    // Remove old price line and create new one with updated price
     if (priceLineRef.current) {
-      try { series.removePriceLine(priceLineRef.current) } catch (_) {}
+      try {
+        priceLineRef.current.applyOptions({ price: activePrice })
+      } catch (_) {}
+      return
     }
     try {
       priceLineRef.current = series.createPriceLine({
-        price: livePriceData.price,
-        color: '#ffcc00',
+        price: activePrice,
+        color: C.amberBright,
         lineWidth: 1,
         lineStyle: 2,
         axisLabelVisible: true,
         title: '',
       })
     } catch (_) {}
-  }, [livePriceData?.price])
+  }, [livePriceData?.price, livePriceData?.pre_market_price, livePriceData?.post_market_price, livePriceData?.market_state])
 
   const toggleIndicator = useCallback((ind: IndicatorKey) => {
     setActiveIndicators(prev => {
@@ -338,34 +520,52 @@ const ChartScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
 
     const chart = createChart(containerRef.current, {
       layout: {
-        background: { color: '#000000' },
-        textColor: '#cc7700',
+        background: { color: C.surface0 },
+        textColor: C.amberDim,
         fontFamily: "'JetBrains Mono', 'IBM Plex Mono', 'Courier New', monospace",
         fontSize: 11,
       },
       grid: {
-        vertLines: { color: '#1a1a00' },
-        horzLines: { color: '#1a1a00' },
+        vertLines: { color: C.surfaceGlow },
+        horzLines: { color: C.surfaceGlow },
       },
       crosshair: {
         mode: CrosshairMode.Normal,
-        vertLine: { color: '#ff9900', width: 1, style: 1, labelBackgroundColor: '#1a1a00' },
-        horzLine: { color: '#ff9900', width: 1, style: 1, labelBackgroundColor: '#1a1a00' },
+        vertLine: { color: C.amber, width: 1, style: 1, labelBackgroundColor: C.surfaceGlow },
+        horzLine: { color: C.amber, width: 1, style: 1, labelBackgroundColor: C.surfaceGlow },
       },
       rightPriceScale: {
-        borderColor: '#2a2a2a',
-        textColor: '#cc7700',
+        borderColor: C.border1,
+        textColor: C.amberDim,
       },
       timeScale: {
-        borderColor: '#2a2a2a',
+        borderColor: C.border1,
         timeVisible: true,
         secondsVisible: false,
+        shiftVisibleRangeOnNewBar: false,
+        rightOffset: 5,
       },
       width: containerRef.current.clientWidth,
       height: containerRef.current.clientHeight,
     })
 
     chartRef.current = chart
+
+    let panDebounceTimer: ReturnType<typeof setTimeout> | null = null
+    const ts = chart.timeScale()
+
+    const rangeHandler = (range: LogicalRange | null) => {
+      if (!range) return
+      if (suppressRangeHandlerRef.current) return
+      if (!didFitRef.current) return
+      if (range.from < 10) {
+        if (panDebounceTimer) clearTimeout(panDebounceTimer)
+        panDebounceTimer = setTimeout(() => {
+          loadOlderRef.current()
+        }, 250)
+      }
+    }
+    ts.subscribeVisibleLogicalRangeChange(rangeHandler)
 
     // Resize observer
     const ro = new ResizeObserver(entries => {
@@ -379,6 +579,8 @@ const ChartScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
     ro.observe(containerRef.current)
 
     return () => {
+      if (panDebounceTimer) clearTimeout(panDebounceTimer)
+      try { ts.unsubscribeVisibleLogicalRangeChange(rangeHandler) } catch { /* chart already disposed */ }
       ro.disconnect()
       chart.remove()
       chartRef.current = null
@@ -398,21 +600,14 @@ const ChartScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
   }, []) // only on mount
 
   // ── Re-draw all series when data or config changes ────────────────────────
+  const displayBars = accumulatedOhlcv.length > 0 ? accumulatedOhlcv : (chartData?.ohlcv ?? [])
+  const indicatorsKey = [...activeIndicators].sort().join(',')
+
+  // ── Structure effect: create/remove series when chartType or indicator structure changes
   useEffect(() => {
     const chart = chartRef.current
-    if (!chart || !chartData) return
+    if (!chart) return
 
-    const ohlcv = chartData.ohlcv ?? []
-    if (ohlcv.length === 0) return
-
-    // Helper to normalize time values
-    const toTime = (t: string | number): Time => {
-      if (typeof t === 'number') return t as UTCTimestamp
-      const [year, month, day] = t.split('-').map(Number)
-      return { year, month, day } as BusinessDay
-    }
-
-    // ── Remove old series if present ────────────────────────────────────────
     const removeSeries = <T extends ISeriesApi<any>>(ref: React.MutableRefObject<T | null>) => {
       if (ref.current) {
         try { chart.removeSeries(ref.current) } catch (_) {}
@@ -420,6 +615,7 @@ const ChartScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
       }
     }
     removeSeries(mainSeriesRef as React.MutableRefObject<ISeriesApi<any> | null>)
+    priceLineRef.current = null
     removeSeries(sma20Ref as React.MutableRefObject<ISeriesApi<any> | null>)
     removeSeries(sma50Ref as React.MutableRefObject<ISeriesApi<any> | null>)
     removeSeries(sma200Ref as React.MutableRefObject<ISeriesApi<any> | null>)
@@ -431,253 +627,226 @@ const ChartScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
     removeSeries(macdSignalRef as React.MutableRefObject<ISeriesApi<any> | null>)
     removeSeries(macdHistRef as React.MutableRefObject<ISeriesApi<any> | null>)
 
-    // ── Determine pane indices ───────────────────────────────────────────────
-    // pane 0: main price + volume
-    // pane 1: RSI  (if active)
-    // pane 2: MACD (if active)
     const showRSI  = activeIndicators.has('RSI')
     const showMACD = activeIndicators.has('MACD')
     const rsiPane  = 1
     const macdPane = showRSI ? 2 : 1
 
-    // LW Charts v5: pane index is the 3rd arg to addSeries, NOT part of options
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const addS = (type: any, opts: any, pane = 0) => chart.addSeries(type, opts, pane)
 
-    // ── Main price series ────────────────────────────────────────────────────
     if (chartType === 'CANDLE') {
       const series = addS(CandlestickSeries, {
-        upColor:          '#00ff41',
-        downColor:        '#ff3333',
-        borderUpColor:    '#00ff41',
-        borderDownColor:  '#ff3333',
-        wickUpColor:      '#00ff41',
-        wickDownColor:    '#ff3333',
-        priceScaleId:     'right',
+        upColor: C.green, downColor: C.red,
+        borderUpColor: C.green, borderDownColor: C.red,
+        wickUpColor: C.green, wickDownColor: C.red,
+        priceScaleId: 'right',
       }, 0)
-      const data: CandlestickData[] = ohlcv.map(b => ({
-        time:  toTime(b.time),
-        open:  b.open,
-        high:  b.high,
-        low:   b.low,
-        close: b.close,
-      }))
-      series.setData(data)
       mainSeriesRef.current = series
     } else if (chartType === 'LINE') {
       const series = addS(LineSeries, {
-        color:        '#e0e0e0',
-        lineWidth:    2,
-        priceScaleId: 'right',
+        color: C.white, lineWidth: 2, priceScaleId: 'right',
       }, 0)
-      const data: LineData[] = ohlcv.map(b => ({
-        time:  toTime(b.time),
-        value: b.close,
-      }))
-      series.setData(data)
       mainSeriesRef.current = series as unknown as ISeriesApi<'Line'>
     } else {
-      // AREA — white line with subtle fill, Bloomberg GP style
       const series = addS(AreaSeries, {
-        topColor:     'rgba(220,220,220,0.15)',
-        bottomColor:  'rgba(220,220,220,0.0)',
-        lineColor:    '#e0e0e0',
-        lineWidth:    2,
-        priceScaleId: 'right',
+        topColor: 'rgba(220,220,220,0.15)', bottomColor: 'rgba(220,220,220,0.0)',
+        lineColor: C.white, lineWidth: 2, priceScaleId: 'right',
       }, 0)
-      const data: AreaData[] = ohlcv.map(b => ({
-        time:  toTime(b.time),
-        value: b.close,
-      }))
-      series.setData(data)
       mainSeriesRef.current = series as unknown as ISeriesApi<'Area'>
     }
 
-    // ── SMA20 ────────────────────────────────────────────────────────────────
-    if (activeIndicators.has('SMA20') && chartData.sma20?.length) {
-      const s = addS(LineSeries, {
-        color:     '#0088ff',
-        lineWidth: 1,
-        priceScaleId: 'right',
+    if (activeIndicators.has('SMA20')) {
+      sma20Ref.current = addS(LineSeries, {
+        color: C.cyanBright, lineWidth: 1, priceScaleId: 'right',
       }, 0)
-      const d: LineData[] = ohlcv
-        .map((b, i) => ({ time: toTime(b.time), value: chartData.sma20[i] }))
-        .filter((p): p is LineData => p.value != null)
-      s.setData(d)
-      sma20Ref.current = s
     }
-
-    // ── SMA50 ────────────────────────────────────────────────────────────────
-    if (activeIndicators.has('SMA50') && chartData.sma50?.length) {
-      const s = addS(LineSeries, {
-        color:     '#ffcc00',
-        lineWidth: 1,
-        priceScaleId: 'right',
+    if (activeIndicators.has('SMA50')) {
+      sma50Ref.current = addS(LineSeries, {
+        color: C.amberBright, lineWidth: 1, priceScaleId: 'right',
       }, 0)
-      const d: LineData[] = ohlcv
-        .map((b, i) => ({ time: toTime(b.time), value: chartData.sma50[i] }))
-        .filter((p): p is LineData => p.value != null)
-      s.setData(d)
-      sma50Ref.current = s
     }
-
-    // ── SMA200 ───────────────────────────────────────────────────────────────
-    if (activeIndicators.has('SMA200') && chartData.sma200?.length) {
-      const s = addS(LineSeries, {
-        color:     '#cc7700',
-        lineWidth: 1,
-        lineStyle: 2, // dashed
-        priceScaleId: 'right',
+    if (activeIndicators.has('SMA200')) {
+      sma200Ref.current = addS(LineSeries, {
+        color: C.amberDim, lineWidth: 1, lineStyle: 2, priceScaleId: 'right',
       }, 0)
-      const d: LineData[] = ohlcv
-        .map((b, i) => ({ time: toTime(b.time), value: chartData.sma200[i] }))
-        .filter((p): p is LineData => p.value != null)
-      s.setData(d)
-      sma200Ref.current = s
     }
-
-    // ── Bollinger Bands ───────────────────────────────────────────────────────
     if (activeIndicators.has('BB')) {
-      if (chartData.bb_upper?.length) {
-        const s = addS(LineSeries, {
-          color:     '#ff9900',
-          lineWidth: 1,
-          lineStyle: 2,
-          priceScaleId: 'right',
-        }, 0)
-        const d: LineData[] = ohlcv
-          .map((b, i) => ({ time: toTime(b.time), value: chartData.bb_upper[i] }))
-          .filter((p): p is LineData => p.value != null)
-        s.setData(d)
-        bbUpperRef.current = s
-      }
-      if (chartData.bb_mid?.length) {
-        const s = addS(LineSeries, {
-          color:     '#cc7700',
-          lineWidth: 1,
-          lineStyle: 1,
-          priceScaleId: 'right',
-        }, 0)
-        const d: LineData[] = ohlcv
-          .map((b, i) => ({ time: toTime(b.time), value: chartData.bb_mid[i] }))
-          .filter((p): p is LineData => p.value != null)
-        s.setData(d)
-        bbMidRef.current = s
-      }
-      if (chartData.bb_lower?.length) {
-        const s = addS(LineSeries, {
-          color:     '#ff9900',
-          lineWidth: 1,
-          lineStyle: 2,
-          priceScaleId: 'right',
-        }, 0)
-        const d: LineData[] = ohlcv
-          .map((b, i) => ({ time: toTime(b.time), value: chartData.bb_lower[i] }))
-          .filter((p): p is LineData => p.value != null)
-        s.setData(d)
-        bbLowerRef.current = s
-      }
+      bbUpperRef.current = addS(LineSeries, {
+        color: C.amber, lineWidth: 1, lineStyle: 2, priceScaleId: 'right',
+      }, 0)
+      bbMidRef.current = addS(LineSeries, {
+        color: C.amberDim, lineWidth: 1, lineStyle: 1, priceScaleId: 'right',
+      }, 0)
+      bbLowerRef.current = addS(LineSeries, {
+        color: C.amber, lineWidth: 1, lineStyle: 2, priceScaleId: 'right',
+      }, 0)
     }
-
-    // ── RSI ───────────────────────────────────────────────────────────────────
-    if (showRSI && chartData.rsi?.length) {
+    if (showRSI) {
       const s = addS(LineSeries, {
-        color:        '#0088ff',
-        lineWidth:    1,
-        priceScaleId: 'rsi',
+        color: C.cyanBright, lineWidth: 1, priceScaleId: 'rsi',
       }, rsiPane)
-      s.priceScale().applyOptions({
-        scaleMargins: { top: 0.1, bottom: 0.1 },
-      })
-      const d: LineData[] = ohlcv
-        .map((b, i) => ({ time: toTime(b.time), value: chartData.rsi[i] }))
-        .filter((p): p is LineData => p.value != null)
-      s.setData(d)
+      s.priceScale().applyOptions({ scaleMargins: { top: 0.1, bottom: 0.1 } })
       rsiSeriesRef.current = s
     }
-
-    // ── MACD ──────────────────────────────────────────────────────────────────
     if (showMACD) {
-      if (chartData.macd_line?.length) {
-        const s = addS(LineSeries, {
-          color:        '#ff9900',
-          lineWidth:    1,
-          priceScaleId: 'macd',
-        }, macdPane)
-        s.priceScale().applyOptions({
-          scaleMargins: { top: 0.1, bottom: 0.1 },
-        })
-        const d: LineData[] = ohlcv
-          .map((b, i) => ({ time: toTime(b.time), value: chartData.macd_line[i] }))
-          .filter((p): p is LineData => p.value != null)
-        s.setData(d)
-        macdLineRef.current = s
-      }
-      if (chartData.macd_signal?.length) {
-        const s = addS(LineSeries, {
-          color:        '#ffcc00',
-          lineWidth:    1,
-          priceScaleId: 'macd',
-        }, macdPane)
-        const d: LineData[] = ohlcv
-          .map((b, i) => ({ time: toTime(b.time), value: chartData.macd_signal[i] }))
-          .filter((p): p is LineData => p.value != null)
-        s.setData(d)
-        macdSignalRef.current = s
-      }
-      if (chartData.macd_hist?.length) {
-        const s = addS(HistogramSeries, {
-          priceScaleId: 'macd',
-          color:        '#554400',
-        }, macdPane)
-        const d: HistogramData[] = ohlcv
-          .map((b, i) => {
-            const v = chartData.macd_hist[i]
-            if (v == null) return null
-            return {
-              time:  toTime(b.time),
-              value: v,
-              color: v >= 0 ? 'rgba(0,255,65,0.5)' : 'rgba(255,51,51,0.5)',
-            } as HistogramData
-          })
-          .filter((p): p is HistogramData => p !== null)
-        s.setData(d)
-        macdHistRef.current = s
+      const s = addS(LineSeries, {
+        color: C.amber, lineWidth: 1, priceScaleId: 'macd',
+      }, macdPane)
+      s.priceScale().applyOptions({ scaleMargins: { top: 0.1, bottom: 0.1 } })
+      macdLineRef.current = s
+
+      macdSignalRef.current = addS(LineSeries, {
+        color: C.amberBright, lineWidth: 1, priceScaleId: 'macd',
+      }, macdPane)
+
+      macdHistRef.current = addS(HistogramSeries, {
+        priceScaleId: 'macd', color: C.amberMute,
+      }, macdPane)
+    }
+  }, [chartType, indicatorsKey])
+
+  // ── Data effect: push data into existing series, manage visible range
+  useEffect(() => {
+    const chart = chartRef.current
+    if (!chart || !chartData) return
+    const ohlcv = displayBars
+    if (ohlcv.length === 0) return
+
+    const origLen = chartData.ohlcv?.length ?? 0
+    const offset = Math.max(0, ohlcv.length - origLen)
+
+    const isFirstArrival = !didFitRef.current
+
+    const prevRange = chart.timeScale().getVisibleLogicalRange()
+    const prevLen = prevBarsLenRef.current
+    const newFirstTime = ohlcv[0]?.time ?? null
+    const oldFirstTime = firstBarTimeRef.current
+    const delta = ohlcv.length - prevLen
+    const wasPrepended =
+      oldFirstTime !== null &&
+      newFirstTime !== oldFirstTime &&
+      delta > 0
+    firstBarTimeRef.current = newFirstTime
+    prevBarsLenRef.current = ohlcv.length
+
+    const toTime = (t: string | number): Time => {
+      if (typeof t === 'number') return t as UTCTimestamp
+      const [year, month, day] = t.split('-').map(Number)
+      return { year, month, day } as BusinessDay
+    }
+
+    const mainSeries = mainSeriesRef.current
+    if (mainSeries) {
+      if (chartType === 'CANDLE') {
+        const data: CandlestickData[] = ohlcv.map(b => ({
+          time: toTime(b.time), open: b.open, high: b.high, low: b.low, close: b.close,
+        }))
+        mainSeries.setData(data)
+      } else {
+        const data: LineData[] = ohlcv.map(b => ({ time: toTime(b.time), value: b.close }))
+        mainSeries.setData(data as any)
       }
     }
 
-    // ── Fit content ──────────────────────────────────────────────────────────
-    chart.timeScale().fitContent()
+    const lastBar = ohlcv[ohlcv.length - 1]
+    if (lastBar) {
+      const t = toTime(lastBar.time)
+      lastBarTimeRef.current = typeof t === 'number' ? t : (Date.UTC((t as any).year, (t as any).month - 1, (t as any).day, 0, 0, 0) / 1000)
+    }
 
-    // ── Crosshair subscription ────────────────────────────────────────────────
+    const updateLineSeries = (
+      ref: React.MutableRefObject<AnySeries>,
+      values: (number | null)[] | undefined,
+    ) => {
+      if (!ref.current || !values?.length) return
+      const d: LineData[] = values
+        .map((v, i) => v == null ? null : { time: toTime(ohlcv[offset + i].time), value: v })
+        .filter((p): p is LineData => p !== null)
+      ref.current.setData(d as any)
+    }
+
+    updateLineSeries(sma20Ref, chartData.sma20)
+    updateLineSeries(sma50Ref, chartData.sma50)
+    updateLineSeries(sma200Ref, chartData.sma200)
+    updateLineSeries(bbUpperRef, chartData.bb_upper)
+    updateLineSeries(bbMidRef, chartData.bb_mid)
+    updateLineSeries(bbLowerRef, chartData.bb_lower)
+
+    if (activeIndicators.has('RSI')) updateLineSeries(rsiSeriesRef, chartData.rsi)
+    if (activeIndicators.has('MACD')) {
+      updateLineSeries(macdLineRef, chartData.macd_line)
+      updateLineSeries(macdSignalRef, chartData.macd_signal)
+      if (macdHistRef.current && chartData.macd_hist?.length) {
+        const d: HistogramData[] = (chartData.macd_hist ?? [])
+          .map((v, i) => {
+            if (v == null) return null
+            return { time: toTime(ohlcv[offset + i].time), value: v, color: v >= 0 ? 'rgba(0,255,65,0.5)' : 'rgba(255,51,51,0.5)' } as HistogramData
+          })
+          .filter((p): p is HistogramData => p !== null)
+        macdHistRef.current.setData(d as any)
+      }
+    }
+
+    suppressRangeHandlerRef.current = true
+    if (isFirstArrival) {
+      didFitRef.current = true
+      chart.timeScale().fitContent()
+    } else if (prevRange && wasPrepended) {
+      chart.timeScale().setVisibleLogicalRange({
+        from: prevRange.from + delta,
+        to: prevRange.to + delta,
+      })
+    } else if (prevRange) {
+      chart.timeScale().setVisibleLogicalRange(prevRange)
+    }
+    // Clear the suppression after the event loop has dispatched the
+    // resulting visibleLogicalRangeChange so we don't re-trigger loadOlder.
+    requestAnimationFrame(() => {
+      suppressRangeHandlerRef.current = false
+    })
+  }, [displayBars, chartData, chartType, activeIndicators])
+
+  // ── Crosshair subscription (separate so it survives data updates) ───────────
+  useEffect(() => {
+    const chart = chartRef.current
+    if (!chart) return
+
     const handleCrosshair = (param: MouseEventParams) => {
       if (!param.time || !mainSeriesRef.current) {
-        setCrosshairOhlcv({ open: null, high: null, low: null, close: null, volume: null })
+        const bars = accumulatedOhlcv.length > 0 ? accumulatedOhlcv : (chartData?.ohlcv ?? [])
+        const last = bars[bars.length - 1]
+        if (last) {
+          setCrosshairOhlcv({
+            open: last.open, high: last.high, low: last.low, close: last.close, volume: last.volume,
+          })
+        } else {
+          setCrosshairOhlcv({ open: null, high: null, low: null, close: null, volume: null })
+        }
         return
       }
 
-      // Find matching bar by time
-      const idx = ohlcv.findIndex(b => toTime(b.time) === param.time)
+      const ohlcv = accumulatedOhlcv.length > 0 ? accumulatedOhlcv : (chartData?.ohlcv ?? [])
+      const toTime = (t: string | number): Time => {
+        if (typeof t === 'number') return t as UTCTimestamp
+        const [year, month, day] = t.split('-').map(Number)
+        return { year, month, day } as BusinessDay
+      }
+
+      const idx = ohlcv.findIndex(b => JSON.stringify(toTime(b.time)) === JSON.stringify(param.time))
       if (idx === -1) {
         setCrosshairOhlcv({ open: null, high: null, low: null, close: null, volume: null })
         return
       }
       const bar = ohlcv[idx]
       setCrosshairOhlcv({
-        open:   bar.open,
-        high:   bar.high,
-        low:    bar.low,
-        close:  bar.close,
-        volume: bar.volume,
+        open: bar.open, high: bar.high, low: bar.low, close: bar.close, volume: bar.volume,
       })
     }
 
     chart.subscribeCrosshairMove(handleCrosshair)
-
-    return () => {
-      chart.unsubscribeCrosshairMove(handleCrosshair)
-    }
-  }, [chartData, chartType, activeIndicators])
+    return () => { chart.unsubscribeCrosshairMove(handleCrosshair) }
+  }, [chartData, accumulatedOhlcv])
 
   return (
     <div
@@ -685,7 +854,7 @@ const ChartScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        background: '#000',
+        background: C.surface0,
         overflow: 'hidden',
       }}
     >
@@ -693,31 +862,31 @@ const ChartScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
       <LoadingBar loading={isLoading} />
 
       {/* Toolbar */}
-      <div style={{ flexShrink: 0, background: '#0d0d0d', borderBottom: '1px solid #2a2a2a' }}>
+      <div style={{ flexShrink: 0, background: C.surface1, borderBottom: `1px solid ${C.border1}` }}>
         {/* Row 1: ticker + period tabs + chart type */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '4px 8px', height: 32 }}>
-          <span style={{ color: '#ff9900', fontSize: 13, fontWeight: 700, marginRight: 8, letterSpacing: '0.05em' }}>
+          <span style={{ color: C.amber, fontSize: 13, fontWeight: 700, marginRight: 8, letterSpacing: '0.05em' }}>
             {ticker}
           </span>
-          <span style={{ color: '#2a2a2a', fontSize: 11, margin: '0 6px' }}>|</span>
+          <span style={{ color: C.border1, fontSize: 11, margin: '0 6px' }}>|</span>
           {PERIODS.map(p => (
             <button key={p} style={p === activePeriod ? TAB_ACTIVE : TAB_INACTIVE} onClick={() => setActivePeriod(p)}>
               {p}
             </button>
           ))}
-          <span style={{ color: '#2a2a2a', fontSize: 11, margin: '0 6px' }}>|</span>
+          <span style={{ color: C.border1, fontSize: 11, margin: '0 6px' }}>|</span>
           {CHART_TYPES.map(t => (
             <button key={t} style={t === chartType ? TAB_ACTIVE : TAB_INACTIVE} onClick={() => setChartType(t)}>
               {t}
             </button>
           ))}
-          <span style={{ marginLeft: 'auto', color: '#2a2a2a', fontSize: 10 }}>
+          <span style={{ marginLeft: 'auto', color: C.border1, fontSize: 10 }}>
             {period.toUpperCase()} · {interval}{chartData?.ohlcv?.length ? ` · ${chartData.ohlcv.length}` : ''}
           </span>
         </div>
         {/* Row 2: indicators */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '2px 8px 4px', height: 24 }}>
-          <span style={{ color: '#2a2a2a', fontSize: 9, letterSpacing: '0.06em', marginRight: 6 }}>INDICATORS</span>
+          <span style={{ color: C.border1, fontSize: 9, letterSpacing: '0.06em', marginRight: 6 }}>INDICATORS</span>
           {INDICATORS.map(ind => (
             <button
               key={ind}
@@ -737,6 +906,9 @@ const ChartScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
           position: 'relative',
           overflow: 'hidden',
           minHeight: 0,
+          margin: '0 4px 4px',
+          border: `1px solid ${C.border0}`,
+          borderRadius: '4px',
         }}
       >
         {/* Error overlay */}
@@ -749,8 +921,8 @@ const ChartScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
               alignItems: 'center',
               justifyContent: 'center',
               zIndex: 20,
-              background: 'rgba(0,0,0,0.8)',
-              color: '#ff3333',
+              background: `${C.surface0}CC`,
+              color: C.red,
               fontSize: '13px',
             }}
           >
@@ -765,7 +937,7 @@ const ChartScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
               position: 'absolute',
               inset: 0,
               zIndex: 15,
-              background: '#000',
+              background: C.surface0,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -773,11 +945,11 @@ const ChartScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
               gap: '8px',
             }}
           >
-            <span style={{ color: '#ff9900', fontSize: '12px', opacity: 0.6 }}>
+            <span style={{ color: C.amber, fontSize: '12px', opacity: 0.6 }}>
               LOADING {ticker} · {period.toUpperCase()} · {interval}
             </span>
-            <div className="bb-loading-bg" style={{ width: '200px' }}>
-              <div className="bb-loading-bar" />
+            <div style={{ width: '200px', height: '4px', background: C.surface1, borderRadius: '2px', overflow: 'hidden' }}>
+              <div style={{ width: '40%', height: '100%', background: C.amber, borderRadius: '2px', animation: 'pulse 1.5s ease-in-out infinite' }} />
             </div>
           </div>
         )}
@@ -785,8 +957,36 @@ const ChartScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
         {/* Crosshair OHLCV overlay */}
         <OhlcvOverlay {...crosshairOhlcv} />
 
+        {/* Historical loading indicator */}
+        {isLoadingOlder && (
+          <div style={{
+            position: 'absolute', bottom: 32, left: '50%', transform: 'translateX(-50%)',
+            zIndex: 12, background: C.glass, backdropFilter: 'blur(8px)',
+            border: `1px solid ${C.glassBorder}`, borderRadius: '4px', padding: '4px 12px',
+            fontSize: '10px', color: C.amber, letterSpacing: '0.05em', pointerEvents: 'none',
+          }}>
+            LOADING OLDER BARS...
+          </div>
+        )}
+
+        {/* No more data indicator */}
+        {!hasMore && !isLoadingOlder && (
+          <div style={{
+            position: 'absolute', bottom: 32, left: 8,
+            zIndex: 12, fontSize: '9px', color: C.amberMute, letterSpacing: '0.05em',
+          }}>
+            EARLIEST DATA AVAILABLE
+          </div>
+        )}
+
         {/* Price stats overlay (top-right) */}
         <PriceSidebar stats={chartStats} crosshair={crosshairOhlcv} period={activePeriod} livePrice={livePriceData ?? undefined} />
+
+        {/* Extended-hours badge */}
+        <ExtendedHoursBadge marketState={livePriceData?.market_state} />
+
+        {/* Session shading overlay for extended hours */}
+        <SessionShading chart={chartRef.current} ohlcv={accumulatedOhlcv.length > 0 ? accumulatedOhlcv : (chartData?.ohlcv ?? [])} interval={interval} />
 
         {/* Lightweight-charts mount point */}
         <div

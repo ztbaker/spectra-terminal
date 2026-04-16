@@ -1,3 +1,4 @@
+import Panel from '../Terminal/Panel'
 import React, { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchEquity, fetchChart } from '../../lib/api'
@@ -6,6 +7,7 @@ import { usePriceFlash } from '../../lib/usePriceFlash'
 import LoadingBar from '../shared/LoadingBar'
 import TickerBadge from '../shared/TickerBadge'
 import Sparkline from '../shared/Sparkline'
+import C from '../../lib/colors'
 
 // ─── Formatting helpers ───────────────────────────────────────────────────────
 
@@ -47,13 +49,13 @@ const RangeBar: React.FC<RangeBarProps> = ({ low, high, current, label }) => {
     <div style={{ marginBottom: '10px' }}>
       <div
         className="bb-range-bar"
-        style={{ position: 'relative', height: '4px', background: '#2a2a2a', borderRadius: '2px' }}
+        style={{ position: 'relative', height: '4px', background: C.border1, borderRadius: '2px' }}
       >
         {pct != null && (
           <>
             <div
               className="bb-range-fill"
-              style={{ width: `${pct}%`, background: '#ff9900', height: '100%', position: 'absolute', left: 0, top: 0 }}
+              style={{ width: `${pct}%`, background: C.amber, height: '100%', position: 'absolute', left: 0, top: 0 }}
             />
             <div
               className="bb-range-dot"
@@ -63,7 +65,7 @@ const RangeBar: React.FC<RangeBarProps> = ({ low, high, current, label }) => {
                 top: '-2px',
                 width: '8px',
                 height: '8px',
-                background: '#ffcc00',
+                background: C.amberBright,
                 borderRadius: '50%',
                 transform: 'translateX(-50%)',
               }}
@@ -73,10 +75,10 @@ const RangeBar: React.FC<RangeBarProps> = ({ low, high, current, label }) => {
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '3px' }}>
         <span className="bb-label">{label}:</span>
-        <span style={{ color: '#cc7700', fontSize: '11px' }}>
-          <span style={{ color: '#e0e0e0' }}>{formatPrice(low)}</span>
-          <span style={{ color: '#554400', margin: '0 6px' }}>──●──</span>
-          <span style={{ color: '#e0e0e0' }}>{formatPrice(high)}</span>
+        <span style={{ color: C.amberDim, fontSize: '11px' }}>
+          <span style={{ color: C.white }}>{formatPrice(low)}</span>
+          <span style={{ color: C.amberMute, margin: '0 6px' }}>──●──</span>
+          <span style={{ color: C.white }}>{formatPrice(high)}</span>
         </span>
       </div>
     </div>
@@ -94,22 +96,22 @@ const VolumeBar: React.FC<VolumeBarProps> = ({ volume, avgVolume }) => {
       ? Math.min(150, (volume / avgVolume) * 100)
       : null
 
-  const color = pct != null && pct >= 100 ? '#ff9900' : '#cc7700'
+  const color = pct != null && pct >= 100 ? C.amber : C.amberDim
 
   return (
     <div style={{ marginBottom: '10px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
         <span className="bb-label">VOLUME</span>
         <span className="bb-label">
-          <span style={{ color: '#e0e0e0' }}>{formatLarge(volume)}</span>
-          <span style={{ color: '#554400' }}> / avg </span>
-          <span style={{ color: '#e0e0e0' }}>{formatLarge(avgVolume)}</span>
+          <span style={{ color: C.white }}>{formatLarge(volume)}</span>
+          <span style={{ color: C.amberMute }}> / avg </span>
+          <span style={{ color: C.white }}>{formatLarge(avgVolume)}</span>
           {pct != null && (
             <span style={{ color: color, marginLeft: '6px' }}>({pct.toFixed(0)}%)</span>
           )}
         </span>
       </div>
-      <div style={{ height: '4px', background: '#2a2a2a', position: 'relative', borderRadius: '2px' }}>
+      <div style={{ height: '4px', background: C.border1, position: 'relative', borderRadius: '2px' }}>
         {pct != null && (
           <div
             style={{
@@ -129,11 +131,13 @@ const VolumeBar: React.FC<VolumeBarProps> = ({ volume, avgVolume }) => {
 
 // ─── Skeleton loader ──────────────────────────────────────────────────────────
 
+const SKELETON_WIDTHS = [8, 12, 6, 10, 8, 14, 6, 12]
+
 const SkeletonRows: React.FC = () => (
-  <div style={{ padding: '12px', color: '#ff9900', opacity: 0.4 }}>
+  <div style={{ padding: '12px', color: C.amber, opacity: 0.4 }}>
     {Array.from({ length: 8 }).map((_, i) => (
       <div key={i} style={{ marginBottom: '8px', fontSize: '13px' }}>
-        {'██████'.repeat(Math.floor(Math.random() * 3) + 2)}
+        {'█'.repeat(SKELETON_WIDTHS[i % SKELETON_WIDTHS.length])}
       </div>
     ))}
   </div>
@@ -195,13 +199,13 @@ const EquityScreen: React.FC<Props> = ({ ticker, onNavigate }) => {
   ]
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#000' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: C.surface0 }}>
       {/* Loading bar */}
       <LoadingBar loading={isLoading} />
 
       {/* Error */}
       {error && !isLoading && (
-        <div style={{ padding: '12px', color: '#ff3333', fontSize: '12px', borderBottom: '1px solid #2a2a2a' }}>
+        <div style={{ padding: '12px', color: C.red, fontSize: '12px', borderBottom: `1px solid ${C.border1}` }}>
           ERR: {(error as Error).message ?? 'Failed to load equity data'}
         </div>
       )}
@@ -215,7 +219,7 @@ const EquityScreen: React.FC<Props> = ({ ticker, onNavigate }) => {
             title={`EQUITY — ${ticker}`}
             actions={
               equity?.exchange
-                ? <span style={{ color: '#cc7700', fontSize: '11px' }}>{equity.exchange}</span>
+                ? <span style={{ color: C.amberDim, fontSize: '11px' }}>{equity.exchange}</span>
                 : undefined
             }
           >
@@ -227,11 +231,11 @@ const EquityScreen: React.FC<Props> = ({ ticker, onNavigate }) => {
                 {/* ── Ticker + Company Name ── */}
                 <div style={{ marginBottom: '14px' }}>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
-                    <span style={{ fontSize: '24px', color: '#ff9900', fontWeight: 700, letterSpacing: '0.05em' }}>
+                    <span style={{ fontSize: '24px', color: C.amber, fontWeight: 700, letterSpacing: '0.05em' }}>
                       {ticker}
                     </span>
                     {equity?.company_name && (
-                      <span style={{ fontSize: '14px', color: '#cc7700' }}>
+                      <span style={{ fontSize: '14px', color: C.amberDim }}>
                         {equity.company_name}
                       </span>
                     )}
@@ -240,13 +244,13 @@ const EquityScreen: React.FC<Props> = ({ ticker, onNavigate }) => {
 
                 {/* ── Price Block ── */}
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginBottom: '10px' }}>
-                  <span style={{ fontSize: '32px', color: '#e0e0e0', fontWeight: 500, ...priceFlashStyle }}>
+                  <span style={{ fontSize: '32px', color: C.white, fontWeight: 500, ...priceFlashStyle }}>
                     {formatPrice(livePrice)}
                   </span>
                   <TickerBadge value={liveChange ?? null} decimals={2} />
                   <TickerBadge value={liveChangePct ?? null} pct decimals={2} />
                   {equity?.currency && (
-                    <span style={{ fontSize: '12px', color: '#554400' }}>{equity.currency}</span>
+                    <span style={{ fontSize: '12px', color: C.amberMute }}>{equity.currency}</span>
                   )}
                 </div>
 
@@ -257,15 +261,15 @@ const EquityScreen: React.FC<Props> = ({ ticker, onNavigate }) => {
                     gap: '24px',
                     marginBottom: '14px',
                     padding: '6px 8px',
-                    background: '#0d0d0d',
-                    border: '1px solid #2a2a2a',
+                    background: C.surface1,
+                    border: `1px solid ${C.border1}`,
                   }}
                 >
                   <div>
                     <span className="bb-label">BID </span>
                     <span className="bb-value">{formatPrice(liveBid)}</span>
                   </div>
-                  <span style={{ color: '#2a2a2a' }}>×</span>
+                  <span style={{ color: C.border1 }}>×</span>
                   <div>
                     <span className="bb-label">ASK </span>
                     <span className="bb-value">{formatPrice(liveAsk)}</span>
@@ -273,7 +277,7 @@ const EquityScreen: React.FC<Props> = ({ ticker, onNavigate }) => {
                   {liveBid != null && liveAsk != null && (
                     <div style={{ marginLeft: 'auto' }}>
                       <span className="bb-label">SPREAD </span>
-                      <span style={{ color: '#ffcc00', fontSize: '12px' }}>
+                      <span style={{ color: C.amberBright, fontSize: '12px' }}>
                         {formatPrice(liveAsk - liveBid, 3)}
                       </span>
                     </div>
@@ -296,7 +300,7 @@ const EquityScreen: React.FC<Props> = ({ ticker, onNavigate }) => {
                 <VolumeBar volume={liveVolume ?? null} avgVolume={equity?.avg_volume ?? null} />
 
                 {/* ── Separator ── */}
-                <div style={{ height: '1px', background: '#2a2a2a', margin: '12px 0' }} />
+                <div style={{ height: '1px', background: C.border1, margin: '12px 0' }} />
 
                 {/* ── Key Stats Grid ── */}
                 <div
@@ -304,7 +308,7 @@ const EquityScreen: React.FC<Props> = ({ ticker, onNavigate }) => {
                     display: 'grid',
                     gridTemplateColumns: 'repeat(4, 1fr)',
                     gap: '0',
-                    border: '1px solid #2a2a2a',
+                    border: `1px solid ${C.border1}`,
                     marginBottom: '14px',
                   }}
                 >
@@ -322,15 +326,15 @@ const EquityScreen: React.FC<Props> = ({ ticker, onNavigate }) => {
                       key={idx}
                       style={{
                         padding: '6px 8px',
-                        borderRight: idx % 4 !== 3 ? '1px solid #2a2a2a' : undefined,
-                        borderBottom: idx < 4 ? '1px solid #2a2a2a' : undefined,
-                        background: Math.floor(idx / 4) % 2 === 1 ? '#0a0800' : 'transparent',
+                        borderRight: idx % 4 !== 3 ? `1px solid ${C.border1}` : undefined,
+                        borderBottom: idx < 4 ? `1px solid ${C.border1}` : undefined,
+                        background: Math.floor(idx / 4) % 2 === 1 ? C.surfaceGlow : 'transparent',
                       }}
                     >
                       <div className="bb-label" style={{ fontSize: '10px', marginBottom: '2px' }}>
                         {item.label}
                       </div>
-                      <div style={{ color: '#e0e0e0', fontSize: '12px' }}>{item.value}</div>
+                      <div style={{ color: C.white, fontSize: '12px' }}>{item.value}</div>
                     </div>
                   ))}
 
@@ -338,32 +342,32 @@ const EquityScreen: React.FC<Props> = ({ ticker, onNavigate }) => {
                   <div
                     style={{
                       padding: '6px 8px',
-                      borderRight: '1px solid #2a2a2a',
-                      borderTop: '1px solid #2a2a2a',
+                      borderRight: `1px solid ${C.border1}`,
+                      borderTop: `1px solid ${C.border1}`,
                     }}
                   >
                     <div className="bb-label" style={{ fontSize: '10px', marginBottom: '2px' }}>SECTOR</div>
-                    <div style={{ color: '#e0e0e0', fontSize: '11px' }}>{equity?.sector ?? '—'}</div>
+                    <div style={{ color: C.white, fontSize: '11px' }}>{equity?.sector ?? '—'}</div>
                   </div>
                   <div
                     style={{
                       gridColumn: 'span 2',
                       padding: '6px 8px',
-                      borderRight: '1px solid #2a2a2a',
-                      borderTop: '1px solid #2a2a2a',
+                      borderRight: `1px solid ${C.border1}`,
+                      borderTop: `1px solid ${C.border1}`,
                     }}
                   >
                     <div className="bb-label" style={{ fontSize: '10px', marginBottom: '2px' }}>INDUSTRY</div>
-                    <div style={{ color: '#e0e0e0', fontSize: '11px' }}>{equity?.industry ?? '—'}</div>
+                    <div style={{ color: C.white, fontSize: '11px' }}>{equity?.industry ?? '—'}</div>
                   </div>
                   <div
                     style={{
                       padding: '6px 8px',
-                      borderTop: '1px solid #2a2a2a',
+                      borderTop: `1px solid ${C.border1}`,
                     }}
                   >
                     <div className="bb-label" style={{ fontSize: '10px', marginBottom: '2px' }}>CURRENCY</div>
-                    <div style={{ color: '#e0e0e0', fontSize: '12px' }}>{equity?.currency ?? '—'}</div>
+                    <div style={{ color: C.white, fontSize: '12px' }}>{equity?.currency ?? '—'}</div>
                   </div>
                 </div>
 
@@ -371,15 +375,15 @@ const EquityScreen: React.FC<Props> = ({ ticker, onNavigate }) => {
                 {equity?.description && (
                   <div
                     style={{
-                      border: '1px solid #2a2a2a',
+                      border: `1px solid ${C.border1}`,
                       padding: '8px',
-                      background: '#0d0d0d',
+                      background: C.surface1,
                     }}
                   >
                     <div className="bb-label" style={{ marginBottom: '4px' }}>DESCRIPTION</div>
                     <p
                       style={{
-                        color: '#e0e0e0',
+                        color: C.white,
                         fontSize: '11px',
                         lineHeight: '1.5',
                         display: '-webkit-box',
@@ -417,9 +421,9 @@ const EquityScreen: React.FC<Props> = ({ ticker, onNavigate }) => {
                     data={sparklineData}
                     width={260}
                     height={80}
-                    color={isPositive ? '#00ff41' : '#ff3333'}
+                    color={isPositive ? C.green : C.red}
                   />
-                  <div style={{ marginTop: '4px', fontSize: '10px', color: '#554400' }}>
+                  <div style={{ marginTop: '4px', fontSize: '10px', color: C.amberMute }}>
                     {sparklineData.length} bars · 15m interval
                   </div>
                 </div>
@@ -430,8 +434,8 @@ const EquityScreen: React.FC<Props> = ({ ticker, onNavigate }) => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    border: '1px dashed #2a2a2a',
-                    color: '#554400',
+                    border: `1px dashed ${C.border1}`,
+                    color: C.amberMute,
                     fontSize: '12px',
                   }}
                 >
@@ -466,8 +470,8 @@ const EquityScreen: React.FC<Props> = ({ ticker, onNavigate }) => {
                   style={{
                     padding: '6px 0',
                     fontSize: '12px',
-                    border: '1px solid #ff9900',
-                    color: '#ff9900',
+                    border: `1px solid ${C.amber}`,
+                    color: C.amber,
                     textAlign: 'center',
                     letterSpacing: '0.08em',
                   }}
@@ -491,8 +495,8 @@ const EquityScreen: React.FC<Props> = ({ ticker, onNavigate }) => {
                     { label: 'DAY LOW',    value: formatPrice(equity?.day_low) },
                   ].map(({ label, value }) => (
                     <tr key={label}>
-                      <td style={{ color: '#ff9900', fontSize: '11px', padding: '4px 8px' }}>{label}</td>
-                      <td style={{ textAlign: 'right', color: '#e0e0e0', fontSize: '12px', padding: '4px 8px' }}>
+                      <td style={{ color: C.amber, fontSize: '11px', padding: '4px 8px' }}>{label}</td>
+                      <td style={{ textAlign: 'right', color: C.white, fontSize: '12px', padding: '4px 8px' }}>
                         {value}
                       </td>
                     </tr>
@@ -517,8 +521,8 @@ const EquityScreen: React.FC<Props> = ({ ticker, onNavigate }) => {
                     { label: '52W LOW',    value: formatPrice(equity?.low_52w) },
                   ].map(({ label, value }) => (
                     <tr key={label}>
-                      <td style={{ color: '#ff9900', fontSize: '11px', padding: '3px 8px' }}>{label}</td>
-                      <td style={{ textAlign: 'right', color: '#e0e0e0', fontSize: '12px', padding: '3px 8px' }}>
+                      <td style={{ color: C.amber, fontSize: '11px', padding: '3px 8px' }}>{label}</td>
+                      <td style={{ textAlign: 'right', color: C.white, fontSize: '12px', padding: '3px 8px' }}>
                         {value}
                       </td>
                     </tr>

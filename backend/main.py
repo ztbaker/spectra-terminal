@@ -25,6 +25,13 @@ from routers import (
     macro,
     indices,
     ecst,
+    etf,
+    fixedincome,
+    commodity,
+    congress,
+    analytics,
+    ai,
+    fa,
 )
 
 
@@ -35,7 +42,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="BakerTerminal API",
+    title="SpectraTerminal API",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -48,21 +55,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(equity.router,    prefix="/api")
-app.include_router(chart.router,     prefix="/api")
-app.include_router(options.router,   prefix="/api")
-app.include_router(news.router,      prefix="/api")
-app.include_router(econ.router,      prefix="/api")
+app.include_router(equity.router, prefix="/api")
+app.include_router(chart.router, prefix="/api")
+app.include_router(options.router, prefix="/api")
+app.include_router(news.router, prefix="/api")
+app.include_router(econ.router, prefix="/api")
 app.include_router(portfolio.router, prefix="/api")
 app.include_router(watchlist.router, prefix="/api")
-app.include_router(earnings.router,  prefix="/api")
-app.include_router(screener.router,  prefix="/api")
-app.include_router(fx.router,        prefix="/api")
-app.include_router(crypto.router,    prefix="/api")
-app.include_router(filings.router,   prefix="/api")
-app.include_router(macro.router,     prefix="/api")
-app.include_router(indices.router,   prefix="/api")
-app.include_router(ecst.router,      prefix="/api")
+app.include_router(earnings.router, prefix="/api")
+app.include_router(screener.router, prefix="/api")
+app.include_router(fx.router, prefix="/api")
+app.include_router(crypto.router, prefix="/api")
+app.include_router(filings.router, prefix="/api")
+app.include_router(macro.router, prefix="/api")
+app.include_router(indices.router, prefix="/api")
+app.include_router(ecst.router, prefix="/api")
+app.include_router(etf.router, prefix="/api")
+app.include_router(fixedincome.router, prefix="/api")
+app.include_router(commodity.router, prefix="/api")
+app.include_router(congress.router, prefix="/api")
+app.include_router(analytics.router, prefix="/api")
+app.include_router(ai.router, prefix="/api")
+app.include_router(fa.router, prefix="/api")
 
 
 @app.get("/health")
@@ -70,8 +84,36 @@ async def health():
     return {"status": "ok"}
 
 
+@app.get("/health/providers")
+async def health_providers():
+    from providers import get_provider
+
+    provider_names = [
+        "yfinance",
+        "finnhub",
+        "fred",
+        "edgar",
+        "ecb",
+        "bls",
+        "eia",
+        "usda",
+        "cboe",
+        "finra",
+        "treasury",
+        "congress",
+        "stooq",
+    ]
+    providers_status = {}
+    for name in provider_names:
+        provider = get_provider(name)
+        providers_status[name] = "registered" if provider else "missing"
+    return {"providers": providers_status}
+
+
 # ─── Serve built React frontend (Electron / standalone mode) ──────────────────
-_DIST = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend", "dist")
+_DIST = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "frontend", "dist"
+)
 
 if os.path.isdir(_DIST):
     _ASSETS = os.path.join(_DIST, "assets")

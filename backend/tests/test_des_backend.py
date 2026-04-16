@@ -120,7 +120,7 @@ def client(temp_db):
 
 def test_equity_new_fields_present(client):
     """GET /api/equity/AAPL returns all new DES fields when yfinance has them."""
-    with patch("routers.equity.get_ticker_info", new=AsyncMock(return_value=FAKE_INFO)):
+    with patch("providers.yfinance_provider.YFinanceProvider.get_ticker_info_raw", new=AsyncMock(return_value=FAKE_INFO)):
         resp = client.get("/api/equity/AAPL")
     assert resp.status_code == 200
     data = resp.json()
@@ -144,7 +144,7 @@ def test_equity_new_fields_null_when_missing(client):
         "currentPrice": 10.0,
         "previousClose": 9.5,
     }
-    with patch("routers.equity.get_ticker_info", new=AsyncMock(return_value=sparse_info)):
+    with patch("providers.yfinance_provider.YFinanceProvider.get_ticker_info_raw", new=AsyncMock(return_value=sparse_info)):
         resp = client.get("/api/equity/SPARSE")
     assert resp.status_code == 200
     data = resp.json()
@@ -159,7 +159,7 @@ def test_equity_ceo_no_match_returns_none(client):
     info = dict(FAKE_INFO, companyOfficers=[
         {"name": "Someone", "title": "Chief Financial Officer"}
     ])
-    with patch("routers.equity.get_ticker_info", new=AsyncMock(return_value=info)):
+    with patch("providers.yfinance_provider.YFinanceProvider.get_ticker_info_raw", new=AsyncMock(return_value=info)):
         resp = client.get("/api/equity/AAPL")
     assert resp.status_code == 200
     assert resp.json()["ceo"] is None
@@ -168,14 +168,14 @@ def test_equity_ceo_no_match_returns_none(client):
 def test_equity_address_partial(client):
     """address field skips null address parts."""
     info = dict(FAKE_INFO, address1=None, city="Cupertino", state="CA")
-    with patch("routers.equity.get_ticker_info", new=AsyncMock(return_value=info)):
+    with patch("providers.yfinance_provider.YFinanceProvider.get_ticker_info_raw", new=AsyncMock(return_value=info)):
         resp = client.get("/api/equity/AAPL")
     assert resp.json()["address"] == "Cupertino, CA"
 
 
 def test_financials_endpoint_returns_data(client):
     """GET /api/equity/AAPL/financials returns all financial fields."""
-    with patch("routers.equity.get_ticker_info", new=AsyncMock(return_value=FAKE_INFO)):
+    with patch("providers.yfinance_provider.YFinanceProvider.get_ticker_info_raw", new=AsyncMock(return_value=FAKE_INFO)):
         resp = client.get("/api/equity/AAPL/financials")
     assert resp.status_code == 200
     data = resp.json()
@@ -195,7 +195,7 @@ def test_financials_endpoint_returns_data(client):
 def test_financials_endpoint_null_fields(client):
     """Financials fields are null (not omitted) when yfinance doesn't have them."""
     sparse_info = {"longName": "Sparse Corp", "currentPrice": 10.0}
-    with patch("routers.equity.get_ticker_info", new=AsyncMock(return_value=sparse_info)):
+    with patch("providers.yfinance_provider.YFinanceProvider.get_ticker_info_raw", new=AsyncMock(return_value=sparse_info)):
         resp = client.get("/api/equity/SPARSE/financials")
     assert resp.status_code == 200
     data = resp.json()
@@ -205,7 +205,7 @@ def test_financials_endpoint_null_fields(client):
 
 def test_financials_endpoint_uses_cache(client):
     """Second call to /financials does not call get_ticker_info again (cache hit)."""
-    with patch("routers.equity.get_ticker_info", new=AsyncMock(return_value=FAKE_INFO)) as mock:
+    with patch("providers.yfinance_provider.YFinanceProvider.get_ticker_info_raw", new=AsyncMock(return_value=FAKE_INFO)) as mock:
         resp1 = client.get("/api/equity/AAPL/financials")
         resp2 = client.get("/api/equity/AAPL/financials")
     assert mock.call_count == 1
@@ -214,13 +214,13 @@ def test_financials_endpoint_uses_cache(client):
 
 def test_financials_endpoint_404_on_empty_info(client):
     """Returns 404 when yfinance returns empty info."""
-    with patch("routers.equity.get_ticker_info", new=AsyncMock(return_value={})):
+    with patch("providers.yfinance_provider.YFinanceProvider.get_ticker_info_raw", new=AsyncMock(return_value={})):
         resp = client.get("/api/equity/FAKE/financials")
     assert resp.status_code == 404
 
 
 def test_financials_endpoint_502_on_service_error(client):
     """Returns 502 when yfinance raises an exception."""
-    with patch("routers.equity.get_ticker_info", new=AsyncMock(side_effect=RuntimeError("timeout"))):
+    with patch("providers.yfinance_provider.YFinanceProvider.get_ticker_info_raw", new=AsyncMock(side_effect=RuntimeError("timeout"))):
         resp = client.get("/api/equity/AAPL/financials")
     assert resp.status_code == 502

@@ -1,17 +1,15 @@
 import asyncio
 import math
 import time
-from typing import Optional
 
 from fastapi import APIRouter
 from pydantic import BaseModel
 
+from providers.registry import get_provider
 from cache import cache_get, cache_set, TTL
-from services.yfinance_service import get_fast_quote, get_history
 
 router = APIRouter()
 
-# yfinance ticker  ->  human-readable label
 FX_PAIRS: dict[str, str] = {
     "EURUSD=X": "EUR/USD",
     "GBPUSD=X": "GBP/USD",
@@ -27,19 +25,15 @@ FX_PAIRS: dict[str, str] = {
 _CACHE_KEY = "fx_all"
 
 
-# ---------------------------------------------------------------------------
-# Pydantic models
-# ---------------------------------------------------------------------------
-
 class FXPair(BaseModel):
-    pair: str           # yfinance ticker, e.g. "EURUSD=X"
-    label: str          # human label, e.g. "EUR/USD"
-    rate: Optional[float]
-    change: Optional[float]
-    change_pct: Optional[float]
-    day_high: Optional[float]
-    day_low: Optional[float]
-    chart_data: list[dict]  # [{time, open, high, low, close}]
+    pair: str
+    label: str
+    rate: float | None = None
+    change: float | None = None
+    change_pct: float | None = None
+    day_high: float | None = None
+    day_low: float | None = None
+    chart_data: list[dict] = []
 
 
 class FXResponse(BaseModel):
@@ -48,15 +42,11 @@ class FXResponse(BaseModel):
 
 
 class FXRates(BaseModel):
-    rates: dict[str, Optional[float]]
+    rates: dict[str, float | None]
     fetched_at: float
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-def _safe_float(val) -> Optional[float]:
+def _safe_float(val) -> float | None:
     if val is None:
         return None
     try:
@@ -67,13 +57,11 @@ def _safe_float(val) -> Optional[float]:
 
 
 def _df_to_chart(df) -> list[dict]:
-    """Convert a yfinance OHLCV DataFrame to a list of chart-point dicts."""
     if df is None or df.empty:
         return []
     rows = []
     for ts, row in df.iterrows():
         try:
-            # ts can be a Timestamp; convert to ISO string
             time_str = ts.isoformat() if hasattr(ts, "isoformat") else str(ts)
             rows.append({
                 "time":  time_str,
@@ -88,28 +76,31 @@ def _df_to_chart(df) -> list[dict]:
 
 
 async def _fetch_pair(pair: str, label: str) -> FXPair:
-    """Fetch quote + intraday history for one FX pair; never raises."""
+    provider = get_provider("yfinance")
+    if not provider:
+        return FXPair(pair=pair, label=label)
+
     quote: dict = {}
     chart_data: list[dict] = []
 
     try:
-        quote = await get_fast_quote(pair)
+        quote = await provider.get_fast_quote_raw(pair)
     except Exception:
         quote = {}
 
     try:
-        df = await get_history(pair, period="1d", interval="5m")
+        df = await provider.get_historical(pair, period="1d", interval="5m")
         chart_data = _df_to_chart(df)
     except Exception:
         chart_data = []
 
-    price    = _safe_float(quote.get("price"))
+    price = _safe_float(quote.get("price"))
     prev_close = _safe_float(quote.get("prev_close"))
 
-    change: Optional[float] = None
-    change_pct: Optional[float] = None
+    change: float | None = None
+    change_pct: float | None = None
     if price is not None and prev_close and prev_close != 0:
-        change     = round(price - prev_close, 6)
+        change = round(price - prev_close, 6)
         change_pct = round((change / prev_close) * 100, 4)
 
     return FXPair(
@@ -124,21 +115,20 @@ async def _fetch_pair(pair: str, label: str) -> FXPair:
     )
 
 
-# ---------------------------------------------------------------------------
-# Endpoint
-# ---------------------------------------------------------------------------
-
 @router.get("/fx/rates", response_model=FXRates)
 async def get_fx_rates():
-    """Lightweight endpoint: current mid rates only, no chart history. 15s cache."""
-    cached = cache_get("price", "fx_rates_live", 15)
+    cached = cache_get("price", "fx_rates_live", TTL["price"])
     if cached:
         return FXRates(**cached)
 
-    tasks = [get_fast_quote(pair) for pair in FX_PAIRS]
+    provider = get_provider("yfinance")
+    if not provider:
+        return FXRates(rates={pair: None for pair in FX_PAIRS}, fetched_at=time.time())
+
+    tasks = [provider.get_fast_quote_raw(pair) for pair in FX_PAIRS]
     quotes = await asyncio.gather(*tasks, return_exceptions=True)
 
-    rates: dict[str, Optional[float]] = {}
+    rates: dict[str, float | None] = {}
     for pair, result in zip(FX_PAIRS, quotes):
         if isinstance(result, Exception):
             rates[pair] = None

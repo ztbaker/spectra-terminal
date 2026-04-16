@@ -1,3 +1,4 @@
+import Panel from '../Terminal/Panel'
 import React, { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import C from '../../lib/colors'
@@ -31,14 +32,14 @@ const MetricCard: React.FC<{ label: string; value: string; sub?: string; color?:
   label, value, sub, color,
 }) => (
   <div style={{
-    background: C.bg2,
+    background: C.surface2,
     border: `1px solid ${C.border0}`,
     padding: '10px 14px',
     display: 'flex',
     flexDirection: 'column',
     gap: 2,
   }}>
-    <span style={{ color: C.whiteDim, fontSize: 9, fontFamily: C.fontSans, letterSpacing: '0.08em', fontWeight: 600 }}>
+    <span style={{ color: C.whiteDim, fontSize: 9, fontFamily: C.fontDisplay, letterSpacing: '0.08em', fontWeight: 600 }}>
       {label}
     </span>
     <span style={{ color: color ?? C.white, fontSize: 16, fontFamily: C.fontMono, fontVariantNumeric: 'tabular-nums', fontWeight: 700 }}>
@@ -81,7 +82,7 @@ export default function CommodityScreen({ onNavigate }: Props) {
   // PSD data
   const { data: psd, isLoading: psdLoading } = useQuery({
     queryKey: ['commodity-ag-psd'],
-    queryFn: fetchCommodityAgPSD,
+    queryFn: () => fetchCommodityAgPSD(),
     enabled: activeTab === 'AGRICULTURE',
     staleTime: 300_000,
   })
@@ -97,7 +98,7 @@ export default function CommodityScreen({ onNavigate }: Props) {
 
   const energyColumns = useMemo(() => [
     { key: 'symbol', header: 'SYMBOL', type: 'text' as const, width: '70px', render: (row: any) => (
-      <span style={{ color: C.yellow, fontWeight: 700 }}>{row.symbol}</span>
+      <span style={{ color: C.amberBright, fontWeight: 700 }}>{row.symbol}</span>
     )},
     { key: 'name', header: 'NAME', type: 'text' as const },
     { key: 'price', header: 'PRICE', type: 'currency' as const, width: '100px' },
@@ -114,13 +115,13 @@ export default function CommodityScreen({ onNavigate }: Props) {
 
   const metalsColumns = useMemo(() => [
     { key: 'symbol', header: 'SYMBOL', type: 'text' as const, width: '70px', render: (row: any) => (
-      <span style={{ color: C.yellow, fontWeight: 700 }}>{row.symbol}</span>
+      <span style={{ color: C.amberBright, fontWeight: 700 }}>{row.symbol}</span>
     )},
     { key: 'name', header: 'NAME', type: 'text' as const },
     { key: 'price', header: 'PRICE', type: 'currency' as const, width: '100px' },
     { key: 'change_pct', header: 'CHG%', type: 'pct' as const, width: '70px' },
     { key: 'sparkline', header: 'TREND', type: 'text' as const, width: '100px', render: (row: any) => {
-      const sparkData = row.sparkline ?? row.change_pct != null ? [0, row.change_pct ?? 0] : []
+      const sparkData = row.sparkline ?? (row.change_pct != null ? [0, row.change_pct ?? 0] : [])
       return sparkData.length > 1 ? (
         <Sparkline data={sparkData} width={80} height={20} color={row.change_pct >= 0 ? C.green : C.red} />
       ) : <span style={{ color: C.whiteGhost }}>—</span>
@@ -179,7 +180,7 @@ export default function CommodityScreen({ onNavigate }: Props) {
 
             {/* Energy spot prices table */}
             <div style={{ padding: '0 16px' }}>
-              <div style={{ color: C.amberMute, fontSize: 10, fontFamily: C.fontSans, fontWeight: 700, letterSpacing: '0.08em', marginBottom: 6, marginTop: 8 }}>
+              <div style={{ color: C.amberMute, fontSize: 10, fontFamily: C.fontDisplay, fontWeight: 700, letterSpacing: '0.08em', marginBottom: 6, marginTop: 8 }}>
                 CRUDE + PRODUCTS
               </div>
               <DataGrid
@@ -194,10 +195,10 @@ export default function CommodityScreen({ onNavigate }: Props) {
             {/* STEO Outlook summary */}
             {outlookSeries && outlookSeries.length > 0 && (
               <div style={{ padding: '16px 16px 0' }}>
-                <div style={{ color: C.amberMute, fontSize: 10, fontFamily: C.fontSans, fontWeight: 700, letterSpacing: '0.08em', marginBottom: 6 }}>
+                <div style={{ color: C.amberMute, fontSize: 10, fontFamily: C.fontDisplay, fontWeight: 700, letterSpacing: '0.08em', marginBottom: 6 }}>
                   STEO OUTLOOK — {outlook.title || 'EIA'}
                 </div>
-                <div style={{ background: C.bg2, border: `1px solid ${C.border0}`, padding: 12 }}>
+                <div style={{ background: C.surface2, border: `1px solid ${C.border0}`, padding: 12 }}>
                   <Sparkline
                     data={outlookSeries.map((o: any) => o.value)}
                     width={440}
@@ -219,7 +220,7 @@ export default function CommodityScreen({ onNavigate }: Props) {
             {/* Energy stocks table */}
             {energyStocks?.data && energyStocks.data.length > 0 && (
               <div style={{ padding: '16px 16px 0' }}>
-                <div style={{ color: C.amberMute, fontSize: 10, fontFamily: C.fontSans, fontWeight: 700, letterSpacing: '0.08em', marginBottom: 6 }}>
+                <div style={{ color: C.amberMute, fontSize: 10, fontFamily: C.fontDisplay, fontWeight: 700, letterSpacing: '0.08em', marginBottom: 6 }}>
                   PETROLEUM STOCKS (EIA)
                 </div>
                 <DataGrid
@@ -243,7 +244,7 @@ export default function CommodityScreen({ onNavigate }: Props) {
         {/* ── METALS ────────────────────────────────────────────────────── */}
         {activeTab === 'METALS' && (
           <div style={{ padding: '12px 16px' }}>
-            <div style={{ color: C.amberMute, fontSize: 10, fontFamily: C.fontSans, fontWeight: 700, letterSpacing: '0.08em', marginBottom: 8 }}>
+            <div style={{ color: C.amberMute, fontSize: 10, fontFamily: C.fontDisplay, fontWeight: 700, letterSpacing: '0.08em', marginBottom: 8 }}>
               SPOT PRICES
             </div>
             <DataGrid
@@ -256,14 +257,14 @@ export default function CommodityScreen({ onNavigate }: Props) {
 
             {/* Quick nav */}
             <div style={{ marginTop: 16 }}>
-              <div style={{ color: C.yellow, fontSize: 11, fontWeight: 700, marginBottom: 6, fontFamily: C.fontMono }}>QUICK ACCESS</div>
+              <div style={{ color: C.amberBright, fontSize: 11, fontWeight: 700, marginBottom: 6, fontFamily: C.fontMono }}>QUICK ACCESS</div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {['GC=F GP', 'SI=F GP'].map(cmd => (
                   <button
                     key={cmd}
                     onClick={() => onNavigate(cmd)}
                     style={{
-                      background: C.bg2,
+                      background: C.surface2,
                       color: C.amber,
                       border: `1px solid ${C.border1}`,
                       padding: '5px 12px',
@@ -272,8 +273,8 @@ export default function CommodityScreen({ onNavigate }: Props) {
                       cursor: 'pointer',
                       transition: 'all 150ms ease',
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.background = C.bgGlow; e.currentTarget.style.borderColor = C.amberMute }}
-                    onMouseLeave={e => { e.currentTarget.style.background = C.bg2; e.currentTarget.style.borderColor = C.border1 }}
+                    onMouseEnter={e => { e.currentTarget.style.background = C.surfaceGlow; e.currentTarget.style.borderColor = C.amberMute }}
+                    onMouseLeave={e => { e.currentTarget.style.background = C.surface2; e.currentTarget.style.borderColor = C.border1 }}
                   >
                     {cmd.replace(' GP', '')}
                   </button>
@@ -286,7 +287,7 @@ export default function CommodityScreen({ onNavigate }: Props) {
         {/* ── AGRICULTURE ──────────────────────────────────────────────── */}
         {activeTab === 'AGRICULTURE' && (
           <div style={{ padding: '12px 16px' }}>
-            <div style={{ color: C.amberMute, fontSize: 10, fontFamily: C.fontSans, fontWeight: 700, letterSpacing: '0.08em', marginBottom: 8 }}>
+            <div style={{ color: C.amberMute, fontSize: 10, fontFamily: C.fontDisplay, fontWeight: 700, letterSpacing: '0.08em', marginBottom: 8 }}>
               USDA PSD — SUPPLY / DEMAND
             </div>
             {psd?.data && psd.data.length > 0 ? (

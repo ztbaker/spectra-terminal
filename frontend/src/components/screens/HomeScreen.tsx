@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import C from '../../lib/colors'
 import { useBreakpoint } from '../../lib/useBreakpoint'
@@ -24,7 +24,7 @@ interface QuickLink {
 
 // ─── Inline SVG icon factory ────────────────────────────────────────────────
 
-const icons: Record<string, JSX.Element> = {
+const icons: Record<string, React.ReactElement> = {
   equity: (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={C.amber} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="1,12 4,8 7,10 15,3" />
@@ -198,7 +198,7 @@ function ShortcutTooltip({ visible, onClose }: { visible: boolean; onClose: () =
         position: 'fixed',
         bottom: '48px',
         right: '24px',
-        background: C.bg1,
+        background: C.surface1,
         border: `1px solid ${C.border1}`,
         padding: '16px 20px',
         zIndex: 1000,
@@ -215,7 +215,7 @@ function ShortcutTooltip({ visible, onClose }: { visible: boolean; onClose: () =
         borderBottom: `1px solid ${C.border0}`,
       }}>
         <span style={{
-          fontFamily: C.fontSans,
+          fontFamily: C.fontDisplay,
           fontSize: '11px',
           fontWeight: 700,
           color: C.amber,
@@ -297,13 +297,13 @@ function IndexTile({ quote }: { quote: IndexQuote | undefined }) {
       alignItems: 'center',
       gap: '10px',
       padding: '8px 12px',
-      background: C.bg1,
+      background: C.surface1,
       border: `1px solid ${C.border0}`,
       minWidth: '0',
     }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: '0' }}>
         <span style={{
-          fontFamily: C.fontSans,
+          fontFamily: C.fontDisplay,
           fontSize: '12px',
           fontWeight: 700,
           color: C.amber,
@@ -366,7 +366,7 @@ function QuickCard({ link, onNavigate, delay }: { link: QuickLink; onNavigate: (
         alignItems: 'center',
         gap: '12px',
         padding: '12px 14px',
-        background: hovered ? C.bgGlow : C.bg2,
+        background: hovered ? C.surfaceGlow : C.surface2,
         border: `1px solid ${hovered ? C.amber : C.border0}`,
         cursor: 'pointer',
         textAlign: 'left',
@@ -380,17 +380,17 @@ function QuickCard({ link, onNavigate, delay }: { link: QuickLink; onNavigate: (
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
         <span style={{
-          fontFamily: C.fontSans,
+          fontFamily: C.fontDisplay,
           fontSize: '13px',
           fontWeight: 700,
-          color: hovered ? C.amberHot : C.white,
+          color: hovered ? C.amberBright : C.white,
           transition: 'color 200ms ease',
           whiteSpace: 'nowrap',
         }}>
           {link.label}
         </span>
         <span style={{
-          fontFamily: C.fontSans,
+          fontFamily: C.fontDisplay,
           fontSize: '11px',
           fontWeight: 400,
           color: C.amberDim,
@@ -453,7 +453,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
       display: 'flex',
       flexDirection: 'column',
       height: '100%',
-      background: C.bg0,
+      background: C.surface0,
       overflowY: 'auto',
       overflowX: 'hidden',
     }}>
@@ -480,7 +480,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
           pointerEvents: 'none',
         }} />
         <div style={{
-          fontFamily: C.fontSans,
+          fontFamily: C.fontDisplay,
           fontSize: breakpoint === 'compact' ? '24px' : '28px',
           fontWeight: 700,
           color: C.amber,
@@ -488,7 +488,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
           lineHeight: 1,
           position: 'relative',
         }}>
-          BAKER
+          SPECTRA
         </div>
         <div style={{
           fontFamily: C.fontMono,
@@ -520,7 +520,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
           flexShrink: 0,
         }}>
           <span style={{
-            fontFamily: C.fontSans,
+            fontFamily: C.fontDisplay,
             fontSize: '10px',
             fontWeight: 700,
             color: C.amberMute,
@@ -552,7 +552,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
         {/* Left column: Markets */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div style={{
-            fontFamily: C.fontSans,
+            fontFamily: C.fontDisplay,
             fontSize: '10px',
             fontWeight: 700,
             color: C.amberMute,
@@ -576,7 +576,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
         {/* Right column: Tools */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div style={{
-            fontFamily: C.fontSans,
+            fontFamily: C.fontDisplay,
             fontSize: '10px',
             fontWeight: 700,
             color: C.amberMute,

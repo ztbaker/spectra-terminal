@@ -21,7 +21,7 @@ def client(temp_db):
 
 def test_fx_rates_returns_correct_shape(client):
     """GET /api/fx/rates returns a rates dict and fetched_at timestamp."""
-    with patch("routers.fx.get_fast_quote", new=AsyncMock(return_value=FAKE_QUOTE)):
+    with patch("providers.yfinance_provider.YFinanceProvider.get_fast_quote_raw", new=AsyncMock(return_value=FAKE_QUOTE)):
         resp = client.get("/api/fx/rates")
     assert resp.status_code == 200
     data = resp.json()
@@ -33,7 +33,7 @@ def test_fx_rates_returns_correct_shape(client):
 
 def test_fx_rates_values_are_floats_or_null(client):
     """Rate values are floats (or null) — never strings or missing keys."""
-    with patch("routers.fx.get_fast_quote", new=AsyncMock(return_value=FAKE_QUOTE)):
+    with patch("providers.yfinance_provider.YFinanceProvider.get_fast_quote_raw", new=AsyncMock(return_value=FAKE_QUOTE)):
         resp = client.get("/api/fx/rates")
     rates = resp.json()["rates"]
     for key, val in rates.items():
@@ -42,7 +42,7 @@ def test_fx_rates_values_are_floats_or_null(client):
 
 def test_fx_rates_uses_cache_on_second_call(client):
     """Second call within 15s TTL does not call get_fast_quote again."""
-    with patch("routers.fx.get_fast_quote", new=AsyncMock(return_value=FAKE_QUOTE)) as mock:
+    with patch("providers.yfinance_provider.YFinanceProvider.get_fast_quote_raw", new=AsyncMock(return_value=FAKE_QUOTE)) as mock:
         client.get("/api/fx/rates")
         client.get("/api/fx/rates")
     # Each pair fetched once, not twice
@@ -51,7 +51,7 @@ def test_fx_rates_uses_cache_on_second_call(client):
 
 def test_fx_rates_handles_null_price_gracefully(client):
     """If get_fast_quote returns no price, the rate is null — no 500 error."""
-    with patch("routers.fx.get_fast_quote", new=AsyncMock(return_value={})):
+    with patch("providers.yfinance_provider.YFinanceProvider.get_fast_quote_raw", new=AsyncMock(return_value={})):
         resp = client.get("/api/fx/rates")
     assert resp.status_code == 200
     rates = resp.json()["rates"]

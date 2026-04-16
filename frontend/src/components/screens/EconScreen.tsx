@@ -1,8 +1,6 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import C from '../../lib/colors'
-import Metric from '../shared/Metric'
-import LiveDot from '../shared/LiveDot'
 import LoadingBar from '../shared/LoadingBar'
 import { fetchEcon, fetchEconSearch } from '../../lib/api'
 import type { EconSeries } from '../../types'
@@ -74,12 +72,12 @@ const EconChart: React.FC<EconChartProps> = ({ series, height = 180 }) => {
 
     const lineSeries = chart.addSeries(LineSeries, {
       color: C.amber,
-      lineWidth: 1.5,
+      lineWidth: 2,
       priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
     })
 
     lineSeries.setData(validObs.map(o => ({
-      time: o.date as UTCTimestamp,
+      time: o.date as unknown as UTCTimestamp,
       value: o.value,
     })))
 
@@ -153,7 +151,7 @@ const MiniChart: React.FC<MiniChartProps> = ({ series }) => {
     })
 
     lineSeries.setData(validObs.map(o => ({
-      time: o.date as UTCTimestamp,
+      time: o.date as unknown as UTCTimestamp,
       value: o.value,
     })))
 
@@ -173,8 +171,8 @@ const MiniChart: React.FC<MiniChartProps> = ({ series }) => {
 const SeriesMeta: React.FC<{ series: EconSeries }> = ({ series }) => {
   const latest = series.observations.filter(o => o.value != null).slice(-1)[0]
   const prev = series.observations.filter(o => o.value != null).slice(-2)[0]
-  const change = latest && prev ? latest.value - prev.value : null
-  const changePct = latest && prev && prev.value !== 0 ? ((latest.value - prev.value) / Math.abs(prev.value)) * 100 : null
+  const change = latest && prev ? latest.value! - prev.value! : null
+  const changePct = latest && prev && prev.value !== 0 ? ((latest.value! - prev.value!) / Math.abs(prev.value!)) * 100 : null
 
   return (
     <div style={{ padding: '12px 16px', borderBottom: `1px solid ${C.border1}` }}>
@@ -298,7 +296,7 @@ export default function EconScreen({ onNavigate: _onNavigate }: Props) {
             placeholder="Search FRED series (e.g. DGS10, UNRATE, GDP)..."
             style={{
               width: '100%',
-              background: C.bg2,
+              background: C.surface2,
               border: `1px solid ${C.amberMute}`,
               color: C.white,
               fontFamily: C.fontMono,
@@ -325,7 +323,7 @@ export default function EconScreen({ onNavigate: _onNavigate }: Props) {
             marginTop: 4,
             maxHeight: 200,
             overflowY: 'auto',
-            background: C.bg2,
+            background: C.surface2,
             border: `1px solid ${C.border1}`,
             borderRadius: 2,
           }}>
@@ -343,11 +341,11 @@ export default function EconScreen({ onNavigate: _onNavigate }: Props) {
                   borderBottom: `1px solid ${C.border0}`,
                   transition: 'background 100ms',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = C.bgGlow }}
+                onMouseEnter={e => { e.currentTarget.style.background = C.surfaceGlow }}
                 onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: C.yellow, fontSize: 11, fontFamily: C.fontMono, fontWeight: 700 }}>{r.series_id}</span>
+                  <span style={{ color: C.amberBright, fontSize: 11, fontFamily: C.fontMono, fontWeight: 700 }}>{r.series_id}</span>
                   <span style={{ color: C.whiteGhost, fontSize: 9, fontFamily: C.fontMono }}>{r.frequency}</span>
                 </div>
                 <div style={{ color: C.whiteDim, fontSize: 11, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -366,8 +364,8 @@ export default function EconScreen({ onNavigate: _onNavigate }: Props) {
       </div>
 
       {/* Favorites row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderBottom: `1px solid ${C.border0}`, background: C.bg1 }}>
-        <span style={{ color: C.amberMute, fontSize: 9, fontFamily: C.fontSans, fontWeight: 700, letterSpacing: '0.08em', marginRight: 4 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderBottom: `1px solid ${C.border0}`, background: C.surface1 }}>
+        <span style={{ color: C.amberMute, fontSize: 9, fontFamily: C.fontDisplay, fontWeight: 700, letterSpacing: '0.08em', marginRight: 4 }}>
           FAVS
         </span>
         {favorites.map(id => (
@@ -376,7 +374,7 @@ export default function EconScreen({ onNavigate: _onNavigate }: Props) {
             onClick={() => setSelectedSeries(id)}
             onContextMenu={e => { e.preventDefault(); removeFavorite(id) }}
             style={{
-              background: selectedSeries === id ? C.amberGhost : 'transparent',
+              background: selectedSeries === id ? C.amberMute : 'transparent',
               color: selectedSeries === id ? C.amber : C.whiteDim,
               border: `1px solid ${selectedSeries === id ? C.amberMute : C.border1}`,
               padding: '2px 8px',
@@ -416,7 +414,7 @@ export default function EconScreen({ onNavigate: _onNavigate }: Props) {
           onClick={() => setDashboardMode(!dashboardMode)}
           style={{
             marginLeft: 'auto',
-            background: dashboardMode ? C.amberGhost : 'transparent',
+            background: dashboardMode ? C.amberMute : 'transparent',
             color: dashboardMode ? C.amber : C.whiteDim,
             border: `1px solid ${dashboardMode ? C.amberMute : C.border1}`,
             padding: '2px 8px',
@@ -440,7 +438,7 @@ export default function EconScreen({ onNavigate: _onNavigate }: Props) {
               <div
                 key={series.series_id}
                 style={{
-                  background: C.bg2,
+                  background: C.surface2,
                   border: `1px solid ${C.border0}`,
                   cursor: 'pointer',
                   transition: 'border-color 150ms',
@@ -450,7 +448,7 @@ export default function EconScreen({ onNavigate: _onNavigate }: Props) {
                 onMouseLeave={e => { e.currentTarget.style.borderColor = C.border0 }}
               >
                 <div style={{ padding: '6px 10px', borderBottom: `1px solid ${C.border0}` }}>
-                  <span style={{ color: C.yellow, fontSize: 10, fontFamily: C.fontMono, fontWeight: 700 }}>{series.series_id}</span>
+                  <span style={{ color: C.amberBright, fontSize: 10, fontFamily: C.fontMono, fontWeight: 700 }}>{series.series_id}</span>
                   <span style={{ color: C.whiteDim, fontSize: 9, marginLeft: 8 }}>{series.title}</span>
                 </div>
                 <MiniChart series={series} />

@@ -57,7 +57,7 @@ function changeColor(value: unknown): string | undefined {
   if (typeof value !== 'number') return undefined
   if (value > 0) return C.green
   if (value < 0) return C.red
-  return C.amber
+  return C.whiteDim
 }
 
 function DataGrid<T extends Record<string, unknown>>({
@@ -170,10 +170,11 @@ function DataGrid<T extends Record<string, unknown>>({
       >
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', fontFamily: C.fontMono }}>
           <thead>
-            <tr style={{ borderBottom: `1px solid ${C.border1}` }}>
-              {visibleColumns.map(col => {
+            <tr style={{ borderBottom: `2px solid ${C.amber}20` }}>
+              {visibleColumns.map((col, colIdx) => {
                 const isActive = sortKey === col.key
                 const arrow = isActive ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''
+                const isLast = colIdx === visibleColumns.length - 1
                 return (
                   <th
                     key={col.key}
@@ -183,14 +184,16 @@ function DataGrid<T extends Record<string, unknown>>({
                       cursor: col.sortable ? 'pointer' : 'default',
                       userSelect: 'none',
                       color: isActive ? C.amber : C.whiteDim,
-                      fontWeight: 500,
-                      fontSize: '11px',
-                      letterSpacing: '0.05em',
+                      fontWeight: 600,
+                      fontSize: '9px',
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase' as const,
                       padding: '6px 8px',
                       position: stickyHeader ? 'sticky' : undefined,
                       top: stickyHeader ? 0 : undefined,
                       background: stickyHeader ? C.surface1 : undefined,
                       zIndex: stickyHeader ? 1 : undefined,
+                      borderRight: isLast ? undefined : `1px solid ${C.border0}`,
                       width: col.width,
                     }}
                   >
@@ -218,15 +221,16 @@ function DataGrid<T extends Record<string, unknown>>({
                   onMouseEnter={() => { setHoveredIdx(virtualRow.index); onRowHover?.(row) }}
                   onMouseLeave={() => { setHoveredIdx(null); onRowHover?.(null) }}
                   style={{
-                    background: isHovered ? C.surface3 : virtualRow.index % 2 === 0 ? C.surface1 : C.surface2,
+                    background: isHovered ? C.surfaceGlow : virtualRow.index % 2 === 0 ? C.surface0 : `${C.surface0}80`,
                     cursor: onRowClick ? 'pointer' : 'default',
-                    transition: 'background 150ms ease',
+                    transition: 'background 100ms ease',
                     position: 'absolute',
                     top: 0,
                     left: 0,
                     width: '100%',
                     height: `${virtualRow.size}px`,
                     transform: `translateY(${virtualRow.start}px)`,
+                    borderLeft: isHovered && onRowClick ? `3px solid ${C.amber}` : undefined,
                     ...accent,
                     ...(staggerDelay > 0 ? {
                       animation: 'fadeSlideUp 250ms cubic-bezier(0.16, 1, 0.3, 1) both',
@@ -234,7 +238,7 @@ function DataGrid<T extends Record<string, unknown>>({
                     } : {}),
                   }}
                 >
-                  {visibleColumns.map(col => {
+                  {visibleColumns.map((col, colIdx) => {
                     const raw = getField(row, col.key)
                     const content = col.render
                       ? col.render(row)
@@ -242,6 +246,7 @@ function DataGrid<T extends Record<string, unknown>>({
                     const color = (col.type === 'change' || col.type === 'pct') && !col.render
                       ? changeColor(raw)
                       : undefined
+                    const isLast = colIdx === visibleColumns.length - 1
                     return (
                       <td
                         key={col.key}
@@ -252,6 +257,7 @@ function DataGrid<T extends Record<string, unknown>>({
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
+                          borderRight: isLast ? undefined : `1px solid ${C.border0}`,
                         }}
                       >
                         {content}
@@ -272,10 +278,11 @@ function DataGrid<T extends Record<string, unknown>>({
     <div style={{ maxHeight: maxHeight ?? undefined, overflowY: maxHeight ? 'auto' : undefined }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', fontFamily: C.fontMono }}>
         <thead>
-          <tr style={{ borderBottom: `1px solid ${C.border1}` }}>
-            {visibleColumns.map(col => {
+          <tr style={{ borderBottom: `2px solid ${C.amber}20` }}>
+            {visibleColumns.map((col, colIdx) => {
               const isActive = sortKey === col.key
               const arrow = isActive ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''
+              const isLast = colIdx === visibleColumns.length - 1
               return (
                 <th
                   key={col.key}
@@ -285,14 +292,16 @@ function DataGrid<T extends Record<string, unknown>>({
                     cursor: col.sortable ? 'pointer' : 'default',
                     userSelect: 'none',
                     color: isActive ? C.amber : C.whiteDim,
-                    fontWeight: 500,
-                    fontSize: '11px',
-                    letterSpacing: '0.05em',
+                    fontWeight: 600,
+                    fontSize: '9px',
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase' as const,
                     padding: '6px 8px',
                     position: stickyHeader ? 'sticky' : undefined,
                     top: stickyHeader ? 0 : undefined,
-                    background: stickyHeader ? C.bg1 : undefined,
+                    background: stickyHeader ? C.surface1 : undefined,
                     zIndex: stickyHeader ? 1 : undefined,
+                    borderRight: isLast ? undefined : `1px solid ${C.border0}`,
                     width: col.width,
                   }}
                 >
@@ -318,9 +327,10 @@ function DataGrid<T extends Record<string, unknown>>({
                 onMouseEnter={() => { setHoveredIdx(rowIdx); onRowHover?.(row) }}
                 onMouseLeave={() => { setHoveredIdx(null); onRowHover?.(null) }}
                 style={{
-                  background: isHovered ? C.surface3 : rowIdx % 2 === 0 ? C.surface1 : C.surface2,
+                  background: isHovered ? C.surfaceGlow : rowIdx % 2 === 0 ? C.surface0 : `${C.surface0}80`,
                   cursor: onRowClick ? 'pointer' : 'default',
-                  transition: 'background 150ms ease',
+                  transition: 'background 100ms ease',
+                  borderLeft: isHovered && onRowClick ? `3px solid ${C.amber}` : undefined,
                   ...accent,
                   ...(staggerDelay > 0 ? {
                     animation: 'fadeSlideUp 250ms cubic-bezier(0.16, 1, 0.3, 1) both',
@@ -328,7 +338,7 @@ function DataGrid<T extends Record<string, unknown>>({
                   } : {}),
                 }}
               >
-                {visibleColumns.map(col => {
+                {visibleColumns.map((col, colIdx) => {
                   const raw = getField(row, col.key)
                   const content = col.render
                     ? col.render(row)
@@ -336,6 +346,7 @@ function DataGrid<T extends Record<string, unknown>>({
                   const color = (col.type === 'change' || col.type === 'pct') && !col.render
                     ? changeColor(raw)
                     : undefined
+                  const isLast = colIdx === visibleColumns.length - 1
                   return (
                     <td
                       key={col.key}
@@ -346,6 +357,7 @@ function DataGrid<T extends Record<string, unknown>>({
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
+                        borderRight: isLast ? undefined : `1px solid ${C.border0}`,
                       }}
                     >
                       {content}

@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import Panel from '../Terminal/Panel'
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchScreener, fetchScreenerDSL } from '../../lib/api'
 import C from '../../lib/colors'
@@ -368,7 +369,7 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
   }, [mode])
 
   // ── Memoized columns ──
-  const columnsMemo = buildColumns()
+  const columnsMemo = useMemo(() => buildColumns(), [])
 
   // ── Shared styles ──
 
@@ -389,12 +390,12 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: C.bg0 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: C.surface0 }}>
       <LoadingBar loading={isLoading || isFetching} />
 
       <Panel title="EQUITY SCREENER">
         {/* ── Mode toggle ── */}
-        <div style={{ padding: '8px 10px 0', background: C.bg1 }}>
+        <div style={{ padding: '8px 10px 0', background: C.surface1 }}>
           <TabBar
             tabs={[
               { key: 'dsl', label: 'DSL' },
@@ -408,7 +409,7 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
 
         {/* ── DSL mode ── */}
         {mode === 'dsl' && (
-          <div style={{ padding: '8px 10px', background: C.bg1, borderBottom: `1px solid ${C.border1}` }}>
+          <div style={{ padding: '8px 10px', background: C.surface1, borderBottom: `1px solid ${C.border1}` }}>
             {/* Query bar row */}
             <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
               <input
@@ -421,7 +422,7 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
                 style={{
                   flex: 1,
                   height: '40px',
-                  background: C.bg1,
+                  background: C.surface1,
                   border: `1px solid ${C.border1}`,
                   color: C.amber,
                   fontFamily: C.fontMono,
@@ -447,14 +448,14 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
                   border: 'none',
                   borderRadius: '2px',
                   cursor: 'pointer',
-                  color: C.bg0,
+                  color: C.surface0,
                   fontWeight: 700,
                   fontSize: '16px',
                   fontFamily: C.fontMono,
                   flexShrink: 0,
                   transition: 'background 150ms ease',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = C.amberHot }}
+                onMouseEnter={e => { e.currentTarget.style.background = C.amberBright }}
                 onMouseLeave={e => { e.currentTarget.style.background = C.amber }}
               >
                 {isFetching ? <AmberSpinner /> : '\u25B6'}
@@ -479,7 +480,7 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
                   cursor: dslQuery.trim() ? 'pointer' : 'default',
                   color: dslQuery.trim() ? C.amberDim : C.whiteGhost,
                   fontSize: '11px',
-                  fontFamily: C.fontSans,
+                  fontFamily: C.fontDisplay,
                   fontWeight: 600,
                   letterSpacing: '0.05em',
                   flexShrink: 0,
@@ -512,10 +513,10 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
                   style={{
                     flex: 1,
                     height: '28px',
-                    background: C.bg0,
+                    background: C.surface0,
                     border: `1px solid ${C.border1}`,
                     color: C.white,
-                    fontFamily: C.fontSans,
+                    fontFamily: C.fontDisplay,
                     fontSize: '11px',
                     padding: '0 8px',
                     outline: 'none',
@@ -532,13 +533,13 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
                   style={{
                     height: '28px',
                     padding: '0 10px',
-                    background: saveName.trim() ? C.amberMute : C.bg2,
+                    background: saveName.trim() ? C.amberMute : C.surface2,
                     border: `1px solid ${saveName.trim() ? C.amberMute : C.border1}`,
                     color: saveName.trim() ? C.amber : C.whiteGhost,
                     borderRadius: '2px',
                     cursor: saveName.trim() ? 'pointer' : 'default',
                     fontSize: '11px',
-                    fontFamily: C.fontSans,
+                    fontFamily: C.fontDisplay,
                     fontWeight: 600,
                     letterSpacing: '0.03em',
                   }}
@@ -556,7 +557,7 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
                     borderRadius: '2px',
                     cursor: 'pointer',
                     fontSize: '11px',
-                    fontFamily: C.fontSans,
+                    fontFamily: C.fontDisplay,
                   }}
                 >
                   CANCEL
@@ -574,13 +575,13 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
                     onClick={() => handleQuickFilter(f.query)}
                     style={{
                       padding: '4px 12px',
-                      background: isActive ? C.amberGhost : 'transparent',
+                      background: isActive ? C.amberMute : 'transparent',
                       border: `1px solid ${isActive ? C.amberMute : C.border1}`,
                       color: isActive ? C.amber : C.whiteDim,
                       borderRadius: '3px',
                       cursor: 'pointer',
                       fontSize: '11px',
-                      fontFamily: C.fontSans,
+                      fontFamily: C.fontDisplay,
                       fontWeight: isActive ? 700 : 400,
                       letterSpacing: '0.03em',
                       transition: 'all 150ms ease',
@@ -610,7 +611,7 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
         {mode === 'visual' && (
           <div style={{
             padding: '8px 10px',
-            background: C.bg1,
+            background: C.surface1,
             borderBottom: `1px solid ${C.border1}`,
             display: 'flex',
             flexWrap: 'wrap',
@@ -679,17 +680,17 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
                 style={{
                   padding: '4px 14px',
                   fontSize: '11px',
-                  color: C.bg0,
+                  color: C.surface0,
                   background: C.amber,
                   border: `1px solid ${C.amber}`,
                   fontWeight: 700,
-                  fontFamily: C.fontSans,
+                  fontFamily: C.fontDisplay,
                   cursor: 'pointer',
                   letterSpacing: '0.03em',
                   borderRadius: '2px',
                   transition: 'background 150ms ease',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = C.amberHot }}
+                onMouseEnter={e => { e.currentTarget.style.background = C.amberBright }}
                 onMouseLeave={e => { e.currentTarget.style.background = C.amber }}
               >
                 SCREEN
@@ -702,7 +703,7 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
                   color: C.whiteDim,
                   background: 'transparent',
                   border: `1px solid ${C.border1}`,
-                  fontFamily: C.fontSans,
+                  fontFamily: C.fontDisplay,
                   cursor: 'pointer',
                   letterSpacing: '0.03em',
                   borderRadius: '2px',
@@ -732,7 +733,7 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
               width: '200px',
               minWidth: '200px',
               borderRight: `1px solid ${C.border1}`,
-              background: C.bg1,
+              background: C.surface1,
               display: 'flex',
               flexDirection: 'column',
             }}>
@@ -742,7 +743,7 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
                 color: C.amberDim,
                 fontSize: '10px',
                 letterSpacing: '0.08em',
-                fontFamily: C.fontSans,
+                fontFamily: C.fontDisplay,
                 fontWeight: 700,
                 flexShrink: 0,
               }}>
@@ -772,14 +773,14 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
                       transition: 'background 150ms ease',
                     }}
                     onClick={() => handleLoadSaved(sq)}
-                    onMouseEnter={e => { e.currentTarget.style.background = C.bg3 }}
+                    onMouseEnter={e => { e.currentTarget.style.background = C.surface3 }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
                   >
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{
                         color: C.white,
                         fontSize: '11px',
-                        fontFamily: C.fontSans,
+                        fontFamily: C.fontDisplay,
                         fontWeight: 600,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',

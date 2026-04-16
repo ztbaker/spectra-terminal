@@ -1,3 +1,4 @@
+import Panel from '../Terminal/Panel'
 import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -9,6 +10,7 @@ import { usePolling } from '../../hooks/usePolling'
 import type { PortfolioPerformance, PortfolioRow } from '../../types'
 import LoadingBar from '../shared/LoadingBar'
 import TickerBadge from '../shared/TickerBadge'
+import C from '../../lib/colors'
 
 // ─── Formatting helpers ───────────────────────────────────────────────────────
 
@@ -30,8 +32,8 @@ function formatLarge(n: number | null): string {
 
 // A palette cycling through amber/yellow tones so each holding is distinct.
 const ALLOC_COLORS = [
-  '#ff9900', '#ffcc00', '#cc7700', '#ffee66', '#aa5500',
-  '#ffe033', '#dd8800', '#ffd480', '#886600', '#ffb84d',
+  C.amber, C.amberBright, C.amberDim, C.amberBright, C.amberDim,
+  C.amberBright, C.amberDim, C.amberBright, C.amberDim, C.amberBright,
 ]
 
 interface AllocationBarProps {
@@ -53,7 +55,7 @@ const AllocationBar: React.FC<AllocationBarProps> = ({ holdings, totalValue }) =
   if (!segments.length) return null
 
   return (
-    <div style={{ padding: '8px', borderTop: '1px solid #2a2a2a' }}>
+    <div style={{ padding: '8px', borderTop: `1px solid ${C.border1}` }}>
       <div className="bb-label" style={{ marginBottom: '4px', fontSize: '10px' }}>
         ALLOCATION
       </div>
@@ -65,7 +67,7 @@ const AllocationBar: React.FC<AllocationBarProps> = ({ holdings, totalValue }) =
           height: '20px',
           width: '100%',
           overflow: 'hidden',
-          border: '1px solid #2a2a2a',
+          border: `1px solid ${C.border1}`,
         }}
       >
         {segments.map(seg => (
@@ -112,7 +114,7 @@ const AllocationBar: React.FC<AllocationBarProps> = ({ holdings, totalValue }) =
         }}
       >
         {segments.map(seg => (
-          <span key={seg.ticker} style={{ fontSize: '10px', color: '#554400' }}>
+          <span key={seg.ticker} style={{ fontSize: '10px', color: C.amberMute }}>
             <span style={{ color: seg.color }}>{seg.ticker}</span>
             {' '}{seg.pct.toFixed(1)}%
           </span>
@@ -213,8 +215,8 @@ const PortfolioScreen: React.FC<Props> = ({ onNavigate }) => {
           alignItems: 'center',
           gap: '6px',
           padding: '6px 8px',
-          borderBottom: '1px solid #2a2a2a',
-          background: '#0d0d0d',
+          borderBottom: `1px solid ${C.border1}`,
+          background: C.surface1,
           flexWrap: 'wrap',
         }}
       >
@@ -282,8 +284,8 @@ const PortfolioScreen: React.FC<Props> = ({ onNavigate }) => {
             display: 'flex',
             gap: '24px',
             padding: '5px 10px',
-            borderBottom: '1px solid #2a2a2a',
-            background: '#0a0800',
+            borderBottom: `1px solid ${C.border1}`,
+            background: C.surfaceGlow,
             flexWrap: 'wrap',
             fontSize: '12px',
           }}
@@ -301,9 +303,9 @@ const PortfolioScreen: React.FC<Props> = ({ onNavigate }) => {
             <span>
               <TickerBadge value={totalPnl} decimals={2} prefix="$" />
               {' '}
-              <span style={{ color: '#554400' }}>(</span>
+              <span style={{ color: C.amberMute }}>(</span>
               <TickerBadge value={totalPnlPct} pct decimals={2} />
-              <span style={{ color: '#554400' }}>)</span>
+              <span style={{ color: C.amberMute }}>)</span>
             </span>
           </span>
         </div>
@@ -311,11 +313,11 @@ const PortfolioScreen: React.FC<Props> = ({ onNavigate }) => {
 
       {/* Content area */}
       {isError ? (
-        <div style={{ padding: '24px', textAlign: 'center', color: '#ff3333' }}>
+        <div style={{ padding: '24px', textAlign: 'center', color: C.red }}>
           PORTFOLIO UNAVAILABLE — BACKEND ERROR
         </div>
       ) : isLoading ? (
-        <div style={{ padding: '24px', textAlign: 'center', color: '#554400' }}>
+        <div style={{ padding: '24px', textAlign: 'center', color: C.amberMute }}>
           LOADING PORTFOLIO...
         </div>
       ) : holdings.length === 0 ? (
@@ -323,7 +325,7 @@ const PortfolioScreen: React.FC<Props> = ({ onNavigate }) => {
           style={{
             padding: '40px 24px',
             textAlign: 'center',
-            color: '#554400',
+            color: C.amberMute,
             fontSize: '12px',
             letterSpacing: '0.05em',
           }}
@@ -352,14 +354,14 @@ const PortfolioScreen: React.FC<Props> = ({ onNavigate }) => {
                   <tr key={row.id}>
                     {/* TICKER */}
                     <td
-                      style={{ color: '#ff9900', cursor: 'pointer', fontWeight: 'bold' }}
+                      style={{ color: C.amber, cursor: 'pointer', fontWeight: 'bold' }}
                       onClick={() => onNavigate(`${row.ticker} EQUITY`)}
                     >
                       {row.ticker}
                     </td>
 
                     {/* SHARES */}
-                    <td style={{ color: '#e0e0e0' }}>
+                    <td style={{ color: C.white }}>
                       {row.shares.toLocaleString('en-US', {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
@@ -367,7 +369,7 @@ const PortfolioScreen: React.FC<Props> = ({ onNavigate }) => {
                     </td>
 
                     {/* AVG COST */}
-                    <td style={{ color: '#e0e0e0' }}>
+                    <td style={{ color: C.white }}>
                       {row.avg_cost.toLocaleString('en-US', {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
@@ -375,7 +377,7 @@ const PortfolioScreen: React.FC<Props> = ({ onNavigate }) => {
                     </td>
 
                     {/* CURRENT */}
-                    <td style={{ color: '#e0e0e0' }}>
+                    <td style={{ color: C.white }}>
                       {row.current_price !== null
                         ? row.current_price.toLocaleString('en-US', {
                             minimumFractionDigits: 2,
@@ -385,7 +387,7 @@ const PortfolioScreen: React.FC<Props> = ({ onNavigate }) => {
                     </td>
 
                     {/* MKT VALUE */}
-                    <td style={{ color: '#e0e0e0' }}>
+                    <td style={{ color: C.white }}>
                       {formatLarge(row.market_value)}
                     </td>
 
@@ -406,8 +408,8 @@ const PortfolioScreen: React.FC<Props> = ({ onNavigate }) => {
                         style={{
                           fontSize: '11px',
                           padding: '1px 5px',
-                          color: '#ff3333',
-                          borderColor: '#441111',
+                          color: C.red,
+                          borderColor: C.redDim,
                         }}
                         title={`Remove ${row.ticker}`}
                         onClick={e => {

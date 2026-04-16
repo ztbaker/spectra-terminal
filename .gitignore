@@ -5,6 +5,9 @@ backend/.venv/
 # Environment files with real secrets
 backend/.env
 .env
+frontend/.env.production
+frontend/.env.local
+frontend/.env.*.local
 
 # Python cache
 __pycache__/
@@ -17,13 +20,33 @@ __pycache__/
 .pytest_cache/
 *.db
 
-# Distribution / packaging
+# Node / Electron
+node_modules/
+frontend/node_modules/
+frontend/dist/
 dist/
-build/
+release/
+out/
+
+# Packaging
 *.egg-info/
+
+# Tooling / agent caches
+.claude/
+.claude-flow/
+.superpowers/
+.swarm/
+backend/.claude-flow/
+frontend/.claude-flow/
+
+# Reports / scratch
+security-report.json
 
 # macOS
 .DS_Store
+
+# Windows
+Thumbs.db
 
 # IDEs
 .vscode/

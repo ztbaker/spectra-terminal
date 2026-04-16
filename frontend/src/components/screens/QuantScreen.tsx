@@ -1,3 +1,4 @@
+import Panel from '../Terminal/Panel'
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import C from '../../lib/colors'
@@ -7,7 +8,6 @@ import LiveDot from '../shared/LiveDot'
 import LoadingBar from '../shared/LoadingBar'
 import {
   fetchAnalyticsSummary,
-  fetchAnalyticsRegression,
   fetchAnalyticsCointegration,
   fetchAnalyticsFamaFrench,
   fetchChart,
@@ -15,10 +15,8 @@ import {
 import {
   createChart,
   AreaSeries,
-  LineSeries,
   CrosshairMode,
   type IChartApi,
-  type Time,
   type UTCTimestamp,
 } from 'lightweight-charts'
 
@@ -48,7 +46,7 @@ const InlineChart: React.FC<InlineChartProps> = ({ data, color, inverted = false
       width: containerRef.current.clientWidth,
       height,
       layout: {
-        background: { color: C.bg1 },
+        background: { color: C.surface1 },
         textColor: C.whiteGhost,
         fontFamily: C.fontMono,
         fontSize: 10,
@@ -71,22 +69,23 @@ const InlineChart: React.FC<InlineChartProps> = ({ data, color, inverted = false
     })
 
     series.setData(data.map(d => ({
-      time: d.time as UTCTimestamp,
+      time: d.time as unknown as UTCTimestamp,
       value: d.value,
     })))
 
     chart.timeScale().fitContent()
     chartRef.current = chart
 
-    const handleResize = () => {
+    const ro = new ResizeObserver(() => {
       if (containerRef.current && chartRef.current) {
         chartRef.current.applyOptions({ width: containerRef.current.clientWidth })
+        chartRef.current.applyOptions({ height })
       }
-    }
-    window.addEventListener('resize', handleResize)
+    })
+    ro.observe(containerRef.current)
 
     return () => {
-      window.removeEventListener('resize', handleResize)
+      ro.disconnect()
       chart.remove()
     }
   }, [data, color, inverted, height])
@@ -96,7 +95,7 @@ const InlineChart: React.FC<InlineChartProps> = ({ data, color, inverted = false
       {title && (
         <div style={{
           position: 'absolute', top: 8, left: 12, zIndex: 2,
-          color: C.amberMute, fontSize: 10, fontFamily: C.fontSans, fontWeight: 700, letterSpacing: '0.06em',
+          color: C.amberMute, fontSize: 10, fontFamily: C.fontDisplay, fontWeight: 700, letterSpacing: '0.06em',
         }}>
           {title}
         </div>
@@ -104,16 +103,6 @@ const InlineChart: React.FC<InlineChartProps> = ({ data, color, inverted = false
       <div ref={containerRef} style={{ width: '100%' }} />
     </div>
   )
-}
-
-// ─── Significance indicator ──────────────────────────────────────────────────
-
-function significanceIndicator(pValue: number | null | undefined): { label: string; color: string } {
-  if (pValue == null) return { label: '—', color: C.whiteGhost }
-  if (pValue < 0.01) return { label: '***', color: C.green }
-  if (pValue < 0.05) return { label: '**', color: C.green }
-  if (pValue < 0.1) return { label: '*', color: C.yellow }
-  return { label: '', color: C.whiteGhost }
 }
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
@@ -130,7 +119,7 @@ export default function QuantScreen({ ticker, onNavigate: _onNavigate }: Props) 
 
   // Chart data for drawdown computation
   const { data: chartData } = useQuery({
-    queryKey: ['chart', sym, '2y'],
+    queryKey: ['chart', sym, '2y', '1d'],
     queryFn: () => fetchChart(sym, '2y'),
     staleTime: 300_000,
   })
@@ -219,7 +208,7 @@ export default function QuantScreen({ ticker, onNavigate: _onNavigate }: Props) 
 
   const ffColumns = [
     { key: 'factor', header: 'FACTOR', type: 'text' as const, width: '80px', render: (row: any) => (
-      <span style={{ color: C.yellow, fontWeight: 700 }}>{row.factor}</span>
+      <span style={{ color: C.amberBright, fontWeight: 700 }}>{row.factor}</span>
     )},
     { key: 'label', header: 'DESCRIPTION', type: 'text' as const },
     { key: 'beta', header: 'BETA', type: 'number' as const, width: '80px', render: (row: any) => {
@@ -236,7 +225,7 @@ export default function QuantScreen({ ticker, onNavigate: _onNavigate }: Props) 
     }},
   ]
 
-  const isLoading = statsLoading && ffLoading
+  const isLoading = statsLoading || ffLoading
 
   return (
     <Panel title={`QUANT — ${sym}`} actions={<LiveDot label={isLoading ? 'LOADING' : 'LIVE'} active={!isLoading} />}>
@@ -246,7 +235,7 @@ export default function QuantScreen({ ticker, onNavigate: _onNavigate }: Props) 
         {/* ── Summary stats ─────────────────────────────────────────────── */}
         {stats && (
           <div style={{ padding: '12px 16px' }}>
-            <div style={{ color: C.amberMute, fontSize: 10, fontFamily: C.fontSans, fontWeight: 700, letterSpacing: '0.08em', marginBottom: 8 }}>
+            <div style={{ color: C.amberMute, fontSize: 10, fontFamily: C.fontDisplay, fontWeight: 700, letterSpacing: '0.08em', marginBottom: 8 }}>
               DISTRIBUTION STATISTICS
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
@@ -291,7 +280,7 @@ export default function QuantScreen({ ticker, onNavigate: _onNavigate }: Props) 
 
         {/* ── Fama-French table ─────────────────────────────────────────── */}
         <div style={{ padding: '12px 16px' }}>
-          <div style={{ color: C.amberMute, fontSize: 10, fontFamily: C.fontSans, fontWeight: 700, letterSpacing: '0.08em', marginBottom: 8 }}>
+          <div style={{ color: C.amberMute, fontSize: 10, fontFamily: C.fontDisplay, fontWeight: 700, letterSpacing: '0.08em', marginBottom: 8 }}>
             FAMA-FRENCH FACTORS {ff?.cached && <span style={{ color: C.amberMute, fontWeight: 400 }}>(CACHED)</span>}
           </div>
           <DataGrid
@@ -305,7 +294,7 @@ export default function QuantScreen({ ticker, onNavigate: _onNavigate }: Props) 
 
         {/* ── Cointegration test ─────────────────────────────────────────── */}
         <div style={{ padding: '12px 16px' }}>
-          <div style={{ color: C.amberMute, fontSize: 10, fontFamily: C.fontSans, fontWeight: 700, letterSpacing: '0.08em', marginBottom: 8 }}>
+          <div style={{ color: C.amberMute, fontSize: 10, fontFamily: C.fontDisplay, fontWeight: 700, letterSpacing: '0.08em', marginBottom: 8 }}>
             COINTEGRATION QUICK-TEST
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
@@ -314,7 +303,7 @@ export default function QuantScreen({ ticker, onNavigate: _onNavigate }: Props) 
               onChange={e => setCointTicker1(e.target.value.toUpperCase())}
               style={{
                 width: 80,
-                background: C.bg2,
+                background: C.surface2,
                 border: `1px solid ${C.border1}`,
                 color: C.white,
                 fontFamily: C.fontMono,
@@ -330,7 +319,7 @@ export default function QuantScreen({ ticker, onNavigate: _onNavigate }: Props) 
               onChange={e => setCointTicker2(e.target.value.toUpperCase())}
               style={{
                 width: 80,
-                background: C.bg2,
+                background: C.surface2,
                 border: `1px solid ${C.border1}`,
                 color: C.white,
                 fontFamily: C.fontMono,
@@ -344,7 +333,7 @@ export default function QuantScreen({ ticker, onNavigate: _onNavigate }: Props) 
               onClick={handleCointTest}
               disabled={cointLoading}
               style={{
-                background: C.amberGhost,
+                background: C.amberMute,
                 color: C.amber,
                 border: `1px solid ${C.amberMute}`,
                 padding: '5px 16px',
@@ -357,7 +346,7 @@ export default function QuantScreen({ ticker, onNavigate: _onNavigate }: Props) 
                 transition: 'all 150ms ease',
               }}
               onMouseEnter={e => { e.currentTarget.style.background = C.amberDim; e.currentTarget.style.color = C.white }}
-              onMouseLeave={e => { e.currentTarget.style.background = C.amberGhost; e.currentTarget.style.color = C.amber }}
+              onMouseLeave={e => { e.currentTarget.style.background = C.amberMute; e.currentTarget.style.color = C.amber }}
             >
               {cointLoading ? '...' : 'TEST'}
             </button>
@@ -365,7 +354,7 @@ export default function QuantScreen({ ticker, onNavigate: _onNavigate }: Props) 
 
           {cointResult && !cointResult.error && (
             <div style={{
-              background: C.bg2,
+              background: C.surface2,
               border: `1px solid ${C.border0}`,
               padding: 12,
               display: 'grid',
@@ -375,7 +364,7 @@ export default function QuantScreen({ ticker, onNavigate: _onNavigate }: Props) 
               <Metric label="ADF STAT" value={cointResult.adf_statistic} format="number" size="sm"
                 color={cointResult.adf_statistic != null && cointResult.adf_statistic < -3.4 ? C.green : C.red} />
               <Metric label="P-VALUE" value={cointResult.p_value} format="number" size="sm"
-                color={cointResult.p_value != null && cointResult.p_value < 0.05 ? C.green : C.yellow} />
+                color={cointResult.p_value != null && cointResult.p_value < 0.05 ? C.green : C.amberBright} />
               <Metric label="CRITICAL 5%" value={cointResult.critical_values?.['5%'] ?? null} format="number" size="sm" />
               <div style={{ gridColumn: '1 / -1' }}>
                 <span style={{

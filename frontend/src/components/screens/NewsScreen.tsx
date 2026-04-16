@@ -5,8 +5,8 @@ import type { NewsItem } from '../../types'
 import C from '../../lib/colors'
 import TabBar from '../shared/TabBar'
 import DataGrid from '../shared/DataGrid'
-import LiveDot from '../shared/LiveDot'
 import LoadingBar from '../shared/LoadingBar'
+import ReaderPanel from '../news/ReaderPanel'
 import { usePolling } from '../../hooks/usePolling'
 
 interface Props {
@@ -94,10 +94,10 @@ const SentimentBadge: React.FC<{ sentiment: NewsItem['sentiment'] }> = ({ sentim
 
 interface NewsRowProps {
   item: NewsItem
-  onHover?: (preview: string | null) => void
+  onOpen: (item: NewsItem) => void
 }
 
-const NewsRow: React.FC<NewsRowProps> = ({ item, onHover }) => {
+const NewsRow: React.FC<NewsRowProps> = ({ item, onOpen }) => {
   const [hovered, setHovered] = useState(false)
 
   return (
@@ -110,15 +110,15 @@ const NewsRow: React.FC<NewsRowProps> = ({ item, onHover }) => {
         transition: 'background 150ms ease',
         background: hovered ? C.surfaceGlow : 'transparent',
       }}
-      onMouseEnter={() => { setHovered(true); onHover?.(item.summary || null) }}
-      onMouseLeave={() => { setHovered(false); onHover?.(null) }}
-      onClick={() => window.open(item.url, '_blank', 'noopener,noreferrer')}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={() => onOpen(item)}
     >
       <div style={{ lineHeight: 1.45, wordBreak: 'break-word' }}>
         <span style={{ color: C.amberBright, marginRight: 6, fontSize: 11, fontWeight: 700 }}>
           [{item.source.toUpperCase()}]
         </span>
-        <span style={{ color: C.white, fontSize: 13, fontFamily: C.fontBody, fontWeight: 500 }}>{item.headline}</span>
+        <span style={{ color: C.white, fontSize: 13, fontWeight: 500 }}>{item.headline}</span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, fontSize: 11 }}>
         <span style={{ color: C.whiteGhost }}>{formatTimestamp(item.datetime)}</span>
@@ -194,7 +194,7 @@ const SentimentHistogram: React.FC<SentimentHistogramProps> = ({ items }) => {
 const NewsScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
   const [activeTab, setActiveTab] = useState<Tab>('COMPANY')
   const [worldTopic, setWorldTopic] = useState<string>('ECONOMY')
-  const [hoverPreview, setHoverPreview] = useState<string | null>(null)
+  const [reading, setReading] = useState<NewsItem | null>(null)
 
   // COMPANY data
   const {
@@ -242,7 +242,7 @@ const NewsScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
 
   const sentimentColumns = [
     { key: 'headline', header: 'HEADLINE', type: 'text' as const, render: (row: any) => (
-      <span style={{ color: C.white, fontSize: 12, fontFamily: C.fontBody, fontWeight: 500 }}>{row.headline}</span>
+      <span style={{ color: C.white, fontSize: 12, fontWeight: 500 }}>{row.headline}</span>
     )},
     { key: 'source', header: 'SOURCE', type: 'text' as const, width: '90px', render: (row: any) => (
       <span style={{ color: C.cyan, fontSize: 10, background: C.surface2, padding: '1px 5px', borderRadius: 2 }}>{(row.source || '').toUpperCase()}</span>
@@ -268,21 +268,6 @@ const NewsScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
         <TabBar tabs={TABS} activeKey={activeTab} onChange={(k) => setActiveTab(k as Tab)} />
       </div>
 
-      {/* Hover preview */}
-      {hoverPreview && (
-        <div style={{
-          padding: '6px 16px',
-          background: C.surface2,
-          borderBottom: `1px solid ${C.border1}`,
-          color: C.whiteDim,
-          fontSize: 11,
-          lineHeight: 1.4,
-          fontFamily: C.fontMono,
-        }}>
-          {hoverPreview}
-        </div>
-      )}
-
       {/* COMPANY tab */}
       {activeTab === 'COMPANY' && (
         <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -292,7 +277,7 @@ const NewsScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
             </div>
           )}
           {companyItems.map((item, idx) => (
-            <NewsRow key={`${item.datetime}-${idx}`} item={item} onHover={setHoverPreview} />
+            <NewsRow key={`${item.datetime}-${idx}`} item={item} onOpen={setReading} />
           ))}
         </div>
       )}
@@ -301,7 +286,7 @@ const NewsScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
       {activeTab === 'WORLD' && (
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {/* Topic chips */}
-          <div style={{ display: 'flex', gap: 6, padding: '8px 12px', borderBottom: `1px solid ${C.border0}`, background: C.bg1 }}>
+          <div style={{ display: 'flex', gap: 6, padding: '8px 12px', borderBottom: `1px solid ${C.border0}`, background: C.surface1 }}>
             {WORLD_TOPICS.map(t => {
               const isActive = worldTopic === t.label
               return (
@@ -309,7 +294,7 @@ const NewsScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
                   key={t.label}
                   onClick={() => setWorldTopic(t.label)}
                   style={{
-                    background: isActive ? C.amberGhost : 'transparent',
+                    background: isActive ? C.amberMute : 'transparent',
                     color: isActive ? C.amber : C.whiteDim,
                     border: `1px solid ${isActive ? C.amberMute : C.border1}`,
                     padding: '4px 10px',
@@ -332,7 +317,7 @@ const NewsScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
             <div style={{ padding: 24, color: C.whiteGhost, textAlign: 'center' }}>No world news available</div>
           )}
           {worldItems.map((item, idx) => (
-            <NewsRow key={`${item.datetime}-${idx}`} item={item} onHover={setHoverPreview} />
+            <NewsRow key={`${item.datetime}-${idx}`} item={item} onOpen={setReading} />
           ))}
         </div>
       )}
@@ -340,7 +325,7 @@ const NewsScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
       {/* SENTIMENT tab */}
       {activeTab === 'SENTIMENT' && (
         <div style={{ flex: 1, overflowY: 'auto' }}>
-          <SentimentHistogram items={activeTab === 'WORLD' ? worldItems : companyItems} />
+          <SentimentHistogram items={companyItems} />
           <div style={{ borderTop: `1px solid ${C.border1}` }}>
             <DataGrid
               columns={sentimentColumns}
@@ -357,6 +342,15 @@ const NewsScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
         <div style={{ padding: '4px 12px', color: C.amberMute, fontSize: 9, fontFamily: C.fontMono, letterSpacing: '0.05em', textAlign: 'right' }}>
           CACHED
         </div>
+      )}
+
+      {reading && (
+        <ReaderPanel
+          url={reading.url}
+          fallbackHeadline={reading.headline}
+          fallbackSource={reading.source}
+          onClose={() => setReading(null)}
+        />
       )}
     </div>
   )

@@ -137,6 +137,7 @@ const TABS = [
 // ─── Unusual activity row type ────────────────────────────────────────────────
 
 interface UnusualRow {
+  [key: string]: unknown
   id: string
   strike: number | null
   expiry: string
@@ -274,33 +275,29 @@ const ChainTab: React.FC<{
             borderCollapse: 'collapse',
             fontSize: '11px',
             fontFamily: C.fontMono,
-            tableLayout: 'fixed',
           }}>
             <colgroup>
-              {/* CALLS: Δ Γ Θ V IV OI VOL ASK BID LAST (10) */}
-              <col style={{ width: '6%' }} />
-              <col style={{ width: '6%' }} />
-              <col style={{ width: '6%' }} />
-              <col style={{ width: '6%' }} />
-              <col style={{ width: '6%' }} />
-              <col style={{ width: '6%' }} />
-              <col style={{ width: '6%' }} />
-              <col style={{ width: '6%' }} />
-              <col style={{ width: '6%' }} />
-              <col style={{ width: '6%' }} />
-              {/* STRIKE */}
-              <col style={{ width: '10%' }} />
-              {/* PUTS: LAST BID ASK VOL OI IV V Θ Γ Δ (10) */}
-              <col style={{ width: '6%' }} />
-              <col style={{ width: '6%' }} />
-              <col style={{ width: '6%' }} />
-              <col style={{ width: '6%' }} />
-              <col style={{ width: '6%' }} />
-              <col style={{ width: '6%' }} />
-              <col style={{ width: '6%' }} />
-              <col style={{ width: '6%' }} />
-              <col style={{ width: '6%' }} />
-              <col style={{ width: '6%' }} />
+              <col style={{ minWidth: '48px' }} />
+              <col style={{ minWidth: '48px' }} />
+              <col style={{ minWidth: '48px' }} />
+              <col style={{ minWidth: '48px' }} />
+              <col style={{ minWidth: '52px' }} />
+              <col style={{ minWidth: '50px' }} />
+              <col style={{ minWidth: '50px' }} />
+              <col style={{ minWidth: '50px' }} />
+              <col style={{ minWidth: '50px' }} />
+              <col style={{ minWidth: '50px' }} />
+              <col style={{ minWidth: '64px' }} />
+              <col style={{ minWidth: '50px' }} />
+              <col style={{ minWidth: '50px' }} />
+              <col style={{ minWidth: '50px' }} />
+              <col style={{ minWidth: '50px' }} />
+              <col style={{ minWidth: '50px' }} />
+              <col style={{ minWidth: '52px' }} />
+              <col style={{ minWidth: '48px' }} />
+              <col style={{ minWidth: '48px' }} />
+              <col style={{ minWidth: '48px' }} />
+              <col style={{ minWidth: '48px' }} />
             </colgroup>
             <thead>
               <tr style={{ borderBottom: `1px solid ${C.border1}` }}>
@@ -337,7 +334,7 @@ const ChainTab: React.FC<{
                 const putItm = row.put?.in_the_money ?? false
 
                 // Background: ITM calls = green tint, ITM puts = red tint, ATM = subtle glow
-                let rowBg = idx % 2 === 0 ? C.surface1 : C.surface2
+                let rowBg: string = idx % 2 === 0 ? C.surface1 : C.surface2
                 if (callItm && !putItm) rowBg = C.greenDim
                 else if (putItm && !callItm) rowBg = C.redDim
                 if (isAtm) rowBg = C.amberGlow
@@ -661,7 +658,7 @@ const TermTab: React.FC<{
 
     const chart = createChart(chartContainerRef.current, {
       layout: {
-        background: { color: '#000000' },
+        background: { color: C.surface0 },
         textColor: C.whiteDim,
         fontFamily: C.fontMono,
         fontSize: 11,
@@ -693,26 +690,17 @@ const TermTab: React.FC<{
     const series = chart.addSeries(LineSeries, {
       color: C.amber,
       lineWidth: 2,
-      pointMarkers: {
-        visible: true,
-        size: 4,
-        color: C.cyan,
-      },
     })
 
     // Convert term structure to chart data
     // Use days-to-expiry as sequential index mapped to dates
     const chartData = termStructure
       .filter(p => p.atm_iv !== null && p.atm_iv !== undefined)
-      .map((p, idx) => {
-        // Parse expiry to get days from now
-        const expDate = new Date(p.expiry)
-        const now = new Date()
-        const daysToExp = Math.round((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      .map((p) => {
         // Use expiry string as time (lightweight-charts accepts YYYY-MM-DD)
         return {
           time: p.expiry as unknown as import('lightweight-charts').Time,
-          value: (p.atm_iv as number) * 100, // Convert to percentage
+          value: (p.atm_iv as number) * 100,
         }
       })
       .sort((a, b) => (a.time as string).localeCompare(b.time as string))
@@ -786,7 +774,7 @@ const TermTab: React.FC<{
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <span style={{ color: C.whiteDim, fontSize: '9px', fontFamily: C.fontDisplay, letterSpacing: '0.05em' }}>FURTHEST</span>
               <span style={{ color: C.cyan, fontSize: '13px', fontFamily: C.fontMono, fontVariantNumeric: 'tabular-nums' }}>
-                {termStructure[termStructure.length - 1].atm_iv !== null ? `${(termStructure[termStructure.length - 1].atm_iv * 100).toFixed(1)}%` : '—'}
+                {termStructure[termStructure.length - 1]!.atm_iv !== null ? `${(termStructure[termStructure.length - 1]!.atm_iv! * 100).toFixed(1)}%` : '—'}
               </span>
             </div>
             {(() => {
@@ -950,11 +938,11 @@ const FlowTab: React.FC = () => (
 // MAIN OPTIONS SCREEN
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const OptionsScreen: React.FC<Props> = ({ ticker, onNavigate }) => {
+const OptionsScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
   const [activeTab, setActiveTab] = useState('CHAIN')
 
   // Chain data (always loaded — primary view)
-  const { data: chainData, isLoading: chainLoading, isError: chainError } = useQuery({
+  const { data: chainData, isLoading: chainLoading } = useQuery({
     queryKey: ['options', ticker],
     queryFn: () => fetchOptions(ticker),
     staleTime: 60_000,
@@ -990,7 +978,7 @@ const OptionsScreen: React.FC<Props> = ({ ticker, onNavigate }) => {
             fontVariantNumeric: 'tabular-nums',
             letterSpacing: '0.05em',
           }}>
-            SPOT: <span style={{ color: C.white, fontWeight: 700 }}>${chainData.spot.toFixed(2)}</span>
+            SPOT: <span style={{ color: C.white, fontWeight: 700 }}>${chainData!.spot!.toFixed(2)}</span>
           </span>
         )}
       </div>

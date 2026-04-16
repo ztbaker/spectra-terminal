@@ -5,6 +5,7 @@ import type { FXPair } from '../../types'
 import { usePolling } from '../../hooks/usePolling'
 import LoadingBar from '../shared/LoadingBar'
 import Sparkline from '../shared/Sparkline'
+import C from '../../lib/colors'
 
 // ─── Formatting helpers ───────────────────────────────────────────────────────
 
@@ -35,8 +36,8 @@ interface FXCardProps {
 
 const FXCard: React.FC<FXCardProps> = ({ pair }) => {
   const isPositive = (pair.change ?? 0) >= 0
-  const sparkColor = isPositive ? '#00ff41' : '#ff3333'
-  const changeColor = isPositive ? '#00ff41' : '#ff3333'
+  const sparkColor = isPositive ? C.green : C.red
+  const changeColor = isPositive ? C.green : C.red
 
   const closeValues = pair.chart_data?.map(d => d.close) ?? []
 
@@ -58,8 +59,8 @@ const FXCard: React.FC<FXCardProps> = ({ pair }) => {
         minHeight: '160px',
         padding: 0,
         boxSizing: 'border-box',
-        border: '1px solid #2a2a2a',
-        background: '#0d0d0d',
+        border: `1px solid ${C.border1}`,
+        background: C.surface1,
         overflow: 'hidden',
       }}
     >
@@ -67,12 +68,12 @@ const FXCard: React.FC<FXCardProps> = ({ pair }) => {
       <div
         style={{
           padding: '6px 10px 4px',
-          borderBottom: '1px solid #2a2a2a',
-          background: '#1a1a00',
+          borderBottom: `1px solid ${C.border1}`,
+          background: C.surfaceGlow,
           flexShrink: 0,
         }}
       >
-        <span style={{ color: '#ff9900', fontSize: '16px', fontWeight: 700, letterSpacing: '0.04em' }}>
+        <span style={{ color: C.amber, fontSize: '16px', fontWeight: 700, letterSpacing: '0.04em' }}>
           {pair.label}
         </span>
       </div>
@@ -81,7 +82,7 @@ const FXCard: React.FC<FXCardProps> = ({ pair }) => {
       <div style={{ padding: '8px 10px', flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
 
         {/* Rate */}
-        <div style={{ fontSize: '28px', color: '#e0e0e0', fontWeight: 500, lineHeight: 1.1 }}>
+        <div style={{ fontSize: '28px', color: C.white, fontWeight: 500, lineHeight: 1.1 }}>
           {formatRate(pair.rate, pair.pair)}
         </div>
 
@@ -94,26 +95,26 @@ const FXCard: React.FC<FXCardProps> = ({ pair }) => {
                 : pair.change.toFixed(4)}
             </span>
           ) : (
-            <span style={{ color: '#554400' }}>—</span>
+            <span style={{ color: C.amberMute }}>—</span>
           )}
           {pair.change_pct != null ? (
             <span style={{ color: changeColor }}>
               ({changePctSign}{pair.change_pct.toFixed(2)}%)
             </span>
           ) : (
-            <span style={{ color: '#554400' }}>(—)</span>
+            <span style={{ color: C.amberMute }}>(—)</span>
           )}
         </div>
 
         {/* Day range */}
-        <div style={{ fontSize: '11px', color: '#554400', letterSpacing: '0.02em' }}>
+        <div style={{ fontSize: '11px', color: C.amberMute, letterSpacing: '0.02em' }}>
           Lo:&nbsp;
-          <span style={{ color: '#cc7700' }}>
+          <span style={{ color: C.amberDim }}>
             {formatDayRange(pair.day_low, pair.pair)}
           </span>
           {'  '}
           Hi:&nbsp;
-          <span style={{ color: '#cc7700' }}>
+          <span style={{ color: C.amberDim }}>
             {formatDayRange(pair.day_high, pair.pair)}
           </span>
         </div>
@@ -142,8 +143,8 @@ const FXCardSkeleton: React.FC = () => (
     style={{
       width: '220px',
       minHeight: '160px',
-      border: '1px solid #2a2a2a',
-      background: '#0d0d0d',
+      border: `1px solid ${C.border1}`,
+      background: C.surface1,
       padding: '10px',
       boxSizing: 'border-box',
       display: 'flex',
@@ -151,12 +152,12 @@ const FXCardSkeleton: React.FC = () => (
       gap: '8px',
     }}
   >
-    <div style={{ width: '80px', height: '16px', background: '#1a1a00', borderRadius: '2px' }} />
-    <div style={{ width: '140px', height: '28px', background: '#1a1200', borderRadius: '2px' }} />
-    <div style={{ width: '100px', height: '12px', background: '#0d0d00', borderRadius: '2px' }} />
-    <div style={{ width: '120px', height: '11px', background: '#0d0d00', borderRadius: '2px' }} />
+    <div style={{ width: '80px', height: '16px', background: C.surfaceGlow, borderRadius: '2px' }} />
+    <div style={{ width: '140px', height: '28px', background: C.surfaceGlow, borderRadius: '2px' }} />
+    <div style={{ width: '100px', height: '12px', background: C.surfaceGlow, borderRadius: '2px' }} />
+    <div style={{ width: '120px', height: '11px', background: C.surfaceGlow, borderRadius: '2px' }} />
     <div style={{ flex: 1 }} />
-    <div style={{ width: '100%', height: '40px', background: '#0d0d00', borderRadius: '2px' }} />
+    <div style={{ width: '100%', height: '40px', background: C.surfaceGlow, borderRadius: '2px' }} />
   </div>
 )
 
@@ -183,7 +184,7 @@ const FXScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        background: '#000000',
+        background: C.surface0,
         overflow: 'hidden',
       }}
     >
@@ -202,10 +203,10 @@ const FXScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
         }}
       >
         <span>FX MONITOR</span>
-        <span style={{ color: '#554400', fontSize: '11px' }}>
+        <span style={{ color: C.amberMute, fontSize: '11px' }}>
           AUTO-REFRESH 60s
           {data?.cached && (
-            <span style={{ color: '#2a2a2a', marginLeft: '8px' }}>CACHED</span>
+            <span style={{ color: C.border1, marginLeft: '8px' }}>CACHED</span>
           )}
         </span>
       </div>
@@ -215,9 +216,9 @@ const FXScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
         <div
           style={{
             padding: '8px 12px',
-            color: '#ff3333',
+            color: C.red,
             fontSize: '12px',
-            borderBottom: '1px solid #2a2a2a',
+            borderBottom: `1px solid ${C.border1}`,
             flexShrink: 0,
           }}
         >
