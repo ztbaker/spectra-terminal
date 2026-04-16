@@ -8,6 +8,14 @@ export interface ReleaseNote {
 // "What's New" dialog on first launch after update.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.1.5',
+    date: '2026-04-16',
+    highlights: [
+      'Fixed the login form: Sign In / Sign Up buttons now always respond, and validation errors appear inline instead of the button going silent.',
+      'Redesigned the mode toggle as a clear tab row so it\u2019s no longer mistaken for the submit button.',
+    ],
+  },
+  {
     version: '0.1.4',
     date: '2026-04-16',
     highlights: [
