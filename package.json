@@ -4,12 +4,16 @@
   "description": "Spectra Terminal — Bloomberg-style trading terminal",
   "main": "electron/main.cjs",
   "scripts": {
-    "build":        "cd frontend && npm run build",
-    "electron":     "electron .",
-    "app":          "npm run build && electron .",
+    "build": "cd frontend && npm run build",
+    "electron": "electron .",
+    "app": "npm run build && electron .",
     "electron:dev": "BAKER_DEV=1 electron ."
   },
   "devDependencies": {
-    "electron": "^36.0.0"
+    "electron": "^36.0.0",
+    "electron-builder": "^26.8.1"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.3"
   }
 }
