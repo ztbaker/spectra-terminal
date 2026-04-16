@@ -129,6 +129,48 @@ def init_db(db_path: str | None = None) -> None:
 
             CREATE INDEX IF NOT EXISTS ix_email_tokens_user
                 ON email_tokens(user_id, kind);
+
+            CREATE TABLE IF NOT EXISTS chat_rooms (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                slug        TEXT NOT NULL UNIQUE COLLATE NOCASE,
+                name        TEXT NOT NULL,
+                description TEXT,
+                created_by  INTEGER NOT NULL,
+                created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+                FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS chat_memberships (
+                room_id   INTEGER NOT NULL,
+                user_id   INTEGER NOT NULL,
+                joined_at TEXT NOT NULL DEFAULT (datetime('now')),
+                PRIMARY KEY (room_id, user_id),
+                FOREIGN KEY (room_id) REFERENCES chat_rooms(id) ON DELETE CASCADE,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS chat_messages (
+                id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                room_id      INTEGER,
+                sender_id    INTEGER NOT NULL,
+                recipient_id INTEGER,
+                body         TEXT NOT NULL,
+                created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+                FOREIGN KEY (room_id)      REFERENCES chat_rooms(id) ON DELETE CASCADE,
+                FOREIGN KEY (sender_id)    REFERENCES users(id)      ON DELETE CASCADE,
+                FOREIGN KEY (recipient_id) REFERENCES users(id)      ON DELETE CASCADE,
+                CHECK (
+                    (room_id IS NOT NULL AND recipient_id IS NULL) OR
+                    (room_id IS NULL     AND recipient_id IS NOT NULL)
+                )
+            );
+
+            CREATE INDEX IF NOT EXISTS ix_chat_msgs_room
+                ON chat_messages(room_id, id);
+            CREATE INDEX IF NOT EXISTS ix_chat_msgs_dm_pair
+                ON chat_messages(sender_id, recipient_id, id);
+            CREATE INDEX IF NOT EXISTS ix_chat_msgs_dm_pair_rev
+                ON chat_messages(recipient_id, sender_id, id);
         """)
 
         _ensure_email_columns(conn)

@@ -43,6 +43,7 @@ const COMMANDS: HelpRow[] = [
   { command: 'CONG', aliases: 'CONGRESS', description: 'Congressional bills and trading data.', needsTicker: false },
   { command: 'QUANT', aliases: '', description: 'Quantitative analytics and regression.', needsTicker: true },
   { command: 'ASK', aliases: '', description: 'AI-powered ask assistant.', needsTicker: false },
+  { command: 'CHAT', aliases: 'CHAT #room, CHAT @user', description: 'Chat rooms and private messages with other users.', needsTicker: false },
   { command: 'QUIT', aliases: 'EXIT', description: 'Exit the terminal.', needsTicker: false },
 ]
 

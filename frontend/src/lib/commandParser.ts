@@ -169,6 +169,25 @@ export function parseCommand(input: string): ParsedCommand {
     return { screen: 'home', raw }
   }
 
+  // Chat: CHAT, CHAT #slug, CHAT @username — preserve original case for the
+  // target since usernames/slugs are case-insensitive server-side but we want
+  // to display the username as the user entered it.
+  if (parts[0] === 'CHAT') {
+    const rawParts = raw.split(/\s+/).filter(Boolean)
+    if (rawParts.length >= 2) {
+      const target = rawParts[1]
+      if (target.startsWith('#')) {
+        return { screen: 'chat', sub: `room:${target.slice(1).toLowerCase()}`, raw }
+      }
+      if (target.startsWith('@')) {
+        return { screen: 'chat', sub: `dm:${target.slice(1)}`, raw }
+      }
+      // Bare second token: treat as room slug
+      return { screen: 'chat', sub: `room:${target.toLowerCase()}`, raw }
+    }
+    return { screen: 'chat', raw }
+  }
+
   // 0. G1–G9 graph slot shortcuts (before standalone check so G1 ≠ ticker)
   if (parts.length === 1 && /^G[1-9]$/.test(parts[0])) {
     return { screen: 'graph', ticker: parts[0].slice(1), raw }

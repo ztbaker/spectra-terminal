@@ -8,6 +8,14 @@ export interface ReleaseNote {
 // "What's New" dialog on first launch after update.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.1.8',
+    date: '2026-04-16',
+    highlights: [
+      'New CHAT screen: join public rooms or send private DMs to any Spectra user.',
+      'Type \u201cCHAT\u201d to open the directory, \u201cCHAT #slug\u201d to jump into a room, or \u201cCHAT @username\u201d to start a direct message.',
+    ],
+  },
+  {
     version: '0.1.7',
     date: '2026-04-16',
     highlights: [

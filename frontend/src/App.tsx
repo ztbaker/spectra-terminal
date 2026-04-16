@@ -38,6 +38,7 @@ import FAScreen         from './components/screens/FAScreen'
 import EconScreen       from './components/screens/EconScreen'
 import HomeScreenV3     from './components/screens/HomeScreenV3'
 import HelpScreen       from './components/screens/HelpScreen'
+import ChatScreen       from './components/screens/ChatScreen'
 import { UpdateToast } from './components/UpdateToast'
 import { BugReportDialog } from './components/BugReportDialog'
 import { WhatsNewDialog } from './components/WhatsNewDialog'
@@ -157,6 +158,7 @@ function screenTitle(screen: ScreenType, ticker?: string): string {
     home: 'HOME', des: 'DES', graph: 'GRAPH', gpo: 'GPO', gip: 'GIP',
     wei: 'WEI', hs: 'HS', ecst: 'ECST', etf: 'ETF', bond: 'BOND',
     comd: 'COMD', cong: 'CONG', quant: 'QUANT', fa: 'FA', ask: 'ASK', help: 'HELP',
+    chat: 'CHAT',
   }
   const label = labels[screen] ?? screen.toUpperCase()
   return ticker ? `${label} · ${ticker}` : label
@@ -273,7 +275,7 @@ function TerminalApp() {
   }, [])
 
   // ── Render screen for a panel ──────────────────────────────────────────────
-  const renderScreen = (screen: ScreenType, ticker?: string, _sub?: string) => {
+  const renderScreen = (screen: ScreenType, ticker?: string, sub?: string) => {
     switch (screen) {
       case 'equity':
         return ticker
@@ -378,6 +380,9 @@ function TerminalApp() {
 
       case 'help':
         return <HelpScreen onNavigate={handleNavigate} />
+
+      case 'chat':
+        return <ChatScreen sub={sub} onNavigate={handleNavigate} />
 
       case 'home':
       default:
