@@ -6,7 +6,7 @@ const log             = require('electron-log')
 autoUpdater.logger      = log
 autoUpdater.logger.transports.file.level = 'info'
 autoUpdater.autoDownload          = true
-autoUpdater.autoInstallOnAppQuit  = false
+autoUpdater.autoInstallOnAppQuit  = true
 
 function initAutoUpdater(mainWindow) {
   const send = (channel, payload = {}) => {
