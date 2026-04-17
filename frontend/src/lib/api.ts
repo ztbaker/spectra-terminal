@@ -123,8 +123,10 @@ export const fetchIndices = (): Promise<IndexQuote[]> =>
 export const fetchWorldIndices = (): Promise<WorldIndicesResponse> =>
   api.get('/indices/world').then(r => r.data)
 
-export const fetchIndexMembers = (ticker: string): Promise<IndexMembersResponse> =>
-  api.get('/indices/world/members', { params: { ticker } }).then(r => r.data)
+export const fetchIndexMembers = (
+  ticker: string, offset = 0, limit = 50,
+): Promise<IndexMembersResponse> =>
+  api.get('/indices/world/members', { params: { ticker, offset, limit } }).then(r => r.data)
 
 // ─── Econ ─────────────────────────────────────────────────────────────────────
 export const fetchEcon = (seriesId: string, start = '2010-01-01'): Promise<EconSeries> =>

@@ -5,7 +5,7 @@
  * organized by region: Americas, Europe, Asia/Pacific, Mid East/Africa.
  * Auto-refreshes every 60 seconds.
  */
-import React, { useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchWorldIndices, fetchIndexMembers } from '../../lib/api'
 import type { WorldIndexEntry, IndexMember } from '../../types'
@@ -318,22 +318,53 @@ interface MembersPanelProps {
 }
 
 const MembersPanel: React.FC<MembersPanelProps> = ({ index, onBack }) => {
+  const [allMembers, setAllMembers] = useState<IndexMember[]>([])
+  const [total, setTotal] = useState(0)
+  const [hasMore, setHasMore] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const offsetRef = useRef(0)
+
   const { data, isLoading, error } = useQuery({
-    queryKey:        ['indexMembers', index.ticker],
-    queryFn:         () => fetchIndexMembers(index.ticker),
+    queryKey:        ['indexMembers', index.ticker, 0],
+    queryFn:         () => fetchIndexMembers(index.ticker, 0, 50),
     staleTime:       55_000,
     refetchInterval: 60_000,
   })
 
+  // Sync first page into accumulated state
+  useEffect(() => {
+    if (data) {
+      setAllMembers(data.members)
+      setTotal(data.total)
+      setHasMore(data.has_more)
+      offsetRef.current = data.members.length
+    }
+  }, [data])
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return
+    setLoadingMore(true)
+    try {
+      const page = await fetchIndexMembers(index.ticker, offsetRef.current, 50)
+      setAllMembers(prev => [...prev, ...page.members])
+      setHasMore(page.has_more)
+      offsetRef.current += page.members.length
+    } catch {
+      // silently fail — user can retry
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [index.ticker, loadingMore, hasMore])
+
   const { advances, declines } = useMemo(() => {
-    if (!data?.members) return { advances: 0, declines: 0 }
+    if (!allMembers.length) return { advances: 0, declines: 0 }
     let adv = 0, dec = 0
-    for (const m of data.members) {
+    for (const m of allMembers) {
       if ((m.change_pct ?? 0) > 0) adv++
       else if ((m.change_pct ?? 0) < 0) dec++
     }
     return { advances: adv, declines: dec }
-  }, [data])
+  }, [allMembers])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
@@ -366,7 +397,7 @@ const MembersPanel: React.FC<MembersPanelProps> = ({ index, onBack }) => {
             <span style={{ color: UP_COLOR,   fontSize: 10 }}>▲ {advances}</span>
             <span style={{ color: DOWN_COLOR, fontSize: 10 }}>▼ {declines}</span>
             <span style={{ color: C.border1, fontSize: 10, marginLeft: 4 }}>
-              {data.members.length} CONSTITUENTS
+              {allMembers.length} OF {total} CONSTITUENTS
             </span>
           </>
         )}
@@ -386,12 +417,36 @@ const MembersPanel: React.FC<MembersPanelProps> = ({ index, onBack }) => {
               FETCHING CONSTITUENTS…
             </div>
           )}
-          {data?.members.map(m => (
+          {allMembers.map(m => (
             <MemberRow key={m.ticker} member={m} />
           ))}
-          {data?.members.length === 0 && (
+          {allMembers.length === 0 && !isLoading && (
             <div style={{ padding: '20px 12px', color: C.border1, fontSize: 11 }}>
               NO CONSTITUENT DATA AVAILABLE
+            </div>
+          )}
+          {hasMore && (
+            <div style={{ padding: '12px', textAlign: 'center' }}>
+              <button
+                onClick={loadMore}
+                disabled={loadingMore}
+                style={{
+                  background: 'transparent',
+                  border: `1px solid ${C.amber}`,
+                  color: C.amber,
+                  padding: '6px 20px',
+                  fontFamily: C.fontDisplay,
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  letterSpacing: '0.12em',
+                  cursor: loadingMore ? 'default' : 'pointer',
+                  opacity: loadingMore ? 0.5 : 1,
+                }}
+              >
+                {loadingMore
+                  ? 'LOADING…'
+                  : `LOAD MORE (${allMembers.length} of ${total})`}
+              </button>
             </div>
           )}
         </div>

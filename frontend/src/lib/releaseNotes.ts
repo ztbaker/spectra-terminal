@@ -8,6 +8,14 @@ export interface ReleaseNote {
 // "What's New" dialog on first launch after update.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.1.13',
+    date: '2026-04-17',
+    highlights: [
+      'WEI now shows the full S&P 500 (503 tickers) and NASDAQ-100 — first 50 load instantly, press "LOAD MORE" for the next batch.',
+      'Header shows "50 OF 503 CONSTITUENTS" so you always know how many are loaded vs. total.',
+    ],
+  },
+  {
     version: '0.1.12',
     date: '2026-04-16',
     highlights: [

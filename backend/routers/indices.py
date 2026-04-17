@@ -202,22 +202,75 @@ CONSTITUENTS: dict[str, list[str]] = {
         "MCD",  "MMM",  "MRK",  "MSFT","NKE", "PG",  "SHW", "TRV",  "UNH",
         "V",    "VZ",   "WMT",
     ],
-    # ── S&P 500 top-50 ────────────────────────────────────────────────────────
+    # ── S&P 500 (sorted by market cap, all 503 tickers incl. dual-class) ─────
     "^GSPC": [
-        "AAPL", "MSFT", "NVDA", "AMZN", "META",  "GOOGL", "BRK-B", "TSLA",
-        "LLY",  "AVGO", "UNH",  "JPM",  "V",     "ORCL",  "XOM",   "MA",
-        "JNJ",  "WMT",  "PG",   "HD",   "COST",  "ABBV",  "MRK",   "CRM",
-        "BAC",  "CVX",  "NFLX", "KO",   "ADBE",  "AMD",   "CSCO",  "ACN",
-        "PEP",  "LIN",  "TMO",  "WFC",  "DIS",   "ABT",   "MCD",   "INTC",
-        "GE",   "AXP",  "IBM",  "CAT",  "PM",    "INTU",  "NOW",   "QCOM",
-        "RTX",  "AMGN",
+        "AAPL", "MSFT", "NVDA", "AMZN", "META",  "GOOGL", "GOOG",  "BRK-B",
+        "TSLA", "LLY",  "AVGO", "UNH",  "JPM",   "V",     "ORCL",  "XOM",
+        "MA",   "JNJ",  "WMT",  "PG",   "HD",    "COST",  "ABBV",  "MRK",
+        "CRM",  "BAC",  "CVX",  "NFLX", "KO",    "ADBE",  "AMD",   "CSCO",
+        "ACN",  "PEP",  "LIN",  "TMO",  "WFC",   "DIS",   "ABT",   "MCD",
+        "INTC", "GE",   "AXP",  "IBM",  "CAT",   "PM",    "INTU",  "NOW",
+        "QCOM", "RTX",  "AMGN", "TXN",  "ISRG",  "GS",    "BKNG",  "SPGI",
+        "BLK",  "HON",  "NEE",  "AMAT", "VRTX",  "PFE",   "T",     "SYK",
+        "LOW",  "UNP",  "ELV",  "SCHW", "MDT",   "PANW",  "PLD",   "BMY",
+        "DE",   "LRCX", "ETN",  "CB",   "LMT",   "MU",    "KLAC",  "SBUX",
+        "ADP",  "FI",   "C",    "TMUS", "GILD",  "SO",    "CI",    "BSX",
+        "REGN", "DUK",  "CME",  "ZTS",  "SHW",   "MDLZ",  "SNPS",  "CDNS",
+        "BDX",  "CL",   "TJX",  "FCX",  "EQIX",  "PGR",   "ITW",   "MMC",
+        "ICE",  "MO",   "MCK",  "PYPL", "CEG",   "APH",   "HUM",   "SLB",
+        "NOC",  "CMG",  "EMR",  "MCO",  "EOG",   "ORLY",  "MELI",  "WM",
+        "GD",   "CTAS", "FDX",  "MAR",  "USB",   "PNC",   "APD",   "RSG",
+        "MSI",  "WELL", "TGT",  "NSC",  "AJG",   "ECL",   "HCA",   "DXCM",
+        "ADSK", "SPG",  "TT",   "DHR",  "ROP",   "AFL",   "PSA",   "OXY",
+        "AZO",  "TFC",  "NEM",  "F",    "KMB",   "CARR",  "CCI",   "SRE",
+        "AIG",  "MPC",  "MNST", "HLT",  "O",     "PSX",   "GM",    "VLO",
+        "D",    "MSCI", "ALL",  "COF",  "EW",    "KHC",   "FTNT",  "A",
+        "GIS",  "TEL",  "DLR",  "AEP",  "JCI",   "PAYX",  "BK",    "KMI",
+        "IDXX", "PCG",  "HSY",  "PCAR", "CNC",   "ROST",  "CTVA",  "FAST",
+        "EXC",  "KDP",  "VRSK", "OKE",  "WEC",   "YUM",   "NDAQ",  "AME",
+        "IQV",  "MCHP", "OTIS", "URI",  "EXR",   "HAL",   "XEL",   "EA",
+        "GEHC", "ODFL", "BKR",  "FANG", "CTSH",  "CBRE",  "AWK",   "BIIB",
+        "KVUE", "GWW",  "HES",  "DOW",  "ANSS",  "PPG",   "ED",    "IT",
+        "TROW", "RCL",  "DLTR", "EFX",  "MTB",   "DVN",   "ON",    "WAB",
+        "VMC",  "HPQ",  "MLM",  "CDW",  "STZ",   "ROK",   "WTW",   "DD",
+        "KEYS", "CPAY", "ACGL", "MPWR", "FITB",  "SBAC",  "VLTO",  "FE",
+        "WMB",  "AVB",  "RMD",  "PPL",  "TSCO",  "CHD",   "EQR",   "DAL",
+        "IRM",  "CSGP", "MTD",  "BR",   "GPC",   "DOV",   "DTE",   "TDY",
+        "TTWO", "PHM",  "HBAN", "WAT",  "RF",    "ES",    "CLX",   "ETR",
+        "HPE",  "FTV",  "STE",  "LYB",  "WBD",   "K",     "PTC",   "CNP",
+        "AEE",  "CAH",  "NTAP", "CINF", "TRGP",  "BAX",   "DG",    "STT",
+        "CFG",  "DRI",  "INVH", "HOLX", "PKG",   "J",     "MOH",   "ZBH",
+        "VTR",  "LH",   "MKC",  "BALL", "MAA",   "NTRS",  "COO",   "KEY",
+        "OMC",  "SYF",  "ULTA", "TSN",  "NUE",   "ALGN",  "IP",    "KIM",
+        "WRB",  "IFF",  "LDOS", "DPZ",  "SWK",   "CMS",   "BRO",   "NVR",
+        "ARE",  "EMN",  "PODD", "EXPD", "FDS",   "LNT",   "EG",    "TER",
+        "TRMB", "GEN",  "MAS",  "AKAM", "L",     "CE",    "REG",   "AVY",
+        "AMCR", "HST",  "POOL", "RVTY", "TPR",   "APA",   "JBHT",  "BXP",
+        "WDC",  "CPT",  "SNA",  "EVRG", "TXT",   "VTRS",  "MRO",   "SJM",
+        "ALB",  "SWKS", "INCY", "GL",   "PEAK",  "UDR",   "LKQ",   "TAP",
+        "NDSN", "IPG",  "TECH", "PNR",  "BG",    "JKHY",  "CHRW",  "AIZ",
+        "BWA",  "WYNN", "HRL",  "AOS",  "CRL",   "HSIC",  "BEN",   "BBWI",
+        "IVZ",  "MTCH", "FFIV", "LW",   "RHI",   "FRT",   "GNRC",  "CPB",
+        "NCLH", "HWM",  "PNW",  "HII",  "MKTX",  "CZR",   "DVA",   "ETSY",
+        "SEDG", "QRVO", "AAL",  "NI",   "HAS",   "XRAY",  "WHR",   "FMC",
+        "ZION", "PARA", "PAYC", "CMA",  "MGM",   "LVS",   "RL",    "MOS",
+        "FOXA", "FOX",  "NWS",  "NWSA", "BIO",   "CTLT",  "DISH",
     ],
-    # ── NASDAQ Composite (top NASDAQ-100 names) ───────────────────────────────
+    # ── NASDAQ-100 ────────────────────────────────────────────────────────────
     "^IXIC": [
         "AAPL", "MSFT", "NVDA", "AMZN", "META",  "GOOGL", "GOOG",  "TSLA",
         "AVGO", "COST", "NFLX", "AMD",  "ADBE",  "QCOM",  "INTC",  "TMUS",
         "TXN",  "AMGN", "HON",  "INTU", "ISRG",  "CMCSA", "BKNG",  "AMAT",
-        "MU",   "LRCX", "PANW", "KLAC", "MELI",  "SNPS",
+        "MU",   "LRCX", "PANW", "KLAC", "MELI",  "SNPS",  "CDNS",  "PYPL",
+        "CTAS", "ORLY", "MAR",  "CEG",  "ABNB",  "FTNT",  "MCHP",  "DASH",
+        "MNST", "AEP",  "PCAR", "KDP",  "ODFL",  "PAYX",  "KHC",   "EA",
+        "FAST", "VRSK", "IDXX", "GEHC", "DXCM",  "EXC",   "XEL",   "ON",
+        "BIIB", "CDW",  "ANSS", "CTSH", "TTD",   "CPRT",  "ZS",    "GFS",
+        "FANG", "ROST", "ILMN", "BKR",  "TEAM",  "DDOG",  "WBD",   "CRWD",
+        "MRNA", "SIRI", "DLTR", "WBA",  "ENPH",  "JD",    "LCID",  "ZM",
+        "ALGN", "RIVN", "SWKS", "MTCH", "OKTA",  "LULU",  "MRVL",  "AZN",
+        "CSX",  "PDD",  "WDAY", "REGN", "VRTX",  "SBUX",  "NXPI",  "CHTR",
+        "ARM",  "SMCI", "PLTR", "COIN",
     ],
     # ── Russell 2000 (sample — top liquid small-caps) ─────────────────────────
     "^RUT": [
@@ -307,23 +360,35 @@ class IndexMembersResponse(BaseModel):
     index_ticker: str
     index_name:   str
     members:      list[IndexMember]
+    total:        int
+    offset:       int
+    has_more:     bool
 
 
 @router.get("/indices/world/members", response_model=IndexMembersResponse)
-async def get_index_members(ticker: str = Query(...)):
-    """Return live quotes for constituent equities of a world index."""
-    now = _time.monotonic()
-    if ticker in _MEMBERS_CACHE and (now - _MEMBERS_CACHE_TS.get(ticker, 0)) < _MEMBERS_CACHE_TTL:
-        return _MEMBERS_CACHE[ticker]
-
-    constituent_tickers = CONSTITUENTS.get(ticker, [])
+async def get_index_members(
+    ticker: str = Query(...),
+    offset: int = Query(0, ge=0),
+    limit:  int = Query(50, ge=1, le=100),
+):
+    """Return live quotes for a page of constituent equities of a world index."""
+    all_tickers = CONSTITUENTS.get(ticker, [])
+    total = len(all_tickers)
     index_name = _INDEX_NAMES.get(ticker, ticker)
 
+    page_tickers = all_tickers[offset:offset + limit]
+
+    # Cache keyed by ticker + page so different pages are cached independently
+    cache_key = f"{ticker}:{offset}:{limit}"
+    now = _time.monotonic()
+    if cache_key in _MEMBERS_CACHE and (now - _MEMBERS_CACHE_TS.get(cache_key, 0)) < _MEMBERS_CACHE_TTL:
+        return _MEMBERS_CACHE[cache_key]
+
     members: list[dict] = []
-    if constituent_tickers:
+    if page_tickers:
         provider = get_provider("yfinance")
         if provider:
-            bulk = await provider.get_bulk_quotes(constituent_tickers)
+            bulk = await provider.get_bulk_quotes(page_tickers)
             for q in bulk:
                 price = _safe_float(q.price)
                 prev_close = _safe_float(q.prev_close)
@@ -342,7 +407,10 @@ async def get_index_members(ticker: str = Query(...)):
         "index_ticker": ticker,
         "index_name":   index_name,
         "members":      members,
+        "total":        total,
+        "offset":       offset,
+        "has_more":     offset + limit < total,
     }
-    _MEMBERS_CACHE[ticker]    = result
-    _MEMBERS_CACHE_TS[ticker] = now
+    _MEMBERS_CACHE[cache_key]    = result
+    _MEMBERS_CACHE_TS[cache_key] = now
     return result
