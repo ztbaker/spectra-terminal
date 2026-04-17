@@ -375,6 +375,9 @@ export interface IndexMembersResponse {
   index_ticker: string
   index_name:   string
   members:      IndexMember[]
+  total:        number
+  offset:       number
+  has_more:     boolean
 }
 
 // ─── ECST ─────────────────────────────────────────────────────────────────────
