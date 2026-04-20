@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
 import { useBreakpoint } from '../../lib/useBreakpoint'
 import { fetchIndices } from '../../lib/api'
 import type { IndexQuote } from '../../types'
 import ChangeIndicator from '../shared/ChangeIndicator'
 import LiveDot from '../shared/LiveDot'
 import Sparkline from '../shared/Sparkline'
+
+const { color, font } = theme
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -26,50 +28,50 @@ interface QuickLink {
 
 const icons: Record<string, React.ReactElement> = {
   equity: (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={C.amber} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={color.accentPositive} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="1,12 4,8 7,10 15,3" />
       <polyline points="11,3 15,3 15,7" />
     </svg>
   ),
   chart: (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={C.amber} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={color.accentPositive} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <rect x="1" y="1" width="14" height="14" rx="1" />
       <polyline points="3,11 6,7 9,9 13,4" />
     </svg>
   ),
   options: (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={C.amber} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={color.accentPositive} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <line x1="2" y1="4" x2="14" y2="4" />
       <line x1="2" y1="8" x2="14" y2="8" />
       <line x1="2" y1="12" x2="14" y2="12" />
-      <circle cx="5" cy="4" r="1.5" fill={C.amber} />
-      <circle cx="10" cy="8" r="1.5" fill={C.amber} />
-      <circle cx="7" cy="12" r="1.5" fill={C.amber} />
+      <circle cx="5" cy="4" r="1.5" fill={color.accentPositive} />
+      <circle cx="10" cy="8" r="1.5" fill={color.accentPositive} />
+      <circle cx="7" cy="12" r="1.5" fill={color.accentPositive} />
     </svg>
   ),
   etf: (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={C.amber} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={color.accentPositive} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <rect x="1" y="3" width="14" height="10" rx="1" />
       <line x1="1" y1="7" x2="15" y2="7" />
       <line x1="5.5" y1="3" x2="5.5" y2="13" />
     </svg>
   ),
   crypto: (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={C.amber} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={color.accentPositive} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="8" cy="8" r="6" />
       <line x1="8" y1="3" x2="8" y2="13" />
       <path d="M5.5,6 C5.5,4.5 10.5,4.5 10.5,6 C10.5,7.5 5.5,7.5 5.5,9.5 C5.5,11.5 10.5,11.5 10.5,10" />
     </svg>
   ),
   fx: (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={C.amber} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={color.accentPositive} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="5" cy="6" r="3" />
       <circle cx="11" cy="10" r="3" />
       <line x1="13" y1="2" x2="3" y2="14" />
     </svg>
   ),
   commodity: (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={C.amber} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={color.accentPositive} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <rect x="2" y="2" width="12" height="12" rx="1" />
       <line x1="5" y1="6" x2="5" y2="10" />
       <line x1="8" y1="4" x2="8" y2="12" />
@@ -77,14 +79,14 @@ const icons: Record<string, React.ReactElement> = {
     </svg>
   ),
   bond: (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={C.amber} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={color.accentPositive} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <line x1="2" y1="14" x2="2" y2="2" />
       <line x1="14" y1="14" x2="14" y2="2" />
       <polyline points="2,12 5,9 8,11 11,6 14,4" />
     </svg>
   ),
   screener: (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={C.amber} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={color.accentPositive} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <polygon points="8,1 15,5 15,11 8,15 1,11 1,5" />
       <line x1="8" y1="1" x2="8" y2="15" />
       <line x1="1" y1="5" x2="15" y2="5" />
@@ -92,7 +94,7 @@ const icons: Record<string, React.ReactElement> = {
     </svg>
   ),
   portfolio: (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={C.amber} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={color.accentPositive} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <rect x="1" y="1" width="6" height="6" rx="1" />
       <rect x="9" y="1" width="6" height="6" rx="1" />
       <rect x="1" y="9" width="6" height="6" rx="1" />
@@ -100,22 +102,22 @@ const icons: Record<string, React.ReactElement> = {
     </svg>
   ),
   watchlist: (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={C.amber} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={color.accentPositive} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="8" cy="8" r="6" />
       <polyline points="8,4 8,8 11,8" />
     </svg>
   ),
   earnings: (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={C.amber} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={color.accentPositive} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <rect x="1" y="2" width="14" height="12" rx="1" />
       <line x1="1" y1="6" x2="15" y2="6" />
       <line x1="5" y1="2" x2="5" y2="6" />
       <line x1="11" y1="2" x2="11" y2="6" />
-      <circle cx="8" cy="10.5" r="1.5" fill={C.amber} />
+      <circle cx="8" cy="10.5" r="1.5" fill={color.accentPositive} />
     </svg>
   ),
   news: (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={C.amber} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={color.accentPositive} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <rect x="1" y="2" width="14" height="12" rx="1" />
       <line x1="4" y1="5" x2="12" y2="5" />
       <line x1="4" y1="8" x2="12" y2="8" />
@@ -123,7 +125,7 @@ const icons: Record<string, React.ReactElement> = {
     </svg>
   ),
   filings: (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={C.amber} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={color.accentPositive} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3,1 L10,1 L13,4 L13,15 L3,15 Z" />
       <polyline points="10,1 10,4 13,4" />
       <line x1="5" y1="7" x2="11" y2="7" />
@@ -131,20 +133,20 @@ const icons: Record<string, React.ReactElement> = {
     </svg>
   ),
   congress: (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={C.amber} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={color.accentPositive} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <rect x="1" y="6" width="14" height="9" rx="1" />
       <line x1="8" y1="1" x2="8" y2="6" />
-      <polygon points="5,1 8,1 11,1" fill={C.amber} />
+      <polygon points="5,1 8,1 11,1" fill={color.accentPositive} />
       <line x1="4" y1="6" x2="4" y2="15" />
       <line x1="12" y1="6" x2="12" y2="15" />
     </svg>
   ),
   quant: (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={C.amber} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={color.accentPositive} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="8" cy="8" r="6" />
       <line x1="8" y1="2" x2="8" y2="8" />
       <line x1="8" y1="8" x2="13" y2="5" />
-      <circle cx="8" cy="8" r="1.5" fill={C.amber} />
+      <circle cx="8" cy="8" r="1.5" fill={color.accentPositive} />
     </svg>
   ),
 }
@@ -198,8 +200,8 @@ function ShortcutTooltip({ visible, onClose }: { visible: boolean; onClose: () =
         position: 'fixed',
         bottom: '48px',
         right: '24px',
-        background: C.surface1,
-        border: `1px solid ${C.border1}`,
+        background: color.bgElevated,
+        border: `1px solid ${color.borderSubtle}`,
         padding: '16px 20px',
         zIndex: 1000,
         minWidth: '240px',
@@ -212,13 +214,13 @@ function ShortcutTooltip({ visible, onClose }: { visible: boolean; onClose: () =
         alignItems: 'center',
         marginBottom: '10px',
         paddingBottom: '8px',
-        borderBottom: `1px solid ${C.border0}`,
+        borderBottom: `1px solid ${color.borderSubtle}`,
       }}>
         <span style={{
-          fontFamily: C.fontDisplay,
+          fontFamily: font.sans,
           fontSize: '11px',
           fontWeight: 700,
-          color: C.amber,
+          color: color.textPrimary,
           letterSpacing: '0.1em',
         }}>
           KEYBOARD SHORTCUTS
@@ -228,12 +230,12 @@ function ShortcutTooltip({ visible, onClose }: { visible: boolean; onClose: () =
           style={{
             background: 'none',
             border: 'none',
-            color: C.whiteGhost,
+            color: color.textTertiary,
             cursor: 'pointer',
             fontSize: '14px',
             lineHeight: 1,
             padding: '0 2px',
-            fontFamily: C.fontMono,
+            fontFamily: font.mono,
           }}
         >
           x
@@ -247,17 +249,17 @@ function ShortcutTooltip({ visible, onClose }: { visible: boolean; onClose: () =
         {SHORTCUT_ENTRIES.map(([key, cmd]) => (
           <div key={key} style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
             <span style={{
-              fontFamily: C.fontMono,
+              fontFamily: font.mono,
               fontSize: '10px',
-              color: C.amber,
+              color: color.textPrimary,
               minWidth: '38px',
             }}>
               [{key}]
             </span>
             <span style={{
-              fontFamily: C.fontMono,
+              fontFamily: font.mono,
               fontSize: '10px',
-              color: C.whiteDim,
+              color: color.textSecondary,
             }}>
               {cmd}
             </span>
@@ -275,10 +277,8 @@ function IndexTile({ quote }: { quote: IndexQuote | undefined }) {
   const price = quote?.price ?? null
   const change = quote?.change ?? null
   const changePct = quote?.change_pct ?? null
-  const color = change !== null ? (change >= 0 ? C.green : C.red) : C.whiteDim
+  const changeColor = change !== null ? (change >= 0 ? color.accentPositive : color.accentNegative) : color.textSecondary
 
-  // Generate a small synthetic sparkline from change for visual interest
-  // Real apps would use historical data; here we approximate
   const sparkData: (number | null)[] = React.useMemo(() => {
     if (price === null) return []
     const base = price
@@ -297,25 +297,25 @@ function IndexTile({ quote }: { quote: IndexQuote | undefined }) {
       alignItems: 'center',
       gap: '10px',
       padding: '8px 12px',
-      background: C.surface1,
-      border: `1px solid ${C.border0}`,
+      background: color.bgElevated,
+      border: `1px solid ${color.borderSubtle}`,
       minWidth: '0',
     }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: '0' }}>
         <span style={{
-          fontFamily: C.fontDisplay,
+          fontFamily: font.sans,
           fontSize: '12px',
           fontWeight: 700,
-          color: C.amber,
+          color: color.textPrimary,
           letterSpacing: '0.05em',
           whiteSpace: 'nowrap',
         }}>
           {quote?.ticker ?? '--'}
         </span>
         <span style={{
-          fontFamily: C.fontMono,
+          fontFamily: font.mono,
           fontSize: '14px',
-          color: loading ? C.whiteGhost : C.white,
+          color: loading ? color.textTertiary : color.textPrimary,
           fontVariantNumeric: 'tabular-nums',
           whiteSpace: 'nowrap',
         }}>
@@ -327,16 +327,16 @@ function IndexTile({ quote }: { quote: IndexQuote | undefined }) {
           <>
             <ChangeIndicator value={changePct} decimals={2} size="sm" />
             <span style={{
-              fontFamily: C.fontMono,
+              fontFamily: font.mono,
               fontSize: '10px',
-              color,
+              color: changeColor,
               fontVariantNumeric: 'tabular-nums',
             }}>
               {change >= 0 ? '+' : ''}{change.toFixed(2)}
             </span>
           </>
         ) : (
-          <span style={{ fontFamily: C.fontMono, fontSize: '10px', color: C.whiteGhost }}>--</span>
+          <span style={{ fontFamily: font.mono, fontSize: '10px', color: color.textTertiary }}>--</span>
         )}
       </div>
       <div style={{ flexShrink: 0, marginLeft: '2px' }}>
@@ -344,7 +344,7 @@ function IndexTile({ quote }: { quote: IndexQuote | undefined }) {
           data={sparkData}
           width={32}
           height={16}
-          color={change !== null && change >= 0 ? C.green : change !== null ? C.red : C.amber}
+          color={change !== null && change >= 0 ? color.accentPositive : change !== null ? color.accentNegative : color.textPrimary}
         />
       </div>
     </div>
@@ -366,8 +366,8 @@ function QuickCard({ link, onNavigate, delay }: { link: QuickLink; onNavigate: (
         alignItems: 'center',
         gap: '12px',
         padding: '12px 14px',
-        background: hovered ? C.surfaceGlow : C.surface2,
-        border: `1px solid ${hovered ? C.amber : C.border0}`,
+        background: hovered ? color.bgHover : color.bgSurface,
+        border: `1px solid ${hovered ? color.borderMedium : color.borderSubtle}`,
         cursor: 'pointer',
         textAlign: 'left',
         transition: 'border-color 200ms ease, background 200ms ease',
@@ -380,20 +380,20 @@ function QuickCard({ link, onNavigate, delay }: { link: QuickLink; onNavigate: (
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
         <span style={{
-          fontFamily: C.fontDisplay,
+          fontFamily: font.sans,
           fontSize: '13px',
           fontWeight: 700,
-          color: hovered ? C.amberBright : C.white,
+          color: color.textPrimary,
           transition: 'color 200ms ease',
           whiteSpace: 'nowrap',
         }}>
           {link.label}
         </span>
         <span style={{
-          fontFamily: C.fontDisplay,
+          fontFamily: font.sans,
           fontSize: '11px',
           fontWeight: 400,
-          color: C.amberDim,
+          color: color.textSecondary,
           whiteSpace: 'nowrap',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
@@ -453,7 +453,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
       display: 'flex',
       flexDirection: 'column',
       height: '100%',
-      background: C.surface0,
+      background: color.bgBase,
       overflowY: 'auto',
       overflowX: 'hidden',
     }}>
@@ -468,34 +468,23 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
         animation: 'fadeSlideUp 400ms cubic-bezier(0.16, 1, 0.3, 1) both',
         animationDelay: '0ms',
       }}>
-        {/* Radial glow behind wordmark */}
         <div style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: '400px',
-          height: '200px',
-          background: 'radial-gradient(ellipse at center, #ff990008 0%, transparent 60%)',
-          pointerEvents: 'none',
-        }} />
-        <div style={{
-          fontFamily: C.fontDisplay,
+          fontFamily: font.sans,
           fontSize: breakpoint === 'compact' ? '24px' : '28px',
           fontWeight: 700,
-          color: C.amber,
-          letterSpacing: '0.3em',
+          color: color.textPrimary,
+          letterSpacing: '0.05em',
           lineHeight: 1,
           position: 'relative',
         }}>
           SPECTRA
         </div>
         <div style={{
-          fontFamily: C.fontMono,
+          fontFamily: font.mono,
           fontSize: '12px',
           fontWeight: 400,
-          color: C.amberDim,
-          letterSpacing: '0.5em',
+          color: color.textSecondary,
+          letterSpacing: '0.1em',
           marginTop: '6px',
           position: 'relative',
         }}>
@@ -520,15 +509,15 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
           flexShrink: 0,
         }}>
           <span style={{
-            fontFamily: C.fontDisplay,
+            fontFamily: font.sans,
             fontSize: '10px',
             fontWeight: 700,
-            color: C.amberMute,
+            color: color.textTertiary,
             letterSpacing: '0.15em',
           }}>
             MARKET
           </span>
-          <LiveDot size={5} color={indices ? C.green : C.amberMute} active={!!indices} />
+          <LiveDot size={5} color={indices ? color.accentPositive : color.textTertiary} active={!!indices} />
         </div>
         {INDEX_TICKERS.map(ticker => (
           <IndexTile key={ticker} quote={indexMap[ticker]} />
@@ -539,7 +528,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
       <div style={{
         margin: '0 32px',
         height: '1px',
-        background: `linear-gradient(90deg, transparent 0%, ${C.border1} 20%, ${C.border1} 80%, transparent 100%)`,
+        background: color.borderSubtle,
       }} />
 
       {/* ── Quick access grid ──────────────────────────────────────────────── */}
@@ -552,10 +541,10 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
         {/* Left column: Markets */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div style={{
-            fontFamily: C.fontDisplay,
+            fontFamily: font.sans,
             fontSize: '10px',
             fontWeight: 700,
-            color: C.amberMute,
+            color: color.textTertiary,
             letterSpacing: '0.2em',
             marginBottom: '2px',
             animation: 'fadeSlideUp 400ms cubic-bezier(0.16, 1, 0.3, 1) both',
@@ -576,10 +565,10 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
         {/* Right column: Tools */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div style={{
-            fontFamily: C.fontDisplay,
+            fontFamily: font.sans,
             fontSize: '10px',
             fontWeight: 700,
-            color: C.amberMute,
+            color: color.textTertiary,
             letterSpacing: '0.2em',
             marginBottom: '2px',
             animation: 'fadeSlideUp 400ms cubic-bezier(0.16, 1, 0.3, 1) both',
@@ -609,9 +598,9 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
           onClick={() => setShowShortcuts(prev => !prev)}
           style={{
             background: 'none',
-            border: `1px solid ${C.border0}`,
-            color: C.whiteGhost,
-            fontFamily: C.fontMono,
+            border: `1px solid ${color.borderSubtle}`,
+            color: color.textTertiary,
+            fontFamily: font.mono,
             fontSize: '10px',
             cursor: 'pointer',
             padding: '3px 8px',
@@ -619,12 +608,12 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
             transition: 'border-color 200ms ease, color 200ms ease',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = C.border1
-            e.currentTarget.style.color = C.whiteDim
+            e.currentTarget.style.borderColor = color.borderMedium
+            e.currentTarget.style.color = color.textSecondary
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = C.border0
-            e.currentTarget.style.color = C.whiteGhost
+            e.currentTarget.style.borderColor = color.borderSubtle
+            e.currentTarget.style.color = color.textTertiary
           }}
         >
           ? shortcuts

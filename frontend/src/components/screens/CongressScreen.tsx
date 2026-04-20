@@ -52,7 +52,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ billId, onClose }) => {
     <div style={{
       width: 400,
       height: '100%',
-      background: C.surface1,
+      background: 'rgba(19, 22, 25, 0.6)',
       borderLeft: `1px solid ${C.border1}`,
       display: 'flex',
       flexDirection: 'column',
@@ -66,7 +66,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ billId, onClose }) => {
         alignItems: 'center',
         padding: '10px 16px',
         borderBottom: `1px solid ${C.border1}`,
-        background: C.surface2,
+        background: 'rgba(26, 30, 35, 0.5)',
       }}>
         <span style={{ color: C.amberBright, fontSize: 13, fontFamily: C.fontMono, fontWeight: 700, letterSpacing: '0.05em' }}>
           {billId ?? 'BILL DETAIL'}
@@ -135,7 +135,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ billId, onClose }) => {
             <div style={{ marginBottom: 16 }}>
               <div style={{ color: C.whiteDim, fontSize: 9, fontFamily: C.fontDisplay, letterSpacing: '0.08em', fontWeight: 600, marginBottom: 4 }}>LATEST ACTION</div>
               <div style={{
-                background: C.surface2,
+                background: 'rgba(26, 30, 35, 0.5)',
                 border: `1px solid ${C.border0}`,
                 padding: '8px 12px',
                 color: C.amberDim,
@@ -153,7 +153,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ billId, onClose }) => {
             <div style={{ marginBottom: 16 }}>
               <div style={{ color: C.whiteDim, fontSize: 9, fontFamily: C.fontDisplay, letterSpacing: '0.08em', fontWeight: 600, marginBottom: 4 }}>SUMMARY</div>
               <div style={{
-                background: C.surface2,
+                background: 'rgba(26, 30, 35, 0.5)',
                 border: `1px solid ${C.border0}`,
                 padding: '10px 12px',
                 color: C.whiteDim,
@@ -259,14 +259,14 @@ export default function CongressScreen(_props: Props) {
         {/* Main list area */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           {/* Search/filter bar */}
-          <div style={{ padding: '8px 12px', borderBottom: `1px solid ${C.border1}`, background: C.surface1 }}>
+          <div style={{ padding: '8px 12px', borderBottom: `1px solid ${C.border1}`, background: 'rgba(19, 22, 25, 0.6)' }}>
             <input
               value={searchFilter}
               onChange={e => setSearchFilter(e.target.value)}
               placeholder="Search bills by ID, title, or action..."
               style={{
                 width: '100%',
-                background: C.surface2,
+                background: 'rgba(26, 30, 35, 0.5)',
                 border: `1px solid ${C.border1}`,
                 color: C.white,
                 fontFamily: C.fontMono,

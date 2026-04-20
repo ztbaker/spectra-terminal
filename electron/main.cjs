@@ -102,6 +102,24 @@ const MIME_TYPES = {
 function startStaticServer(port = 3000) {
   return new Promise((resolve, reject) => {
     const server = http.createServer((req, res) => {
+      // Proxy /api requests to backend
+      if (req.url.startsWith('/api')) {
+        const proxyReq = http.request(
+          `${BACKEND_URL}${req.url}`,
+          { method: req.method, headers: { ...req.headers, host: '127.0.0.1:8000' } },
+          (proxyRes) => {
+            res.writeHead(proxyRes.statusCode, proxyRes.headers)
+            proxyRes.pipe(res)
+          }
+        )
+        proxyReq.on('error', () => {
+          res.writeHead(502, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ detail: 'Backend unavailable' }))
+        })
+        req.pipe(proxyReq)
+        return
+      }
+
       // Serve static files from frontend/dist
       let filePath = path.join(FRONTEND_DIST, req.url === '/' ? 'index.html' : req.url)
 
@@ -200,7 +218,9 @@ async function createWindow() {
       await waitForBackend()
       mainWindow.loadURL('http://localhost:5173')
     } else {
+      startBackend()
       const appUrl = await startStaticServer()
+      await waitForBackend()
       mainWindow.loadURL(appUrl)
     }
   } catch (err) {

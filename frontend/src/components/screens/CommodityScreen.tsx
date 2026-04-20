@@ -1,7 +1,8 @@
 import Panel from '../Terminal/Panel'
 import React, { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
+const { color, font } = theme
 import TabBar from '../shared/TabBar'
 import DataGrid from '../shared/DataGrid'
 import Sparkline from '../shared/Sparkline'
@@ -26,44 +27,38 @@ const TABS = [
   { key: 'AGRICULTURE', label: 'AGRICULTURE' },
 ]
 
-// ─── Metric card ──────────────────────────────────────────────────────────────
-
 const MetricCard: React.FC<{ label: string; value: string; sub?: string; color?: string }> = ({
-  label, value, sub, color,
+  label, value, sub, color: accentColor,
 }) => (
   <div style={{
-    background: C.surface2,
-    border: `1px solid ${C.border0}`,
+    background: 'rgba(19, 22, 25, 0.6)',
+    border: `1px solid ${color.borderSubtle}`,
     padding: '10px 14px',
     display: 'flex',
     flexDirection: 'column',
     gap: 2,
   }}>
-    <span style={{ color: C.whiteDim, fontSize: 9, fontFamily: C.fontDisplay, letterSpacing: '0.08em', fontWeight: 600 }}>
+    <span style={{ color: color.textTertiary, fontSize: 11, fontFamily: font.sans, letterSpacing: '0', fontWeight: 600 }}>
       {label}
     </span>
-    <span style={{ color: color ?? C.white, fontSize: 16, fontFamily: C.fontMono, fontVariantNumeric: 'tabular-nums', fontWeight: 700 }}>
+    <span style={{ color: accentColor ?? color.textPrimary, fontSize: 16, fontFamily: font.mono, fontVariantNumeric: 'tabular-nums', fontWeight: 700 }}>
       {value}
     </span>
     {sub && (
-      <span style={{ color: C.amberMute, fontSize: 10, fontFamily: C.fontMono }}>{sub}</span>
+      <span style={{ color: color.textTertiary, fontSize: 10, fontFamily: font.mono }}>{sub}</span>
     )}
   </div>
 )
 
-// ─── Main screen ──────────────────────────────────────────────────────────────
-
 export default function CommodityScreen({ onNavigate }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>('ENERGY')
 
-  // Spot prices (used by all tabs)
   const { data: spots, isLoading: spotsLoading } = useQuery({
     queryKey: ['commodity-spots'],
     queryFn: fetchCommoditySpots,
     staleTime: 60_000,
   })
 
-  // Energy outlook
   const { data: outlook, isLoading: outlookLoading } = useQuery({
     queryKey: ['commodity-energy-outlook'],
     queryFn: fetchCommodityEnergyOutlook,
@@ -71,7 +66,6 @@ export default function CommodityScreen({ onNavigate }: Props) {
     staleTime: 300_000,
   })
 
-  // Energy stocks
   const { data: energyStocks, isLoading: stocksLoading } = useQuery({
     queryKey: ['commodity-energy-stocks'],
     queryFn: fetchCommodityEnergyStocks,
@@ -79,7 +73,6 @@ export default function CommodityScreen({ onNavigate }: Props) {
     staleTime: 300_000,
   })
 
-  // PSD data
   const { data: psd, isLoading: psdLoading } = useQuery({
     queryKey: ['commodity-ag-psd'],
     queryFn: () => fetchCommodityAgPSD(),
@@ -94,11 +87,9 @@ export default function CommodityScreen({ onNavigate }: Props) {
     ? spotsLoading || psdLoading
     : spotsLoading
 
-  // ─── ENERGY tab ────────────────────────────────────────────────────────────
-
   const energyColumns = useMemo(() => [
     { key: 'symbol', header: 'SYMBOL', type: 'text' as const, width: '70px', render: (row: any) => (
-      <span style={{ color: C.amberBright, fontWeight: 700 }}>{row.symbol}</span>
+      <span style={{ color: color.textPrimary, fontWeight: 700 }}>{row.symbol}</span>
     )},
     { key: 'name', header: 'NAME', type: 'text' as const },
     { key: 'price', header: 'PRICE', type: 'currency' as const, width: '100px' },
@@ -111,11 +102,9 @@ export default function CommodityScreen({ onNavigate }: Props) {
     [spotList]
   )
 
-  // ─── METALS tab ───────────────────────────────────────────────────────────
-
   const metalsColumns = useMemo(() => [
     { key: 'symbol', header: 'SYMBOL', type: 'text' as const, width: '70px', render: (row: any) => (
-      <span style={{ color: C.amberBright, fontWeight: 700 }}>{row.symbol}</span>
+      <span style={{ color: color.textPrimary, fontWeight: 700 }}>{row.symbol}</span>
     )},
     { key: 'name', header: 'NAME', type: 'text' as const },
     { key: 'price', header: 'PRICE', type: 'currency' as const, width: '100px' },
@@ -123,8 +112,8 @@ export default function CommodityScreen({ onNavigate }: Props) {
     { key: 'sparkline', header: 'TREND', type: 'text' as const, width: '100px', render: (row: any) => {
       const sparkData = row.sparkline ?? (row.change_pct != null ? [0, row.change_pct ?? 0] : [])
       return sparkData.length > 1 ? (
-        <Sparkline data={sparkData} width={80} height={20} color={row.change_pct >= 0 ? C.green : C.red} />
-      ) : <span style={{ color: C.whiteGhost }}>—</span>
+        <Sparkline data={sparkData} width={80} height={20} color={row.change_pct >= 0 ? color.accentPositive : color.accentNegative} />
+      ) : <span style={{ color: color.textTertiary }}>—</span>
     }},
   ], [])
 
@@ -133,11 +122,9 @@ export default function CommodityScreen({ onNavigate }: Props) {
     [spotList]
   )
 
-  // ─── AGRICULTURE tab ─────────────────────────────────────────────────────
-
   const psdColumns = useMemo(() => [
     { key: 'country', header: 'COUNTRY', type: 'text' as const, width: '120px', render: (row: any) => (
-      <span style={{ color: C.white, fontWeight: 600 }}>{row.country ?? row.Country ?? '—'}</span>
+      <span style={{ color: color.textPrimary, fontWeight: 600 }}>{row.country ?? row.Country ?? '—'}</span>
     )},
     { key: 'commodity', header: 'COMMODITY', type: 'text' as const, width: '100px' },
     { key: 'year', header: 'YEAR', type: 'text' as const, width: '60px' },
@@ -146,7 +133,6 @@ export default function CommodityScreen({ onNavigate }: Props) {
     { key: 'exports', header: 'EXPORTS', type: 'number' as const, width: '90px' },
   ], [])
 
-  // Outlook summary section
   const outlookSeries = useMemo(() => {
     if (!outlook?.observations) return null
     return outlook.observations.filter((o: any) => o.value != null)
@@ -156,16 +142,13 @@ export default function CommodityScreen({ onNavigate }: Props) {
     <Panel title="COMMODITIES" actions={<LiveDot label={isLoading ? 'LOADING' : 'LIVE'} active={!isLoading} />}>
       <LoadingBar loading={isLoading} />
 
-      {/* Tab bar */}
-      <div style={{ padding: '8px 12px 0', borderBottom: `1px solid ${C.border1}` }}>
+      <div style={{ padding: '8px 12px 0', borderBottom: `1px solid ${color.borderSubtle}` }}>
         <TabBar tabs={TABS} activeKey={activeTab} onChange={(k) => setActiveTab(k as Tab)} />
       </div>
 
       <div style={{ flex: 1, overflow: 'auto', padding: '0 0 12px' }}>
-        {/* ── ENERGY ─────────────────────────────────────────────────────── */}
         {activeTab === 'ENERGY' && (
           <>
-            {/* Summary metrics from spot prices */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, padding: '12px 16px' }}>
               {energySpotItems.map((s: any) => (
                 <MetricCard
@@ -173,14 +156,13 @@ export default function CommodityScreen({ onNavigate }: Props) {
                   label={s.name}
                   value={s.price != null ? `$${s.price.toFixed(2)}` : '—'}
                   sub={s.change_pct != null ? `${s.change_pct >= 0 ? '+' : ''}${s.change_pct.toFixed(2)}%` : undefined}
-                  color={s.change_pct != null ? (s.change_pct >= 0 ? C.green : C.red) : undefined}
+                  color={s.change_pct != null ? (s.change_pct >= 0 ? color.accentPositive : color.accentNegative) : undefined}
                 />
               ))}
             </div>
 
-            {/* Energy spot prices table */}
             <div style={{ padding: '0 16px' }}>
-              <div style={{ color: C.amberMute, fontSize: 10, fontFamily: C.fontDisplay, fontWeight: 700, letterSpacing: '0.08em', marginBottom: 6, marginTop: 8 }}>
+              <div style={{ color: color.textSecondary, fontSize: 11, fontFamily: font.sans, fontWeight: 600, marginBottom: 6, marginTop: 8 }}>
                 CRUDE + PRODUCTS
               </div>
               <DataGrid
@@ -192,24 +174,23 @@ export default function CommodityScreen({ onNavigate }: Props) {
               />
             </div>
 
-            {/* STEO Outlook summary */}
             {outlookSeries && outlookSeries.length > 0 && (
               <div style={{ padding: '16px 16px 0' }}>
-                <div style={{ color: C.amberMute, fontSize: 10, fontFamily: C.fontDisplay, fontWeight: 700, letterSpacing: '0.08em', marginBottom: 6 }}>
+                <div style={{ color: color.textSecondary, fontSize: 11, fontFamily: font.sans, fontWeight: 600, marginBottom: 6 }}>
                   STEO OUTLOOK — {outlook.title || 'EIA'}
                 </div>
-                <div style={{ background: C.surface2, border: `1px solid ${C.border0}`, padding: 12 }}>
+                <div style={{ background: 'rgba(19, 22, 25, 0.6)', border: `1px solid ${color.borderSubtle}`, padding: 12 }}>
                   <Sparkline
                     data={outlookSeries.map((o: any) => o.value)}
                     width={440}
                     height={100}
-                    color={C.amber}
+                    color={color.textPrimary}
                   />
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
-                    <span style={{ color: C.whiteGhost, fontSize: 10, fontFamily: C.fontMono }}>
+                    <span style={{ color: color.textTertiary, fontSize: 10, fontFamily: font.mono }}>
                       {outlookSeries[0]?.date}
                     </span>
-                    <span style={{ color: C.white, fontSize: 11, fontFamily: C.fontMono, fontWeight: 700 }}>
+                    <span style={{ color: color.textPrimary, fontSize: 11, fontFamily: font.mono, fontWeight: 700 }}>
                       Latest: {outlookSeries[outlookSeries.length - 1]?.value}
                     </span>
                   </div>
@@ -217,16 +198,15 @@ export default function CommodityScreen({ onNavigate }: Props) {
               </div>
             )}
 
-            {/* Energy stocks table */}
             {energyStocks?.data && energyStocks.data.length > 0 && (
               <div style={{ padding: '16px 16px 0' }}>
-                <div style={{ color: C.amberMute, fontSize: 10, fontFamily: C.fontDisplay, fontWeight: 700, letterSpacing: '0.08em', marginBottom: 6 }}>
+                <div style={{ color: color.textSecondary, fontSize: 11, fontFamily: font.sans, fontWeight: 600, marginBottom: 6 }}>
                   PETROLEUM STOCKS (EIA)
                 </div>
                 <DataGrid
                   columns={[
                     { key: 'series', header: 'SERIES', type: 'text' as const, render: (row: any) => (
-                      <span style={{ color: C.white }}>{row.series ?? row.Series ?? row.name ?? '—'}</span>
+                      <span style={{ color: color.textPrimary }}>{row.series ?? row.Series ?? row.name ?? '—'}</span>
                     )},
                     { key: 'value', header: 'VALUE', type: 'number' as const, width: '120px' },
                     { key: 'date', header: 'DATE', type: 'text' as const, width: '100px' },
@@ -241,10 +221,9 @@ export default function CommodityScreen({ onNavigate }: Props) {
           </>
         )}
 
-        {/* ── METALS ────────────────────────────────────────────────────── */}
         {activeTab === 'METALS' && (
           <div style={{ padding: '12px 16px' }}>
-            <div style={{ color: C.amberMute, fontSize: 10, fontFamily: C.fontDisplay, fontWeight: 700, letterSpacing: '0.08em', marginBottom: 8 }}>
+            <div style={{ color: color.textSecondary, fontSize: 11, fontFamily: font.sans, fontWeight: 600, marginBottom: 8 }}>
               SPOT PRICES
             </div>
             <DataGrid
@@ -255,26 +234,25 @@ export default function CommodityScreen({ onNavigate }: Props) {
               emptyMessage="No metals data available"
             />
 
-            {/* Quick nav */}
             <div style={{ marginTop: 16 }}>
-              <div style={{ color: C.amberBright, fontSize: 11, fontWeight: 700, marginBottom: 6, fontFamily: C.fontMono }}>QUICK ACCESS</div>
+              <div style={{ color: color.textPrimary, fontSize: 11, fontWeight: 700, marginBottom: 6, fontFamily: font.mono }}>QUICK ACCESS</div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {['GC=F GP', 'SI=F GP'].map(cmd => (
                   <button
                     key={cmd}
                     onClick={() => onNavigate(cmd)}
                     style={{
-                      background: C.surface2,
-                      color: C.amber,
-                      border: `1px solid ${C.border1}`,
+                      background: 'rgba(19, 22, 25, 0.6)',
+                      color: color.textPrimary,
+                      border: `1px solid ${color.borderSubtle}`,
                       padding: '5px 12px',
                       fontSize: 11,
-                      fontFamily: C.fontMono,
+                      fontFamily: font.mono,
                       cursor: 'pointer',
                       transition: 'all 150ms ease',
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.background = C.surfaceGlow; e.currentTarget.style.borderColor = C.amberMute }}
-                    onMouseLeave={e => { e.currentTarget.style.background = C.surface2; e.currentTarget.style.borderColor = C.border1 }}
+                    onMouseEnter={e => { e.currentTarget.style.background = color.bgHover; e.currentTarget.style.borderColor = color.borderMedium }}
+                    onMouseLeave={e => { e.currentTarget.style.background = color.bgElevated; e.currentTarget.style.borderColor = color.borderSubtle }}
                   >
                     {cmd.replace(' GP', '')}
                   </button>
@@ -284,10 +262,9 @@ export default function CommodityScreen({ onNavigate }: Props) {
           </div>
         )}
 
-        {/* ── AGRICULTURE ──────────────────────────────────────────────── */}
         {activeTab === 'AGRICULTURE' && (
           <div style={{ padding: '12px 16px' }}>
-            <div style={{ color: C.amberMute, fontSize: 10, fontFamily: C.fontDisplay, fontWeight: 700, letterSpacing: '0.08em', marginBottom: 8 }}>
+            <div style={{ color: color.textSecondary, fontSize: 11, fontFamily: font.sans, fontWeight: 600, marginBottom: 8 }}>
               USDA PSD — SUPPLY / DEMAND
             </div>
             {psd?.data && psd.data.length > 0 ? (
@@ -300,7 +277,7 @@ export default function CommodityScreen({ onNavigate }: Props) {
               />
             ) : (
               !psdLoading && (
-                <div style={{ padding: 24, color: C.whiteGhost, textAlign: 'center' }}>
+                <div style={{ padding: 24, color: color.textTertiary, textAlign: 'center' }}>
                   No PSD data available. USDA provider may not be configured.
                 </div>
               )

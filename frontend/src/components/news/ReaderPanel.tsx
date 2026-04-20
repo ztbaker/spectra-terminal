@@ -1,8 +1,10 @@
 import React, { useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchReaderArticle } from '../../lib/api'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
 import LoadingBar from '../shared/LoadingBar'
+
+const { color, font } = theme
 
 interface Props {
   url: string
@@ -48,7 +50,7 @@ const ReaderPanel: React.FC<Props> = ({ url, fallbackHeadline, fallbackSource, o
       onClick={onClose}
       style={{
         position: 'fixed', inset: 0,
-        background: 'rgba(0,0,0,0.75)',
+        background: `${color.bgBase}DA`,
         backdropFilter: 'blur(2px)',
         zIndex: 1000,
         display: 'flex',
@@ -60,9 +62,9 @@ const ReaderPanel: React.FC<Props> = ({ url, fallbackHeadline, fallbackSource, o
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: C.surface0,
-          border: `1px solid ${C.border2}`,
-          boxShadow: C.shadowGlow,
+          background: color.bgBase,
+          border: `1px solid ${color.borderMedium}`,
+          boxShadow: theme.shadow.md,
           width: 'min(960px, 100%)',
           maxHeight: '100%',
           display: 'flex',
@@ -78,14 +80,15 @@ const ReaderPanel: React.FC<Props> = ({ url, fallbackHeadline, fallbackSource, o
           justifyContent: 'space-between',
           alignItems: 'center',
           padding: '8px 16px',
-          borderBottom: `1px solid ${C.border1}`,
-          background: C.surface1,
+          borderBottom: `1px solid ${color.borderSubtle}`,
+          background: 'rgba(19, 22, 25, 0.8)',
           flexShrink: 0,
         }}>
           <span style={{
-            color: C.amber,
+            color: color.textPrimary,
             fontSize: 10,
             fontWeight: 700,
+            fontFamily: font.mono,
             letterSpacing: '0.12em',
             textTransform: 'uppercase',
           }}>
@@ -97,12 +100,12 @@ const ReaderPanel: React.FC<Props> = ({ url, fallbackHeadline, fallbackSource, o
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                color: C.cyan,
+                color: color.accentInfo,
                 fontSize: 10,
                 fontFamily: 'inherit',
                 letterSpacing: '0.06em',
                 textDecoration: 'none',
-                border: `1px solid ${C.cyanDim}`,
+                border: `1px solid ${color.accentInfoDim}`,
                 padding: '3px 8px',
                 borderRadius: 2,
               }}
@@ -114,8 +117,8 @@ const ReaderPanel: React.FC<Props> = ({ url, fallbackHeadline, fallbackSource, o
               onClick={onClose}
               style={{
                 background: 'transparent',
-                border: `1px solid ${C.border2}`,
-                color: C.whiteDim,
+                border: `1px solid ${color.borderMedium}`,
+                color: color.textSecondary,
                 fontSize: 10,
                 fontFamily: 'inherit',
                 padding: '3px 8px',
@@ -134,12 +137,13 @@ const ReaderPanel: React.FC<Props> = ({ url, fallbackHeadline, fallbackSource, o
         <div style={{
           padding: '20px 28px 28px',
           overflowY: 'auto',
-          color: C.white,
+          color: color.textPrimary,
+          fontFamily: font.sans,
           lineHeight: 1.7,
           fontSize: 14,
         }}>
           <h1 style={{
-            color: C.amberBright,
+            color: color.textPrimary,
             fontSize: 22,
             fontWeight: 700,
             lineHeight: 1.25,
@@ -153,15 +157,16 @@ const ReaderPanel: React.FC<Props> = ({ url, fallbackHeadline, fallbackSource, o
             display: 'flex',
             gap: 14,
             flexWrap: 'wrap',
-            color: C.whiteGhost,
+            color: color.textTertiary,
+            fontFamily: font.mono,
             fontSize: 11,
             letterSpacing: '0.05em',
             textTransform: 'uppercase',
-            borderBottom: `1px solid ${C.border0}`,
+            borderBottom: `1px solid ${color.borderSubtle}`,
             paddingBottom: 10,
             marginBottom: 18,
           }}>
-            {author    && <span>By <span style={{ color: C.whiteDim }}>{author}</span></span>}
+            {author    && <span>By <span style={{ color: color.textSecondary }}>{author}</span></span>}
             {published && <span>{published}</span>}
             {data && data.word_count > 0 && <span>{data.word_count.toLocaleString()} words · ~{Math.max(1, Math.round(data.word_count / 220))} min read</span>}
           </div>
@@ -169,24 +174,24 @@ const ReaderPanel: React.FC<Props> = ({ url, fallbackHeadline, fallbackSource, o
           {errorMsg ? (
             <div style={{
               padding: 24,
-              border: `1px solid ${C.redDim}`,
-              background: C.redGlow,
-              color: C.redBright,
+              border: `1px solid ${color.accentNegativeDim}`,
+              background: color.accentNegativeDim,
+              color: color.accentNegative,
               fontSize: 12,
               lineHeight: 1.6,
             }}>
               <div style={{ fontWeight: 700, marginBottom: 6, letterSpacing: '0.06em' }}>
                 ▌ EXTRACTION FAILED
               </div>
-              <div style={{ color: C.white, marginBottom: 12 }}>{errorMsg}</div>
+              <div style={{ color: color.textPrimary, marginBottom: 12 }}>{errorMsg}</div>
               <a
                 href={url}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
-                  color: C.amberBright,
+                  color: color.textPrimary,
                   textDecoration: 'none',
-                  borderBottom: `1px solid ${C.amberBright}`,
+                  borderBottom: `1px solid ${color.textPrimary}`,
                   paddingBottom: 1,
                   fontSize: 11,
                   letterSpacing: '0.06em',
@@ -196,7 +201,7 @@ const ReaderPanel: React.FC<Props> = ({ url, fallbackHeadline, fallbackSource, o
               </a>
             </div>
           ) : isLoading ? (
-            <div style={{ color: C.whiteGhost, fontSize: 12, padding: 24 }}>
+            <div style={{ color: color.textTertiary, fontSize: 12, padding: 24 }}>
               Extracting article…
             </div>
           ) : (

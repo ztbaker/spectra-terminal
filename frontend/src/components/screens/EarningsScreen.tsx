@@ -4,15 +4,14 @@ import { useQuery } from '@tanstack/react-query'
 import { fetchEarnings } from '../../lib/api'
 import type { EarningsEntry } from '../../types'
 import LoadingBar from '../shared/LoadingBar'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+const { color, font } = theme
 
 const DAY_NAMES = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
 const MONTH_NAMES = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
 
 function formatColumnDate(dateStr: string): string {
-  // dateStr is "YYYY-MM-DD"
   const [year, month, day] = dateStr.split('-').map(Number)
   const d = new Date(year, month - 1, day)
   const dayName = DAY_NAMES[d.getDay()]
@@ -25,8 +24,6 @@ function formatEps(n: number | null | undefined): string {
   return n < 0 ? `-$${Math.abs(n).toFixed(2)}` : `$${n.toFixed(2)}`
 }
 
-// ─── When-market badge ────────────────────────────────────────────────────────
-
 interface WhenBadgeProps {
   when: 'BMO' | 'AMC' | 'unknown'
 }
@@ -36,11 +33,10 @@ const WhenBadge: React.FC<WhenBadgeProps> = ({ when }) => {
     return (
       <span
         style={{
-          background: C.amberBright,
-          color: C.surface0,
+          background: color.accentPositive,
+          color: color.textInverse,
           fontSize: '9px',
           padding: '1px 4px',
-          letterSpacing: '0.04em',
           fontWeight: 700,
           flexShrink: 0,
         }}
@@ -53,11 +49,10 @@ const WhenBadge: React.FC<WhenBadgeProps> = ({ when }) => {
     return (
       <span
         style={{
-          background: C.cyanBright,
-          color: C.surface0,
+          background: color.accentInfo,
+          color: color.textInverse,
           fontSize: '9px',
           padding: '1px 4px',
-          letterSpacing: '0.04em',
           fontWeight: 700,
           flexShrink: 0,
         }}
@@ -69,20 +64,17 @@ const WhenBadge: React.FC<WhenBadgeProps> = ({ when }) => {
   return (
     <span
       style={{
-        background: C.amberMute,
-        color: C.amberDim,
+        background: color.bgSurface,
+        color: color.textTertiary,
         fontSize: '9px',
         padding: '1px 4px',
-        letterSpacing: '0.04em',
         flexShrink: 0,
       }}
     >
-      —
+      {'\u2014'}
     </span>
   )
 }
-
-// ─── Single earnings entry card ───────────────────────────────────────────────
 
 interface EntryCardProps {
   entry: EarningsEntry
@@ -101,7 +93,7 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry, onNavigate }) => {
         width: '100%',
         textAlign: 'left',
         background: 'transparent',
-        border: `1px solid ${C.border1}`,
+        border: `1px solid ${color.borderSubtle}`,
         borderRadius: 0,
         padding: '5px 6px',
         cursor: 'pointer',
@@ -110,27 +102,25 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry, onNavigate }) => {
         transition: 'background 0.1s',
       }}
       onMouseEnter={e => {
-        ;(e.currentTarget as HTMLButtonElement).style.background = C.surfaceGlow
-        ;(e.currentTarget as HTMLButtonElement).style.borderColor = C.amber
+        ;(e.currentTarget as HTMLButtonElement).style.background = color.bgHover
+        ;(e.currentTarget as HTMLButtonElement).style.borderColor = color.borderMedium
       }}
       onMouseLeave={e => {
         ;(e.currentTarget as HTMLButtonElement).style.background = 'transparent'
-        ;(e.currentTarget as HTMLButtonElement).style.borderColor = C.border1
+        ;(e.currentTarget as HTMLButtonElement).style.borderColor = color.borderSubtle
       }}
     >
-      {/* Top row: badge + ticker */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '2px' }}>
         <WhenBadge when={entry.when_market} />
-        <span style={{ color: C.amber, fontSize: '12px', fontWeight: 700, letterSpacing: '0.05em' }}>
+        <span style={{ color: color.ticker, fontSize: '12px', fontWeight: 600, fontFamily: font.mono }}>
           {entry.ticker}
         </span>
       </div>
 
-      {/* Company name */}
       {entry.company_name && (
         <div
           style={{
-            color: C.amberDim,
+            color: color.textSecondary,
             fontSize: '10px',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -143,26 +133,25 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry, onNavigate }) => {
         </div>
       )}
 
-      {/* EPS estimates / actuals */}
       {(epsEst || epsActual) && (
         <div style={{ display: 'flex', gap: '8px', fontSize: '10px', marginTop: '1px' }}>
           {epsEst && (
             <span>
-              <span style={{ color: C.amberMute }}>EST </span>
-              <span style={{ color: C.amberDim }}>{epsEst}</span>
+              <span style={{ color: color.textTertiary }}>EST </span>
+              <span style={{ color: color.textSecondary }}>{epsEst}</span>
             </span>
           )}
           {epsActual && (
             <span>
-              <span style={{ color: C.amberMute }}>ACT </span>
+              <span style={{ color: color.textTertiary }}>ACT </span>
               <span
                 style={{
                   color:
                     entry.eps_actual != null && entry.eps_estimate != null
                       ? entry.eps_actual >= entry.eps_estimate
-                        ? C.green
-                        : C.red
-                      : C.white,
+                        ? color.accentPositive
+                        : color.accentNegative
+                      : color.textPrimary,
                 }}
               >
                 {epsActual}
@@ -175,15 +164,11 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry, onNavigate }) => {
   )
 }
 
-// ─── Lookahead toggle options ─────────────────────────────────────────────────
-
 const LOOKAHEAD_OPTIONS: { label: string; value: number }[] = [
   { label: '7 DAYS',  value: 7 },
   { label: '14 DAYS', value: 14 },
   { label: '30 DAYS', value: 30 },
 ]
-
-// ─── Main component ───────────────────────────────────────────────────────────
 
 interface Props {
   onNavigate: (cmd: string) => void
@@ -200,18 +185,16 @@ const EarningsScreen: React.FC<Props> = ({ onNavigate }) => {
 
   const days = data?.days ?? []
 
-  // Filter to weekdays only (Mon-Fri) for the grid columns
   const weekdays = days.filter(d => {
     const [year, month, day] = d.date.split('-').map(Number)
     const dow = new Date(year, month - 1, day).getDay()
     return dow >= 1 && dow <= 5
   })
 
-  // Total count of entries for the status line
   const totalEntries = days.reduce((sum, d) => sum + d.entries.length, 0)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: C.surface0 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'transparent' }}>
       <LoadingBar loading={isLoading || isFetching} />
 
       <Panel
@@ -230,21 +213,18 @@ const EarningsScreen: React.FC<Props> = ({ onNavigate }) => {
           </div>
         }
       >
-        {/* Error state */}
         {error && !isLoading && (
-          <div style={{ padding: '12px', color: C.red, fontSize: '12px', borderBottom: `1px solid ${C.border1}` }}>
+          <div style={{ padding: '12px', color: color.accentNegative, fontSize: '12px', borderBottom: `1px solid ${color.borderSubtle}` }}>
             ERR: {(error as Error).message ?? 'Failed to load earnings calendar'}
           </div>
         )}
 
-        {/* Loading skeleton */}
         {isLoading && !data && (
-          <div style={{ padding: '16px', color: C.amberMute, fontSize: '12px', textAlign: 'center' }}>
+          <div style={{ padding: '16px', color: color.textTertiary, fontSize: '12px', textAlign: 'center' }}>
             LOADING EARNINGS DATA...
           </div>
         )}
 
-        {/* Calendar grid */}
         {!isLoading && days.length > 0 && (
           <div style={{ padding: '8px', overflowX: 'auto' }}>
             <div
@@ -257,33 +237,30 @@ const EarningsScreen: React.FC<Props> = ({ onNavigate }) => {
             >
               {weekdays.map(day => (
                 <div key={day.date} style={{ display: 'flex', flexDirection: 'column' }}>
-                  {/* Column header */}
                   <div
                     style={{
-                      background: C.surfaceGlow,
-                      borderBottom: `2px solid ${C.amber}`,
+                      background: 'rgba(19, 22, 25, 0.6)',
+                      borderBottom: `2px solid ${color.accentPositive}`,
                       padding: '4px 6px',
                       marginBottom: '6px',
                       textAlign: 'center',
                     }}
                   >
-                    <span style={{ color: C.amberBright, fontSize: '11px', letterSpacing: '0.08em', fontWeight: 700 }}>
+                    <span style={{ color: color.textSecondary, fontSize: '11px', fontWeight: 600, fontFamily: font.sans }}>
                       {formatColumnDate(day.date)}
                     </span>
-                    <span style={{ color: C.amberMute, fontSize: '10px', marginLeft: '6px' }}>
+                    <span style={{ color: color.textTertiary, fontSize: '10px', marginLeft: '6px' }}>
                       ({day.entries.length})
                     </span>
                   </div>
 
-                  {/* Entries */}
                   {day.entries.length === 0 ? (
                     <div
                       style={{
-                        color: C.amberMute,
+                        color: color.textTertiary,
                         fontSize: '11px',
                         textAlign: 'center',
                         padding: '12px 0',
-                        letterSpacing: '0.05em',
                       }}
                     >
                       NO EARNINGS
@@ -303,22 +280,20 @@ const EarningsScreen: React.FC<Props> = ({ onNavigate }) => {
           </div>
         )}
 
-        {/* Empty state when no weekday data */}
         {!isLoading && !error && weekdays.length === 0 && (
-          <div style={{ padding: '32px', color: C.amberMute, fontSize: '12px', textAlign: 'center' }}>
+          <div style={{ padding: '32px', color: color.textTertiary, fontSize: '12px', textAlign: 'center' }}>
             NO EARNINGS DATA FOR THIS PERIOD
           </div>
         )}
 
-        {/* Weekend / non-weekday days summary footer */}
         {!isLoading && days.length > 0 && (
           <div
             style={{
-              borderTop: `1px solid ${C.border1}`,
+              borderTop: `1px solid ${color.borderSubtle}`,
               padding: '4px 12px',
               display: 'flex',
               justifyContent: 'space-between',
-              color: C.amberMute,
+              color: color.textTertiary,
               fontSize: '10px',
             }}
           >
@@ -326,7 +301,7 @@ const EarningsScreen: React.FC<Props> = ({ onNavigate }) => {
               {totalEntries} EARNINGS OVER NEXT {lookahead} DAYS
             </span>
             {data?.cached && (
-              <span style={{ color: C.amberMute }}>CACHED</span>
+              <span style={{ color: color.textTertiary }}>CACHED</span>
             )}
           </div>
         )}

@@ -5,18 +5,10 @@ interface Props {
   title: string
   children: React.ReactNode
   className?: string
-  actions?: React.ReactNode  // optional right-side header buttons/controls
-  /** Optional content padding override. Defaults to '0' — most screens set their own padding. At compact breakpoint, reduces to compact value. */
+  actions?: React.ReactNode
   contentPadding?: string
 }
 
-/**
- * Bloomberg-style panel container.
- * Renders a .bb-panel with a .bb-header (title in highlight yellow)
- * and a scrollable content area.
- * At compact breakpoint (<1440px), reduces padding from 24px to 16px
- * when contentPadding is provided.
- */
 const Panel: React.FC<Props> = ({ title, children, className, actions, contentPadding }) => {
   const bp = useBreakpoint()
   const defaultPadding = contentPadding ?? '0'

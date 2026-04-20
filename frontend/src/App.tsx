@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import type { ParsedCommand, ScreenType } from './types'
 import { parseCommand } from './lib/commandParser'
 import { useWorkspace } from './lib/useWorkspace'
@@ -50,8 +51,111 @@ import { useAuth } from './lib/auth'
 import LoginScreen from './components/Auth/LoginScreen'
 
 function QuitModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
+  const mountedRef = useRef(false)
   useEffect(() => {
+    // Skip keydown events that arrive in the same tick as mount
+    // (the Enter that submitted the command is still propagating)
+    requestAnimationFrame(() => { mountedRef.current = true })
     const handleKey = (e: KeyboardEvent) => {
+      if (!mountedRef.current) return
+      if (e.key === 'Escape') onCancel()
+      if (e.key === 'Enter') onConfirm()
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [onConfirm, onCancel])
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      width: '100vw',
+      height: '100vh',
+      background: 'rgba(0, 0, 0, 0.92)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 99999,
+    }}>
+      <div style={{
+        background: 'rgba(19, 22, 25, 0.95)',
+        backdropFilter: 'blur(40px)',
+        WebkitBackdropFilter: 'blur(40px)',
+        border: '1px solid rgba(255, 255, 255, 0.12)',
+        padding: '32px 48px',
+        textAlign: 'center',
+        borderRadius: '12px',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), 0 0 60px rgba(0, 217, 100, 0.05)',
+      }}>
+        <div style={{
+          color: '#E8EAED',
+          fontSize: '16px',
+          fontWeight: 700,
+          fontFamily: "'Inter', sans-serif",
+          letterSpacing: '0.15em',
+          marginBottom: '12px',
+        }}>
+          QUIT SPECTRA TERMINAL?
+        </div>
+        <div style={{
+          color: '#9AA0A6',
+          fontSize: '12px',
+          fontFamily: "'Inter', sans-serif",
+          marginBottom: '32px',
+        }}>
+          This will close the application.
+        </div>
+        <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
+          <button
+            onClick={onConfirm}
+            autoFocus
+            style={{
+              background: '#00D964',
+              color: '#0B0E11',
+              border: 'none',
+              padding: '10px 28px',
+              fontSize: '12px',
+              fontWeight: 700,
+              fontFamily: "'Inter', sans-serif",
+              cursor: 'pointer',
+              letterSpacing: '0.1em',
+              borderRadius: '6px',
+            }}
+          >
+            YES, QUIT
+          </button>
+          <button
+            onClick={onCancel}
+            style={{
+              background: 'transparent',
+              color: '#9AA0A6',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              padding: '10px 28px',
+              fontSize: '12px',
+              fontWeight: 700,
+              fontFamily: "'Inter', sans-serif",
+              cursor: 'pointer',
+              letterSpacing: '0.1em',
+              borderRadius: '6px',
+            }}
+          >
+            CANCEL
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function LogoutModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
+  const mountedRef = useRef(false)
+  useEffect(() => {
+    requestAnimationFrame(() => { mountedRef.current = true })
+    const handleKey = (e: KeyboardEvent) => {
+      if (!mountedRef.current) return
       if (e.key === 'Escape') onCancel()
       if (e.key === 'Enter') onConfirm()
     }
@@ -63,71 +167,75 @@ function QuitModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: (
     <div style={{
       position: 'fixed',
       inset: 0,
-      background: `${C.surface0}E6`,
+      background: 'rgba(0, 0, 0, 0.85)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex: 1000,
+      zIndex: 10000,
     }}>
       <div style={{
-        background: C.surface1,
-        border: `1px solid ${C.amber}`,
+        background: 'rgba(19, 22, 25, 0.95)',
+        backdropFilter: 'blur(40px)',
+        WebkitBackdropFilter: 'blur(40px)',
+        border: '1px solid rgba(255, 255, 255, 0.12)',
         padding: '32px 48px',
         textAlign: 'center',
-        borderRadius: '4px',
-        boxShadow: `0 0 30px ${C.amberGlow}`,
+        borderRadius: '12px',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), 0 0 60px rgba(0, 217, 100, 0.05)',
       }}>
         <div style={{
-          color: C.amber,
+          color: '#E8EAED',
           fontSize: '16px',
           fontWeight: 700,
-          fontFamily: C.fontDisplay,
-          letterSpacing: '0.1em',
-          marginBottom: '24px',
+          fontFamily: "'Inter', sans-serif",
+          letterSpacing: '0.15em',
+          marginBottom: '12px',
         }}>
-          ARE YOU SURE?
+          SIGN OUT?
         </div>
         <div style={{
-          color: C.amberDim,
+          color: '#9AA0A6',
           fontSize: '12px',
-          fontFamily: C.fontBody,
+          fontFamily: "'Inter', sans-serif",
           marginBottom: '32px',
         }}>
-          This will close SpectraTerminal.
+          You will be returned to the login screen.
         </div>
-        <div style={{ display: 'flex', gap: '24px', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
           <button
             onClick={onConfirm}
             autoFocus
             style={{
-              background: C.amber,
-              color: C.surface0,
+              background: '#00D964',
+              color: '#0B0E11',
               border: 'none',
-              padding: '8px 24px',
+              padding: '10px 28px',
               fontSize: '12px',
               fontWeight: 700,
-              fontFamily: C.fontDisplay,
+              fontFamily: "'Inter', sans-serif",
               cursor: 'pointer',
-              letterSpacing: '0.05em',
+              letterSpacing: '0.1em',
+              borderRadius: '6px',
             }}
           >
-            YES
+            YES, SIGN OUT
           </button>
           <button
             onClick={onCancel}
             style={{
               background: 'transparent',
-              color: C.amberDim,
-              border: `1px solid ${C.amberMute}`,
-              padding: '8px 24px',
+              color: '#9AA0A6',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              padding: '10px 28px',
               fontSize: '12px',
               fontWeight: 700,
-              fontFamily: C.fontDisplay,
+              fontFamily: "'Inter', sans-serif",
               cursor: 'pointer',
-              letterSpacing: '0.05em',
+              letterSpacing: '0.1em',
+              borderRadius: '6px',
             }}
           >
-            NO
+            CANCEL
           </button>
         </div>
       </div>
@@ -167,8 +275,10 @@ function screenTitle(screen: ScreenType, ticker?: string): string {
 
 // ─── Main terminal (renders only when authenticated) ─────────────────────────
 function TerminalApp() {
+  const { logout } = useAuth()
   const [activeCommand, setActiveCommand] = useState<ParsedCommand | null>(null)
   const [showQuitModal, setShowQuitModal] = useState(false)
+  const [showLogoutModal, setShowLogoutModal] = useState(false)
   const [bugOpen, setBugOpen] = useState(false)
   const [lastError, setLastError] = useState<string | undefined>(undefined)
   const { state, openScreen, openScreenInNewPanel, closePanel, focusPanel, maximizePanel, swapPanels, resizePanels, goBack, clearHistory } = useWorkspace()
@@ -224,15 +334,16 @@ function TerminalApp() {
     const open = inNewPanel ? openScreenInNewPanel : openScreen
     if (resolved.screen === 'quit') {
       setShowQuitModal(true)
+      return
+    } else if (resolved.screen === 'logout') {
+      setShowLogoutModal(true)
+      return
     } else if (resolved.screen === 'bugreport') {
       setBugOpen(true)
     } else if (resolved.screen === 'home') {
       open('home')
       clearHistory()
       setActiveCommand(null)
-      setLastTicker('')
-      try { localStorage.removeItem('bb_last_ticker') } catch { /* ignore */ }
-      try { localStorage.removeItem('bb_last_command') } catch { /* ignore */ }
     } else {
       open(resolved.screen, resolved.ticker, resolved.sub)
     }
@@ -423,9 +534,6 @@ function TerminalApp() {
         {panelChildren}
       </WorkspaceLayout>
       <StatusBarV3 />
-      {/* CRT phosphor scanlines + edge vignette */}
-      <div className="bb-scanlines" />
-      <div className="bb-vignette" />
       <UpdateToast />
       <ChatNotificationToast onNavigate={handleNavigate} />
       <BugReportDialog
@@ -434,11 +542,19 @@ function TerminalApp() {
         currentScreen={state.panels.find(p => p.focused)?.screen}
         lastError={lastError}
       />
-      {showQuitModal && (
+      {showQuitModal && createPortal(
         <QuitModal
           onConfirm={handleQuit}
           onCancel={() => setShowQuitModal(false)}
-        />
+        />,
+        document.body
+      )}
+      {showLogoutModal && createPortal(
+        <LogoutModal
+          onConfirm={() => { setShowLogoutModal(false); void logout() }}
+          onCancel={() => setShowLogoutModal(false)}
+        />,
+        document.body
       )}
     </div>
   )

@@ -1,6 +1,6 @@
 import React from 'react'
 import type { FAResponse, FAPeriod } from '../../types'
-import C from '../../lib/colors'
+import { color, font } from '../../lib/theme'
 import { fmtCurrency } from './_format'
 
 interface Props {
@@ -11,62 +11,62 @@ interface RowDef {
   label: string
   key: keyof FAPeriod
   bold?: boolean
-  amber?: boolean
+  highlight?: boolean
 }
 
 const rows: RowDef[] = [
-  { label: 'Operating Cash Flow', key: 'operating_cash_flow', bold: true },
+  { label: 'Operating cash flow', key: 'operating_cash_flow', bold: true },
   { label: 'Capex', key: 'capex' },
-  { label: 'Free Cash Flow', key: 'free_cash_flow', bold: true, amber: true },
-  { label: 'Investing Cash Flow', key: 'investing_cash_flow' },
-  { label: 'Financing Cash Flow', key: 'financing_cash_flow' },
-  { label: 'Dividends Paid', key: 'dividends_paid' },
-  { label: 'Share Repurchases', key: 'share_repurchases' },
+  { label: 'Free cash flow', key: 'free_cash_flow', bold: true, highlight: true },
+  { label: 'Investing cash flow', key: 'investing_cash_flow' },
+  { label: 'Financing cash flow', key: 'financing_cash_flow' },
+  { label: 'Dividends paid', key: 'dividends_paid' },
+  { label: 'Share repurchases', key: 'share_repurchases' },
 ]
 
 export default function CashFlowTable({ data }: Props) {
   const periods = data.cash_flow
 
   if (periods.length === 0) {
-    return <div style={{ padding: 24, color: C.whiteGhost, textAlign: 'center' }}>No data</div>
+    return <div style={{ padding: 24, color: color.textTertiary, textAlign: 'center', fontFamily: font.sans }}>No data</div>
   }
 
   const cellBase: React.CSSProperties = {
     padding: '5px 8px',
     fontSize: '12px',
-    fontFamily: C.fontMono,
+    fontFamily: font.mono,
     whiteSpace: 'nowrap' as const,
-    borderRight: `1px solid ${C.border0}`,
+    borderRight: `1px solid ${color.borderSubtle}`,
   }
 
   return (
     <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: C.fontMono }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: font.mono }}>
         <thead>
-          <tr style={{ borderBottom: `2px solid ${C.amber}20` }}>
-            <th style={{ ...cellBase, textAlign: 'left', fontSize: '9px', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: C.amberMute, fontWeight: 600, position: 'sticky' as const, left: 0, background: C.surface0, zIndex: 2, minWidth: 140 }}>Metric</th>
+          <tr style={{ borderBottom: `1px solid ${color.borderMedium}` }}>
+            <th style={{ ...cellBase, textAlign: 'left', fontSize: '11px', letterSpacing: '0.02em', color: color.textSecondary, fontWeight: 500, fontFamily: font.sans, position: 'sticky' as const, left: 0, background: color.bgBase, zIndex: 2, minWidth: 140 }}>Metric</th>
             {periods.map((p) => (
-              <th key={p.date} style={{ ...cellBase, textAlign: 'right', fontSize: '9px', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: C.whiteDim, fontWeight: 600 }}>{p.date}</th>
+              <th key={p.date} style={{ ...cellBase, textAlign: 'right', fontSize: '11px', letterSpacing: '0.02em', color: color.textSecondary, fontWeight: 500, fontFamily: font.sans }}>{p.date}</th>
             ))}
           </tr>
         </thead>
         <tbody>
           {rows.map((row, rowIdx) => {
-            const bg = rowIdx % 2 === 0 ? C.surface0 : C.surface1
+            const bg = rowIdx % 2 === 0 ? color.bgBase : color.bgElevated
             return (
               <tr key={row.key} style={{ background: bg }}>
                 <td style={{
                   ...cellBase,
                   textAlign: 'left',
-                  fontSize: '11px',
-                  color: C.whiteDim,
-                  fontWeight: row.bold ? 700 : 400,
+                  fontSize: '12px',
+                  color: row.highlight ? color.accentPositive : color.textSecondary,
+                  fontWeight: row.bold ? 600 : 400,
+                  fontFamily: font.sans,
                   position: 'sticky' as const,
                   left: 0,
                   background: bg,
                   zIndex: 1,
                   minWidth: 140,
-                  ...(row.amber ? { color: C.amber } : {}),
                 }}>
                   {row.label}
                 </td>
@@ -76,8 +76,8 @@ export default function CashFlowTable({ data }: Props) {
                     <td key={p.date} style={{
                       ...cellBase,
                       textAlign: 'right',
-                      color: row.amber ? C.amber : C.white,
-                      fontWeight: row.bold ? 700 : 400,
+                      color: row.highlight ? color.accentPositive : color.textPrimary,
+                      fontWeight: row.bold ? 600 : 400,
                     }}>
                       {fmtCurrency(raw)}
                     </td>

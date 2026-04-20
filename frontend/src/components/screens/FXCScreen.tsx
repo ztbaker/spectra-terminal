@@ -3,21 +3,16 @@ import { useQuery } from '@tanstack/react-query'
 import { fetchFXRates } from '../../lib/api'
 import { usePolling } from '../../hooks/usePolling'
 import LoadingBar from '../shared/LoadingBar'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
+const { color, font } = theme
 
 interface Props {
   onNavigate: (cmd: string) => void
 }
 
-// ─── Currency order and labels ────────────────────────────────────────────────
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'JPY', 'CHF', 'AUD', 'CAD', 'NZD'] as const
 type Currency = typeof CURRENCIES[number]
 
-// Map each currency to its yfinance pair and inversion flag.
-// yfinance returns:
-//   EURUSD=X, GBPUSD=X, AUDUSD=X, NZDUSD=X → direct CCY/USD rates
-//   USDJPY=X, USDCHF=X, USDCAD=X → USD per 1 CCY (must invert to get CCY/USD)
-// Cross rate: BASE/QUOTE = (BASE→USD) / (QUOTE→USD)
 const CCY_TO_USD_PAIR: Record<Currency, [string, boolean]> = {
   USD: ['', false],
   EUR: ['EURUSD=X', false],
@@ -56,8 +51,6 @@ function formatRate(val: number, quote: Currency): string {
   })
 }
 
-// ─── Cell ─────────────────────────────────────────────────────────────────────
-
 type FlashDir = 'up' | 'down' | null
 
 interface CellProps {
@@ -79,11 +72,11 @@ const Cell: React.FC<CellProps> = ({ base, quote, value, flashDir }) => {
         padding: '6px 10px',
         textAlign: 'right',
         fontSize: '12px',
-        fontFamily: 'monospace',
-        borderBottom: '1px solid ' + C.border0,
-        borderRight: '1px solid ' + C.border0,
-        background: isDiag ? C.surfaceGlow : flashBg,
-        color: isDiag ? C.border1 : value === null ? C.border1 : C.white,
+        fontFamily: font.mono,
+        borderBottom: '1px solid ' + color.borderSubtle,
+        borderRight: '1px solid ' + color.borderSubtle,
+        background: isDiag ? color.bgElevated : flashBg,
+        color: isDiag ? color.textTertiary : value === null ? color.textTertiary : color.textPrimary,
         transition: flashDir ? 'none' : 'background 0.4s ease',
         minWidth: '80px',
         whiteSpace: 'nowrap',
@@ -93,8 +86,6 @@ const Cell: React.FC<CellProps> = ({ base, quote, value, flashDir }) => {
     </td>
   )
 }
-
-// ─── Main screen ──────────────────────────────────────────────────────────────
 
 const FLASH_MS = 600
 
@@ -107,7 +98,6 @@ const FXCScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
 
   usePolling(refetch, 1_000)
 
-  // Per-cell flash directions, keyed by "BASE-QUOTE"
   const [flashDirs, setFlashDirs] = useState<Record<string, FlashDir>>({})
   const prevCcyUsd = useRef<Record<Currency, number | null> | null>(null)
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -143,45 +133,43 @@ const FXCScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
     prevCcyUsd.current = newCcyUsd
   }, [data?.fetched_at, ccyUsd])
 
-  // Cleanup on unmount
   useEffect(() => () => { if (flashTimer.current) clearTimeout(flashTimer.current) }, [])
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: C.surface0, overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'transparent', overflow: 'hidden' }}>
       <LoadingBar loading={isLoading} />
 
-      {/* Header */}
       <div
         className="bb-header"
         style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, padding: '6px 12px' }}
       >
         <span>FXC CROSS CURRENCY MATRIX</span>
-        <span style={{ color: C.green, fontSize: '11px', letterSpacing: '0.05em' }}>
+        <span style={{ color: color.accentPositive, fontSize: '11px', letterSpacing: '0.05em' }}>
           ● LIVE
         </span>
       </div>
 
       {error && !isLoading && (
-        <div style={{ padding: '8px 12px', color: C.red, fontSize: '12px', borderBottom: `1px solid ${C.border1}`, flexShrink: 0 }}>
+        <div style={{ padding: '8px 12px', color: color.accentNegative, fontSize: '12px', borderBottom: `1px solid ${color.borderSubtle}`, flexShrink: 0 }}>
           ERR: {(error as Error).message ?? 'Failed to load FX rates'}
         </div>
       )}
 
-      {/* Matrix */}
       <div style={{ flex: 1, overflow: 'auto', padding: '12px' }}>
-        <table style={{ borderCollapse: 'collapse', fontSize: '12px', fontFamily: 'monospace' }}>
+        <table style={{ borderCollapse: 'collapse', fontSize: '12px', fontFamily: font.mono }}>
           <thead>
             <tr>
               <th
                 style={{
                   padding: '6px 10px',
-                  color: C.amberMute,
+                  color: color.textTertiary,
+                  fontFamily: font.sans,
                   fontSize: '10px',
-                  letterSpacing: '0.06em',
+                  fontWeight: 500,
                   textAlign: 'left',
-                  borderBottom: `1px solid ${C.border1}`,
-                  borderRight: `1px solid ${C.border1}`,
-                  background: C.surface0,
+                  borderBottom: `1px solid ${color.borderSubtle}`,
+                  borderRight: `1px solid ${color.borderSubtle}`,
+                  background: 'transparent',
                   position: 'sticky',
                   left: 0,
                   zIndex: 2,
@@ -194,14 +182,14 @@ const FXCScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
                   key={ccy}
                   style={{
                     padding: '6px 10px',
-                    color: C.amber,
+                    color: color.ticker,
+                    fontFamily: font.mono,
                     fontSize: '12px',
-                    fontWeight: 700,
-                    letterSpacing: '0.06em',
+                    fontWeight: 600,
                     textAlign: 'center',
-                    borderBottom: `1px solid ${C.border1}`,
-                    borderRight: '1px solid ' + C.border0,
-                    background: C.surfaceGlow,
+                    borderBottom: `1px solid ${color.borderSubtle}`,
+                    borderRight: '1px solid ' + color.borderSubtle,
+                    background: 'rgba(19, 22, 25, 0.6)',
                     minWidth: '80px',
                   }}
                 >
@@ -216,13 +204,13 @@ const FXCScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
                 <td
                   style={{
                     padding: '6px 10px',
-                    color: C.amber,
+                    color: color.ticker,
+                    fontFamily: font.mono,
                     fontSize: '12px',
-                    fontWeight: 700,
-                    letterSpacing: '0.06em',
-                    borderBottom: '1px solid ' + C.border0,
-                    borderRight: `1px solid ${C.border1}`,
-                    background: C.surfaceGlow,
+                    fontWeight: 600,
+                    borderBottom: '1px solid ' + color.borderSubtle,
+                    borderRight: `1px solid ${color.borderSubtle}`,
+                    background: 'rgba(19, 22, 25, 0.6)',
                     position: 'sticky',
                     left: 0,
                     zIndex: 1,

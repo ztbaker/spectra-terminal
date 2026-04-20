@@ -840,6 +840,7 @@ export type ScreenType =
   | 'ecst' | 'fxc' | 'quit'
   | 'fa' | 'etf' | 'bond' | 'comd' | 'cong' | 'quant' | 'ask' | 'help' | 'back'
   | 'bugreport'
+  | 'logout'
   | 'chat'
 
 // ─── Chat ────────────────────────────────────────────────────────────────────

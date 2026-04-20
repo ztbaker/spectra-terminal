@@ -4,9 +4,9 @@ import { fetchEquity, fetchFinancials } from '../../lib/api'
 import { usePolling } from '../../hooks/usePolling'
 import type { EquityData, FinancialsData } from '../../types'
 import LoadingBar from '../shared/LoadingBar'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
 
-// ─── Formatting helpers ───────────────────────────────────────────────────────
+const { color, font } = theme
 
 function formatLarge(n: number | null | undefined): string {
   if (n == null) return '—'
@@ -24,7 +24,6 @@ function formatPrice(n: number | null | undefined): string {
 }
 
 function formatPct(n: number | null | undefined): string {
-  // yfinance returns margins/yields as 0–1 decimals
   if (n == null) return '—'
   return (n * 100).toFixed(2) + '%'
 }
@@ -34,20 +33,18 @@ function formatMultiple(n: number | null | undefined): string {
   return n.toFixed(2) + 'x'
 }
 
-// ─── Sub-components ──────────────────────────────────────────────────────────
-
 interface FieldProps {
   label: string
   value: string | number | null | undefined
-  color?: string
+  clr?: string
 }
 
-const Field: React.FC<FieldProps> = ({ label, value, color = C.white }) => {
+const Field: React.FC<FieldProps> = ({ label, value, clr = color.textPrimary }) => {
   if (value === null || value === undefined || value === '') return null
   return (
     <div style={{ display: 'flex', gap: '8px', marginBottom: '2px' }}>
-      <span style={{ color: C.amberMute, minWidth: '90px', flexShrink: 0 }}>{label}</span>
-      <span style={{ color }}>{value}</span>
+      <span style={{ color: color.textTertiary, minWidth: '90px', flexShrink: 0 }}>{label}</span>
+      <span style={{ color: clr }}>{value}</span>
     </div>
   )
 }
@@ -61,11 +58,13 @@ const Section: React.FC<SectionProps> = ({ title, children }) => (
   <div style={{ marginBottom: '12px' }}>
     <div
       style={{
-        color: C.amberDim,
-        fontSize: '10px',
-        letterSpacing: '0.08em',
+        color: color.textSecondary,
+        fontFamily: font.sans,
+        fontSize: '11px',
+        fontWeight: 600,
+        letterSpacing: '0.02em',
         marginBottom: '4px',
-        borderBottom: `1px solid ${C.border1}`,
+        borderBottom: `1px solid ${color.borderSubtle}`,
         paddingBottom: '2px',
       }}
     >
@@ -74,8 +73,6 @@ const Section: React.FC<SectionProps> = ({ title, children }) => (
     {children}
   </div>
 )
-
-// ─── Tab 1: Overview ─────────────────────────────────────────────────────────
 
 const OverviewTab: React.FC<{ data: EquityData }> = ({ data }) => {
   const [showFull, setShowFull] = useState(false)
@@ -94,7 +91,6 @@ const OverviewTab: React.FC<{ data: EquityData }> = ({ data }) => {
         overflowY: 'auto',
       }}
     >
-      {/* ── Left column ── */}
       <div>
         <Section title="SECURITY IDENTIFIERS">
           <Field label="Ticker"    value={data.ticker} />
@@ -110,12 +106,12 @@ const OverviewTab: React.FC<{ data: EquityData }> = ({ data }) => {
         </Section>
 
         <Section title="COMPANY DESCRIPTION">
-          <div style={{ color: C.white, lineHeight: '1.5', marginBottom: '4px' }}>
+          <div style={{ color: color.textPrimary, lineHeight: '1.5', marginBottom: '4px' }}>
             {descTruncated}
           </div>
           {desc.length > 300 && (
             <span
-              style={{ color: C.amber, cursor: 'pointer', fontSize: '11px' }}
+              style={{ color: color.accentInfo, cursor: 'pointer', fontSize: '11px' }}
               onClick={() => setShowFull(f => !f)}
             >
               {showFull ? '[SHOW LESS]' : '[SHOW MORE]'}
@@ -132,7 +128,6 @@ const OverviewTab: React.FC<{ data: EquityData }> = ({ data }) => {
         </Section>
       </div>
 
-      {/* ── Right column ── */}
       <div>
         <Section title="PRICE &amp; TRADING">
           <Field label="Last Price" value={formatPrice(data.price)} />
@@ -162,8 +157,6 @@ const OverviewTab: React.FC<{ data: EquityData }> = ({ data }) => {
   )
 }
 
-// ─── Tab 2: Financials ────────────────────────────────────────────────────────
-
 const FinancialsTab: React.FC<{
   fins: FinancialsData | undefined
   isLoading: boolean
@@ -171,21 +164,21 @@ const FinancialsTab: React.FC<{
 }> = ({ fins, isLoading, isError }) => {
   if (isLoading) {
     return (
-      <div style={{ padding: '24px', textAlign: 'center', color: C.amberMute }}>
+      <div style={{ padding: '24px', textAlign: 'center', color: color.textTertiary }}>
         LOADING FINANCIAL DATA...
       </div>
     )
   }
   if (isError || !fins) {
     return (
-      <div style={{ padding: '24px', textAlign: 'center', color: C.red }}>
+      <div style={{ padding: '24px', textAlign: 'center', color: color.accentNegative }}>
         FINANCIAL DATA UNAVAILABLE
       </div>
     )
   }
 
   const pctColor = (v: number | null) =>
-    v === null ? C.white : v >= 0 ? C.green : C.red
+    v === null ? color.textPrimary : v >= 0 ? color.accentPositive : color.accentNegative
 
   return (
     <div
@@ -197,7 +190,6 @@ const FinancialsTab: React.FC<{
         fontSize: '12px',
       }}
     >
-      {/* Left: Income Statement */}
       <div>
         <Section title="INCOME STATEMENT (TTM)">
           <Field label="Revenue"      value={formatLarge(fins.revenue_ttm)} />
@@ -208,7 +200,6 @@ const FinancialsTab: React.FC<{
         </Section>
       </div>
 
-      {/* Right: Balance Sheet + Growth */}
       <div>
         <Section title="BALANCE SHEET &amp; RETURNS">
           <Field label="Debt/Equity"   value={formatMultiple(fins.debt_to_equity)} />
@@ -220,7 +211,7 @@ const FinancialsTab: React.FC<{
         <Section title="GROWTH">
           {fins.revenue_growth !== null && (
             <div style={{ display: 'flex', gap: '8px', marginBottom: '2px' }}>
-              <span style={{ color: C.amberMute, minWidth: '90px' }}>Revenue Gr.</span>
+              <span style={{ color: color.textTertiary, minWidth: '90px' }}>Revenue Gr.</span>
               <span style={{ color: pctColor(fins.revenue_growth) }}>
                 {fins.revenue_growth >= 0 ? '+' : ''}{formatPct(fins.revenue_growth)}
               </span>
@@ -228,7 +219,7 @@ const FinancialsTab: React.FC<{
           )}
           {fins.earnings_growth !== null && (
             <div style={{ display: 'flex', gap: '8px', marginBottom: '2px' }}>
-              <span style={{ color: C.amberMute, minWidth: '90px' }}>Earnings Gr.</span>
+              <span style={{ color: color.textTertiary, minWidth: '90px' }}>Earnings Gr.</span>
               <span style={{ color: pctColor(fins.earnings_growth) }}>
                 {fins.earnings_growth >= 0 ? '+' : ''}{formatPct(fins.earnings_growth)}
               </span>
@@ -240,14 +231,11 @@ const FinancialsTab: React.FC<{
   )
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
-
 interface Props {
   ticker: string
   onNavigate: (cmd: string) => void
 }
 
-// onNavigate reserved for future quick-links (e.g. GP, NEWS for same ticker)
 const DESScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
   const [activeTab, setActiveTab] = useState(1)
 
@@ -274,8 +262,8 @@ const DESScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
     fontSize: '11px',
     letterSpacing: '0.05em',
     cursor: 'pointer',
-    border: activeTab === tab ? `1px solid ${C.amber}` : `1px solid ${C.border1}`,
-    color: activeTab === tab ? C.amber : C.amberMute,
+    border: activeTab === tab ? `1px solid ${color.accentPositive}` : `1px solid ${color.borderSubtle}`,
+    color: activeTab === tab ? color.accentPositive : color.textTertiary,
     background: 'transparent',
     fontFamily: 'inherit',
     marginLeft: '4px',
@@ -283,7 +271,7 @@ const DESScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
 
   const panelActions = (
     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-      <span style={{ fontSize: '10px', color: C.amberMute }}>
+      <span style={{ fontSize: '10px', color: color.textTertiary }}>
         {isFetching && !isLoading ? 'REFRESHING...' : ''}
       </span>
       <button style={tabStyle(1)} onClick={() => setActiveTab(1)}>DES 1</button>
@@ -298,27 +286,27 @@ const DESScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
         alignItems: 'baseline',
         gap: '16px',
         padding: '4px 8px',
-        borderBottom: `1px solid ${C.border1}`,
+        borderBottom: `1px solid ${color.borderSubtle}`,
         fontSize: '12px',
       }}
     >
-      <span style={{ color: C.amber, fontWeight: 'bold' }}>
+      <span style={{ color: color.textPrimary, fontWeight: 'bold' }}>
         {ticker} US Equity
       </span>
-      <span style={{ color: C.white }}>{data.company_name}</span>
+      <span style={{ color: color.textPrimary }}>{data.company_name}</span>
     </div>
   )
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', fontFamily: font.sans }}>
       <LoadingBar loading={isLoading || isFetching} />
 
       {isError ? (
-        <div style={{ padding: '40px', textAlign: 'center', color: C.red, fontSize: '12px' }}>
+        <div style={{ padding: '40px', textAlign: 'center', color: color.accentNegative, fontSize: '12px' }}>
           SECURITY UNAVAILABLE — {ticker} NOT FOUND
         </div>
       ) : isLoading ? (
-        <div style={{ padding: '40px', textAlign: 'center', color: C.amberMute, fontSize: '12px' }}>
+        <div style={{ padding: '40px', textAlign: 'center', color: color.textTertiary, fontSize: '12px' }}>
           LOADING SECURITY DATA...
         </div>
       ) : data ? (

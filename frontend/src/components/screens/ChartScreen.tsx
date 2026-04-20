@@ -25,7 +25,9 @@ import { useLiveBarUpdater, getActivePrice } from '../../hooks/useLiveBarUpdater
 import LoadingBar from '../shared/LoadingBar'
 import ExtendedHoursBadge from '../shared/ExtendedHoursBadge'
 import OdometerNumber from '../shared/OdometerNumber'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
+
+const TH = theme
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -89,14 +91,12 @@ const OhlcvOverlay: React.FC<OhlcvOverlayProps> = ({ open, high, low, close, vol
         top: '8px',
         left: '8px',
         zIndex: 10,
-        background: C.glass,
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
-        border: `1px solid ${C.glassBorder}`,
+        background: TH.color.bgSurface,
+        border: `1px solid ${TH.color.borderMedium}`,
         borderRadius: '4px',
         padding: '4px 8px',
         fontSize: '11px',
-        color: C.amberDim,
+        color: TH.color.textSecondary,
         pointerEvents: 'none',
         display: 'flex',
         gap: '10px',
@@ -108,7 +108,7 @@ const OhlcvOverlay: React.FC<OhlcvOverlayProps> = ({ open, high, low, close, vol
       <span><span className="bb-label">L: </span><span className="bb-value">{fmt(low)}</span></span>
       <span>
         <span className="bb-label">C: </span>
-        <span style={{ color: isUp ? C.green : C.red }}>{fmt(close)}</span>
+        <span style={{ color: isUp ? TH.color.accentPositive : TH.color.accentNegative }}>{fmt(close)}</span>
       </span>
       <span><span className="bb-label">V: </span><span className="bb-value">{fmtVol(volume)}</span></span>
     </div>
@@ -252,7 +252,7 @@ const PriceSidebar: React.FC<SidebarProps> = ({ stats, crosshair, period, livePr
   const chg    = livePrice?.change ?? (last - prev)
   const pct    = livePrice?.change_pct ?? (chg / prev * 100)
   const isUp   = chg >= 0
-  const chgCol = isUp ? C.green : C.red
+  const chgCol = isUp ? TH.color.accentPositive : TH.color.accentNegative
 
   const ms = livePrice?.market_state
   const regularClose   = livePrice?.regular_close ?? null
@@ -264,9 +264,9 @@ const PriceSidebar: React.FC<SidebarProps> = ({ stats, crosshair, period, livePr
   const fv = (n: number, decimals = dp): string => n.toFixed(decimals)
   const fvSigned = (n: number, decimals = dp): string => `${n >= 0 ? '+' : ''}${n.toFixed(decimals)}`
 
-  const Row = ({ label, value, color = C.white }: { label: string; value: string; color?: string }) => (
+  const Row = ({ label, value, color = TH.color.textPrimary }: { label: string; value: string; color?: string }) => (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-      <span style={{ color: C.amberMute, fontSize: 9, letterSpacing: '0.05em' }}>{label}</span>
+      <span style={{ color: TH.color.textTertiary, fontSize: 9, letterSpacing: '0.05em' }}>{label}</span>
       <span style={{ color, fontSize: 12, fontWeight: 600, fontFamily: 'inherit' }}>{value}</span>
     </div>
   )
@@ -281,10 +281,8 @@ const PriceSidebar: React.FC<SidebarProps> = ({ stats, crosshair, period, livePr
       right:         8,
       zIndex:        5,
       width:         148,
-      background:    C.glass,
-      backdropFilter: 'blur(8px)',
-      WebkitBackdropFilter: 'blur(8px)',
-      border: `1px solid ${C.glassBorder}`,
+      background:    TH.color.bgSurface,
+      border: `1px solid ${TH.color.borderMedium}`,
       borderRadius:  '4px',
       padding:       '8px 10px',
       fontFamily:    "'JetBrains Mono','Courier New',monospace",
@@ -294,37 +292,37 @@ const PriceSidebar: React.FC<SidebarProps> = ({ stats, crosshair, period, livePr
     }}>
       {/* Title */}
       <div style={{
-        color:         C.amber,
+        color:         TH.color.textPrimary,
         fontSize:      10,
         letterSpacing: '0.1em',
         marginBottom:  10,
         paddingBottom: 6,
-        borderBottom: `1px solid ${C.border1}`,
+        borderBottom: `1px solid ${TH.color.borderSubtle}`,
       }}>
         PRICE SUMMARY
       </div>
 
       {/* Last */}
       <div style={{ marginBottom: 12 }}>
-        <div style={{ color: C.amberMute, fontSize: 9, letterSpacing: '0.08em', marginBottom: 3 }}>LAST</div>
+        <div style={{ color: TH.color.textTertiary, fontSize: 9, letterSpacing: '0.08em', marginBottom: 3 }}>LAST</div>
         <div style={{ color: chgCol, fontSize: 22, fontWeight: 700, lineHeight: 1 }}>
           {crosshair.close != null ? fv(last) : <OdometerNumber value={last} decimals={dp} />}
         </div>
       </div>
 
       {/* Stats rows */}
-      <div style={{ borderTop: `1px solid ${C.border0}`, paddingTop: 8 }}>
+      <div style={{ borderTop: `1px solid ${TH.color.borderSubtle}`, paddingTop: 8 }}>
         <Row label="Chg"  value={fvSigned(chg)}          color={chgCol} />
         <Row label="Chg%" value={fvSigned(pct, 2) + '%'} color={chgCol} />
-        <Row label="High" value={fv(stats.high.value)}    color={C.white} />
-        <Row label="Low"  value={fv(stats.low.value)}     color={C.white} />
-        <Row label="Avg"  value={fv(stats.avg)}           color={C.amberDim} />
+        <Row label="High" value={fv(stats.high.value)}    color={TH.color.textPrimary} />
+        <Row label="Low"  value={fv(stats.low.value)}     color={TH.color.textPrimary} />
+        <Row label="Avg"  value={fv(stats.avg)}           color={TH.color.textSecondary} />
       </div>
 
       {/* RTH Close row */}
       {showRthRow && regularClose != null && (
-        <div style={{ borderTop: `1px solid ${C.border0}`, paddingTop: 6, marginTop: 4 }}>
-          <Row label="RTH CLOSE" value={fv(regularClose)} color={C.amberDim} />
+        <div style={{ borderTop: `1px solid ${TH.color.borderSubtle}`, paddingTop: 6, marginTop: 4 }}>
+          <Row label="RTH CLOSE" value={fv(regularClose)} color={TH.color.textSecondary} />
         </div>
       )}
 
@@ -333,17 +331,17 @@ const PriceSidebar: React.FC<SidebarProps> = ({ stats, crosshair, period, livePr
         <div>
           {ms === 'PRE' && prePrice != null && (
             <>
-              <Row label="PRE" value={fv(prePrice)} color={C.amber} />
+              <Row label="PRE" value={fv(prePrice)} color={TH.color.accentWarning} />
               {preChgPct != null && regularClose != null && (
-                <Row label="PRE Δ%" value={fvSigned((prePrice - regularClose) / regularClose * 100, 2) + '%'} color={C.amber} />
+                <Row label="PRE \u0394%" value={fvSigned((prePrice - regularClose) / regularClose * 100, 2) + '%'} color={TH.color.accentWarning} />
               )}
             </>
           )}
           {ms === 'POST' && postPrice != null && (
             <>
-              <Row label="POST" value={fv(postPrice)} color={C.cyanBright} />
+              <Row label="POST" value={fv(postPrice)} color={TH.color.accentInfo} />
               {postChgPct != null && regularClose != null && (
-                <Row label="POST Δ%" value={fvSigned((postPrice - regularClose) / regularClose * 100, 2) + '%'} color={C.cyanBright} />
+                <Row label="POST \u0394%" value={fvSigned((postPrice - regularClose) / regularClose * 100, 2) + '%'} color={TH.color.accentInfo} />
               )}
             </>
           )}
@@ -351,7 +349,7 @@ const PriceSidebar: React.FC<SidebarProps> = ({ stats, crosshair, period, livePr
       )}
 
       {/* Period label */}
-      <div style={{ marginTop: 'auto', paddingTop: 8, color: C.border1, fontSize: 9 }}>
+      <div style={{ marginTop: 'auto', paddingTop: 8, color: TH.color.textTertiary, fontSize: 9 }}>
         {period.toUpperCase()} PERIOD
       </div>
     </div>
@@ -361,27 +359,26 @@ const PriceSidebar: React.FC<SidebarProps> = ({ stats, crosshair, period, livePr
 // ─── Toolbar button styles ────────────────────────────────────────────────────
 
 const TAB_ACTIVE: React.CSSProperties = {
-  background: C.amber, color: C.surface0, border: 'none',
-  fontWeight: 700, padding: '2px 8px', fontSize: '11px',
-  fontFamily: 'inherit', cursor: 'pointer', letterSpacing: '0.04em',
-  borderBottom: `2px solid ${C.amber}`,
-  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
+  background: TH.color.bgSurface, color: TH.color.textPrimary, border: 'none',
+  fontWeight: 600, padding: '3px 10px', fontSize: '11px',
+  fontFamily: TH.font.sans, cursor: 'pointer',
+  borderRadius: '4px',
 }
 const TAB_INACTIVE: React.CSSProperties = {
-  background: 'transparent', color: C.amberMute, border: 'none',
-  padding: '2px 8px', fontSize: '11px',
-  fontFamily: 'inherit', cursor: 'pointer',
-  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
+  background: 'transparent', color: TH.color.textTertiary, border: 'none',
+  padding: '3px 10px', fontSize: '11px',
+  fontFamily: TH.font.sans, cursor: 'pointer',
+  borderRadius: '4px',
 }
 const IND_ACTIVE: React.CSSProperties = {
-  background: C.amber, color: C.surface0, border: 'none',
-  fontWeight: 700, padding: '1px 6px', fontSize: '10px',
-  fontFamily: 'inherit', cursor: 'pointer',
+  background: TH.color.accentPositiveDim, color: TH.color.accentPositive, border: 'none',
+  fontWeight: 600, padding: '2px 8px', fontSize: '10px',
+  fontFamily: TH.font.sans, cursor: 'pointer', borderRadius: '3px',
 }
 const IND_INACTIVE: React.CSSProperties = {
-  background: 'transparent', color: C.amberMute, border: 'none',
-  padding: '1px 6px', fontSize: '10px',
-  fontFamily: 'inherit', cursor: 'pointer',
+  background: 'transparent', color: TH.color.textTertiary, border: 'none',
+  padding: '2px 8px', fontSize: '10px',
+  fontFamily: TH.font.sans, cursor: 'pointer', borderRadius: '3px',
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -496,7 +493,7 @@ const ChartScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
     try {
       priceLineRef.current = series.createPriceLine({
         price: activePrice,
-        color: C.amberBright,
+        color: TH.color.accentWarning,
         lineWidth: 1,
         lineStyle: 2,
         axisLabelVisible: true,
@@ -520,26 +517,26 @@ const ChartScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
 
     const chart = createChart(containerRef.current, {
       layout: {
-        background: { color: C.surface0 },
-        textColor: C.amberDim,
-        fontFamily: "'JetBrains Mono', 'IBM Plex Mono', 'Courier New', monospace",
+        background: { color: TH.color.bgElevated },
+        textColor: TH.color.textTertiary,
+        fontFamily: TH.font.mono,
         fontSize: 11,
       },
       grid: {
-        vertLines: { color: C.surfaceGlow },
-        horzLines: { color: C.surfaceGlow },
+        vertLines: { color: 'rgba(255, 255, 255, 0.03)' },
+        horzLines: { color: 'rgba(255, 255, 255, 0.03)' },
       },
       crosshair: {
         mode: CrosshairMode.Normal,
-        vertLine: { color: C.amber, width: 1, style: 1, labelBackgroundColor: C.surfaceGlow },
-        horzLine: { color: C.amber, width: 1, style: 1, labelBackgroundColor: C.surfaceGlow },
+        vertLine: { color: 'rgba(255, 255, 255, 0.20)', width: 1, style: 1, labelBackgroundColor: TH.color.bgSurface },
+        horzLine: { color: 'rgba(255, 255, 255, 0.20)', width: 1, style: 1, labelBackgroundColor: TH.color.bgSurface },
       },
       rightPriceScale: {
-        borderColor: C.border1,
-        textColor: C.amberDim,
+        borderColor: TH.color.borderSubtle,
+        textColor: TH.color.textTertiary,
       },
       timeScale: {
-        borderColor: C.border1,
+        borderColor: TH.color.borderSubtle,
         timeVisible: true,
         secondsVisible: false,
         shiftVisibleRangeOnNewBar: false,
@@ -637,71 +634,71 @@ const ChartScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
 
     if (chartType === 'CANDLE') {
       const series = addS(CandlestickSeries, {
-        upColor: C.green, downColor: C.red,
-        borderUpColor: C.green, borderDownColor: C.red,
-        wickUpColor: C.green, wickDownColor: C.red,
+        upColor: TH.color.accentPositive, downColor: TH.color.accentNegative,
+        borderUpColor: TH.color.accentPositive, borderDownColor: TH.color.accentNegative,
+        wickUpColor: TH.color.accentPositive, wickDownColor: TH.color.accentNegative,
         priceScaleId: 'right',
       }, 0)
       mainSeriesRef.current = series
     } else if (chartType === 'LINE') {
       const series = addS(LineSeries, {
-        color: C.white, lineWidth: 2, priceScaleId: 'right',
+        color: TH.color.textPrimary, lineWidth: 2, priceScaleId: 'right',
       }, 0)
       mainSeriesRef.current = series as unknown as ISeriesApi<'Line'>
     } else {
       const series = addS(AreaSeries, {
-        topColor: 'rgba(220,220,220,0.15)', bottomColor: 'rgba(220,220,220,0.0)',
-        lineColor: C.white, lineWidth: 2, priceScaleId: 'right',
+        topColor: 'rgba(0, 217, 100, 0.08)', bottomColor: 'rgba(0, 217, 100, 0.0)',
+        lineColor: TH.color.accentPositive, lineWidth: 2, priceScaleId: 'right',
       }, 0)
       mainSeriesRef.current = series as unknown as ISeriesApi<'Area'>
     }
 
     if (activeIndicators.has('SMA20')) {
       sma20Ref.current = addS(LineSeries, {
-        color: C.cyanBright, lineWidth: 1, priceScaleId: 'right',
+        color: TH.color.accentInfo, lineWidth: 1, priceScaleId: 'right',
       }, 0)
     }
     if (activeIndicators.has('SMA50')) {
       sma50Ref.current = addS(LineSeries, {
-        color: C.amberBright, lineWidth: 1, priceScaleId: 'right',
+        color: TH.color.accentWarning, lineWidth: 1, priceScaleId: 'right',
       }, 0)
     }
     if (activeIndicators.has('SMA200')) {
       sma200Ref.current = addS(LineSeries, {
-        color: C.amberDim, lineWidth: 1, lineStyle: 2, priceScaleId: 'right',
+        color: TH.color.textSecondary, lineWidth: 1, lineStyle: 2, priceScaleId: 'right',
       }, 0)
     }
     if (activeIndicators.has('BB')) {
       bbUpperRef.current = addS(LineSeries, {
-        color: C.amber, lineWidth: 1, lineStyle: 2, priceScaleId: 'right',
+        color: TH.color.accentWarning, lineWidth: 1, lineStyle: 2, priceScaleId: 'right',
       }, 0)
       bbMidRef.current = addS(LineSeries, {
-        color: C.amberDim, lineWidth: 1, lineStyle: 1, priceScaleId: 'right',
+        color: TH.color.textSecondary, lineWidth: 1, lineStyle: 1, priceScaleId: 'right',
       }, 0)
       bbLowerRef.current = addS(LineSeries, {
-        color: C.amber, lineWidth: 1, lineStyle: 2, priceScaleId: 'right',
+        color: TH.color.accentWarning, lineWidth: 1, lineStyle: 2, priceScaleId: 'right',
       }, 0)
     }
     if (showRSI) {
       const s = addS(LineSeries, {
-        color: C.cyanBright, lineWidth: 1, priceScaleId: 'rsi',
+        color: TH.color.accentInfo, lineWidth: 1, priceScaleId: 'rsi',
       }, rsiPane)
       s.priceScale().applyOptions({ scaleMargins: { top: 0.1, bottom: 0.1 } })
       rsiSeriesRef.current = s
     }
     if (showMACD) {
       const s = addS(LineSeries, {
-        color: C.amber, lineWidth: 1, priceScaleId: 'macd',
+        color: TH.color.accentWarning, lineWidth: 1, priceScaleId: 'macd',
       }, macdPane)
       s.priceScale().applyOptions({ scaleMargins: { top: 0.1, bottom: 0.1 } })
       macdLineRef.current = s
 
       macdSignalRef.current = addS(LineSeries, {
-        color: C.amberBright, lineWidth: 1, priceScaleId: 'macd',
+        color: TH.color.textSecondary, lineWidth: 1, priceScaleId: 'macd',
       }, macdPane)
 
       macdHistRef.current = addS(HistogramSeries, {
-        priceScaleId: 'macd', color: C.amberMute,
+        priceScaleId: 'macd', color: TH.color.textTertiary,
       }, macdPane)
     }
   }, [chartType, indicatorsKey])
@@ -854,7 +851,7 @@ const ChartScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        background: C.surface0,
+        background: TH.color.bgBase,
         overflow: 'hidden',
       }}
     >
@@ -862,31 +859,31 @@ const ChartScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
       <LoadingBar loading={isLoading} />
 
       {/* Toolbar */}
-      <div style={{ flexShrink: 0, background: C.surface1, borderBottom: `1px solid ${C.border1}` }}>
+      <div style={{ flexShrink: 0, background: TH.color.bgElevated, borderBottom: `1px solid ${TH.color.borderSubtle}` }}>
         {/* Row 1: ticker + period tabs + chart type */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '4px 8px', height: 32 }}>
-          <span style={{ color: C.amber, fontSize: 13, fontWeight: 700, marginRight: 8, letterSpacing: '0.05em' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '4px 12px', height: 34 }}>
+          <span style={{ color: TH.color.ticker, fontSize: 13, fontWeight: 600, marginRight: 10, fontFamily: TH.font.mono }}>
             {ticker}
           </span>
-          <span style={{ color: C.border1, fontSize: 11, margin: '0 6px' }}>|</span>
+          <span style={{ color: TH.color.borderMedium, fontSize: 11, margin: '0 6px' }}>|</span>
           {PERIODS.map(p => (
             <button key={p} style={p === activePeriod ? TAB_ACTIVE : TAB_INACTIVE} onClick={() => setActivePeriod(p)}>
               {p}
             </button>
           ))}
-          <span style={{ color: C.border1, fontSize: 11, margin: '0 6px' }}>|</span>
+          <span style={{ color: TH.color.borderMedium, fontSize: 11, margin: '0 6px' }}>|</span>
           {CHART_TYPES.map(t => (
             <button key={t} style={t === chartType ? TAB_ACTIVE : TAB_INACTIVE} onClick={() => setChartType(t)}>
               {t}
             </button>
           ))}
-          <span style={{ marginLeft: 'auto', color: C.border1, fontSize: 10 }}>
+          <span style={{ marginLeft: 'auto', color: TH.color.textTertiary, fontSize: 10, fontFamily: TH.font.mono }}>
             {period.toUpperCase()} · {interval}{chartData?.ohlcv?.length ? ` · ${chartData.ohlcv.length}` : ''}
           </span>
         </div>
         {/* Row 2: indicators */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '2px 8px 4px', height: 24 }}>
-          <span style={{ color: C.border1, fontSize: 9, letterSpacing: '0.06em', marginRight: 6 }}>INDICATORS</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '2px 12px 6px', height: 26 }}>
+          <span style={{ color: TH.color.textTertiary, fontSize: 10, fontWeight: 500, marginRight: 6, fontFamily: TH.font.sans }}>Indicators</span>
           {INDICATORS.map(ind => (
             <button
               key={ind}
@@ -906,9 +903,7 @@ const ChartScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
           position: 'relative',
           overflow: 'hidden',
           minHeight: 0,
-          margin: '0 4px 4px',
-          border: `1px solid ${C.border0}`,
-          borderRadius: '4px',
+          margin: '0',
         }}
       >
         {/* Error overlay */}
@@ -921,12 +916,13 @@ const ChartScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
               alignItems: 'center',
               justifyContent: 'center',
               zIndex: 20,
-              background: `${C.surface0}CC`,
-              color: C.red,
+              background: `${TH.color.bgBase}CC`,
+              color: TH.color.accentNegative,
               fontSize: '13px',
+              fontFamily: TH.font.sans,
             }}
           >
-            ERR: {(error as Error).message ?? 'Failed to load chart data'}
+            {(error as Error).message ?? 'Failed to load chart data'}
           </div>
         )}
 
@@ -937,7 +933,7 @@ const ChartScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
               position: 'absolute',
               inset: 0,
               zIndex: 15,
-              background: C.surface0,
+              background: TH.color.bgElevated,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -945,11 +941,11 @@ const ChartScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
               gap: '8px',
             }}
           >
-            <span style={{ color: C.amber, fontSize: '12px', opacity: 0.6 }}>
-              LOADING {ticker} · {period.toUpperCase()} · {interval}
+            <span style={{ color: TH.color.textTertiary, fontSize: '12px', fontFamily: TH.font.sans }}>
+              Loading {ticker} · {period.toUpperCase()} · {interval}
             </span>
-            <div style={{ width: '200px', height: '4px', background: C.surface1, borderRadius: '2px', overflow: 'hidden' }}>
-              <div style={{ width: '40%', height: '100%', background: C.amber, borderRadius: '2px', animation: 'pulse 1.5s ease-in-out infinite' }} />
+            <div style={{ width: '200px' }}>
+              <div className="bb-loading-bg"><div className="bb-loading-bar" /></div>
             </div>
           </div>
         )}
@@ -961,9 +957,9 @@ const ChartScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
         {isLoadingOlder && (
           <div style={{
             position: 'absolute', bottom: 32, left: '50%', transform: 'translateX(-50%)',
-            zIndex: 12, background: C.glass, backdropFilter: 'blur(8px)',
-            border: `1px solid ${C.glassBorder}`, borderRadius: '4px', padding: '4px 12px',
-            fontSize: '10px', color: C.amber, letterSpacing: '0.05em', pointerEvents: 'none',
+            zIndex: 12, background: TH.color.bgSurface,
+            border: `1px solid ${TH.color.borderMedium}`, borderRadius: '4px', padding: '4px 12px',
+            fontSize: '10px', color: TH.color.accentWarning, letterSpacing: '0.05em', pointerEvents: 'none',
           }}>
             LOADING OLDER BARS...
           </div>
@@ -973,7 +969,7 @@ const ChartScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
         {!hasMore && !isLoadingOlder && (
           <div style={{
             position: 'absolute', bottom: 32, left: 8,
-            zIndex: 12, fontSize: '9px', color: C.amberMute, letterSpacing: '0.05em',
+            zIndex: 12, fontSize: '9px', color: TH.color.textTertiary, letterSpacing: '0.05em',
           }}>
             EARLIEST DATA AVAILABLE
           </div>

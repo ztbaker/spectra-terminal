@@ -6,8 +6,10 @@ import React, {
   type KeyboardEvent,
 } from 'react'
 import { parseCommand } from '../../lib/commandParser'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
 import type { ParsedCommand } from '../../types'
+
+const { color, font } = theme
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -283,8 +285,8 @@ const CommandBar: React.FC<Props> = ({ onCommand, activeCommand, contextTicker }
         left: 0,
         right: 0,
         height: '40px',
-        background: C.surface0,
-        fontFamily: C.fontMono,
+        background: color.bgBase,
+        fontFamily: font.mono,
         fontSize: '13px',
         display: 'flex',
         alignItems: 'center',
@@ -292,27 +294,23 @@ const CommandBar: React.FC<Props> = ({ onCommand, activeCommand, contextTicker }
         paddingRight: '12px',
         zIndex: 1000,
         userSelect: 'none',
-        // Subtle warm gradient on bottom border
-        borderBottom: '1px solid transparent',
-        backgroundImage: `linear-gradient(${C.surface0}, ${C.surface0}), linear-gradient(90deg, #ff990033, transparent 30%, transparent 70%, #ff990033)`,
-        backgroundOrigin: 'border-box',
-        backgroundClip: 'padding-box, border-box',
+        borderBottom: `1px solid ${color.borderSubtle}`,
       }}
     >
       {/* Left: SPECTRA wordmark */}
       <div
         style={{
-          fontFamily: C.fontDisplay,
+          fontFamily: font.sans,
           fontWeight: 700,
           fontSize: '14px',
-          color: C.amber,
+          color: color.textPrimary,
           letterSpacing: '0.12em',
           paddingLeft: '14px',
           paddingRight: '14px',
           height: '100%',
           display: 'flex',
           alignItems: 'center',
-          borderRight: `1px solid ${C.border0}`,
+          borderRight: `1px solid ${color.borderSubtle}`,
           flexShrink: 0,
         }}
       >
@@ -322,9 +320,9 @@ const CommandBar: React.FC<Props> = ({ onCommand, activeCommand, contextTicker }
       {/* Context ticker ghost prefix */}
       {contextTicker && !input && (
         <span style={{
-          color: C.border1,
+          color: color.textTertiary,
           fontSize: '13px',
-          fontFamily: C.fontMono,
+          fontFamily: font.mono,
           letterSpacing: '0.02em',
           marginRight: '2px',
           pointerEvents: 'none',
@@ -352,16 +350,16 @@ const CommandBar: React.FC<Props> = ({ onCommand, activeCommand, contextTicker }
             background: 'transparent',
             border: 'none',
             outline: 'none',
-            color: C.amber,
-            fontFamily: C.fontMono,
+            color: color.textPrimary,
+            fontFamily: font.mono,
             fontSize: '13px',
             flex: 1,
             caretColor: 'transparent', // we render our own cursor below
             textTransform: 'uppercase',
             letterSpacing: '0.02em',
             padding: 0,
-            boxShadow: focused ? '0 0 8px rgba(255,153,0,0.15)' : 'none',
-            transition: 'box-shadow 0.2s ease',
+            boxShadow: focused ? `0 0 0 1px ${color.borderMedium}` : 'none',
+            transition: 'box-shadow 0.15s ease',
           }}
           aria-label="Command input"
         />
@@ -372,12 +370,12 @@ const CommandBar: React.FC<Props> = ({ onCommand, activeCommand, contextTicker }
             display: 'inline-block',
             width: '8px',
             height: '13px',
-            background: C.amber,
+            background: color.accentPositive,
             marginLeft: '1px',
           }}
         />
 
-        {/* Autocomplete dropdown — frosted glass */}
+        {/* Autocomplete dropdown */}
         {suggestions.length > 0 && (
           <div
             style={{
@@ -385,24 +383,22 @@ const CommandBar: React.FC<Props> = ({ onCommand, activeCommand, contextTicker }
               top: '100%',
               left: 0,
               marginTop: '4px',
-              background: 'rgba(10,10,10,0.9)',
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)',
-              border: `1px solid ${C.border1}`,
-              borderRadius: '4px',
+              background: color.bgSurface,
+              border: `1px solid ${color.borderMedium}`,
+              borderRadius: theme.radius.sm,
               zIndex: 2000,
               minWidth: '180px',
-              boxShadow: `0 4px 24px rgba(0,0,0,0.6), 0 0 0 1px ${C.border0}`,
+              boxShadow: theme.shadow.md,
               overflow: 'hidden',
             }}
           >
             <div style={{
               fontSize: '9px',
               letterSpacing: '0.08em',
-              color: C.amberMute,
+              color: color.textTertiary,
               padding: '4px 10px 2px',
               textTransform: 'uppercase',
-              borderBottom: `1px solid ${C.border0}`,
+              borderBottom: `1px solid ${color.borderSubtle}`,
             }}>
               Suggestions
             </div>
@@ -416,11 +412,11 @@ const CommandBar: React.FC<Props> = ({ onCommand, activeCommand, contextTicker }
                 style={{
                   padding: '5px 10px',
                   cursor: 'pointer',
-                  color: i === suggestionIdx ? C.surface0 : C.amber,
-                  background: i === suggestionIdx ? C.amber : 'transparent',
+                  color: i === suggestionIdx ? color.textInverse : color.textPrimary,
+                  background: i === suggestionIdx ? color.accentPositive : 'transparent',
                   fontSize: '12px',
                   letterSpacing: '0.02em',
-                  fontFamily: C.fontMono,
+                  fontFamily: font.mono,
                   transition: 'background 0.1s ease, color 0.1s ease',
                 }}
               >
@@ -448,14 +444,14 @@ const CommandBar: React.FC<Props> = ({ onCommand, activeCommand, contextTicker }
               gap: '0',
               fontSize: '10px',
               letterSpacing: '0.05em',
-              color: C.amberMute,
-              fontFamily: C.fontMono,
+              color: color.textTertiary,
+              fontFamily: font.mono,
             }}>
               {breadcrumbParts.map((part, i) => (
                 <span key={i} style={{ display: 'inline-flex', alignItems: 'center' }}>
                   {i > 0 && (
                     <span style={{
-                      color: C.border2,
+                      color: color.borderMedium,
                       margin: '0 4px',
                       fontSize: '9px',
                     }}>
@@ -463,7 +459,7 @@ const CommandBar: React.FC<Props> = ({ onCommand, activeCommand, contextTicker }
                     </span>
                   )}
                   <span style={{
-                    color: i === breadcrumbParts.length - 1 ? C.whiteDim : C.amberMute,
+                    color: i === breadcrumbParts.length - 1 ? color.textSecondary : color.textTertiary,
                   }}>
                     {part}
                   </span>
@@ -474,14 +470,14 @@ const CommandBar: React.FC<Props> = ({ onCommand, activeCommand, contextTicker }
 
           {/* Active screen pill */}
           <div style={{
-            background: C.surface3,
-            color: C.amber,
+            background: color.bgSurface,
+            color: color.textPrimary,
             fontSize: '10px',
             fontWeight: 500,
             letterSpacing: '0.06em',
             padding: '2px 8px',
-            borderRadius: '3px',
-            fontFamily: C.fontMono,
+            borderRadius: theme.radius.sm,
+            fontFamily: font.mono,
             whiteSpace: 'nowrap',
           }}>
             {activeLabel}

@@ -1,5 +1,7 @@
 import React from 'react'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
+
+const { color } = theme
 
 interface SkeletonRowProps {
   width?: string
@@ -14,11 +16,12 @@ export const SkeletonRow: React.FC<SkeletonRowProps> = ({
 }) => {
   return (
     <div
-      className="bb-shimmer"
       style={{
         width,
         height,
-        borderRadius: '3px',
+        borderRadius: '4px',
+        background: color.bgSurface,
+        animation: 'fadeIn 1s ease-in-out infinite alternate',
         animationDelay: `${delay}ms`,
         marginBottom: '6px',
       }}
@@ -62,7 +65,7 @@ export const SkeletonOverlay: React.FC<SkeletonOverlayProps> = ({ loading, child
     <div style={{
       position: 'absolute',
       inset: 0,
-      background: `${C.surface0}cc`,
+      background: `${color.bgBase}cc`,
       zIndex: 10,
       display: 'flex',
       flexDirection: 'column',
@@ -73,4 +76,3 @@ export const SkeletonOverlay: React.FC<SkeletonOverlayProps> = ({ loading, child
     </div>
   )
 }
-

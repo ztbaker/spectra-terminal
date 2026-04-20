@@ -1,6 +1,8 @@
 import React from 'react'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
 import { usePriceFlash } from '../../lib/usePriceFlash'
+
+const { color, font } = theme
 
 interface ChangeIndicatorProps {
   value: number
@@ -15,7 +17,6 @@ const ChangeIndicator: React.FC<ChangeIndicatorProps> = ({
   decimals = 2,
   showSign = true,
   size = 'sm',
-  bright = false,
 }) => {
   const { flashStyle, triggerFlash } = usePriceFlash()
   const prevRef = React.useRef<number | null>(null)
@@ -27,7 +28,7 @@ const ChangeIndicator: React.FC<ChangeIndicatorProps> = ({
 
   const fontSize = size === 'sm' ? '11px' : '13px'
   const arrowFontSize = size === 'sm' ? '9px' : '11px'
-  const color = value > 0 ? (bright ? C.greenBright : C.green) : value < 0 ? (bright ? C.redBright : C.red) : C.whiteDim
+  const textColor = value > 0 ? color.accentPositive : value < 0 ? color.accentNegative : color.textTertiary
   const arrow = value > 0 ? '▲' : value < 0 ? '▼' : ''
   const formatted = showSign && value > 0
     ? `+${value.toFixed(decimals)}`
@@ -35,9 +36,9 @@ const ChangeIndicator: React.FC<ChangeIndicatorProps> = ({
 
   return (
     <span style={{
-      color,
+      color: textColor,
       fontSize,
-      fontFamily: C.fontMono,
+      fontFamily: font.mono,
       fontVariantNumeric: 'tabular-nums',
       ...flashStyle,
     }}>

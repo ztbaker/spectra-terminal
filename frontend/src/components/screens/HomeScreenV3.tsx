@@ -1,12 +1,32 @@
-import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react'
+import React, { useEffect, useState, useMemo, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
 import { useBreakpoint } from '../../lib/useBreakpoint'
 import { fetchIndices } from '../../lib/api'
 import type { IndexQuote } from '../../types'
-import ChangeIndicator from '../shared/ChangeIndicator'
-import LiveDot from '../shared/LiveDot'
 import Sparkline from '../shared/Sparkline'
+
+const { color, font, radius, motion } = theme
+
+// ─── Glass panel style ──────────────────────────────────────────────────────────
+
+const glass = {
+  background: 'rgba(255, 255, 255, 0.04)',
+  backdropFilter: 'blur(60px) saturate(1.4)',
+  WebkitBackdropFilter: 'blur(60px) saturate(1.4)',
+  border: '1px solid rgba(255, 255, 255, 0.10)',
+  borderRadius: radius.lg,
+  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 0 40px rgba(0, 217, 100, 0.03), 0 0 40px rgba(59, 130, 246, 0.03)',
+} as const
+
+const glassInner = {
+  background: 'rgba(255, 255, 255, 0.03)',
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
+  border: '1px solid rgba(255, 255, 255, 0.07)',
+  borderRadius: radius.md,
+  boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.04)',
+} as const
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -16,51 +36,50 @@ interface Props {
 
 // ─── Constants ───────────────────────────────────────────────────────────────────
 
-// Ticker keys must match backend's indices.py INDEX_TICKERS (yfinance format)
-// Display labels shown to the user
-const INDEX_DISPLAY: Record<string, string> = {
-  '^GSPC':   'S&P 500',
-  '^DJI':    'DOW',
-  '^IXIC':   'NASDAQ',
-  '^VIX':    'VIX',
-  '^TNX':    '10Y',
-  'GC=F':    'GOLD',
-  'CL=F':    'OIL',
-  'BTC-USD': 'BTC',
+const INDEX_DISPLAY: Record<string, { label: string; short: string }> = {
+  '^GSPC':   { label: 'S&P 500',       short: 'SPX' },
+  '^DJI':    { label: 'Dow Jones',      short: 'DJIA' },
+  '^IXIC':   { label: 'Nasdaq',         short: 'COMP' },
+  '^VIX':    { label: 'VIX',            short: 'VIX' },
+  '^TNX':    { label: '10Y Treasury',   short: '10Y' },
+  'GC=F':    { label: 'Gold',           short: 'GOLD' },
+  'CL=F':    { label: 'Crude Oil',      short: 'CL' },
+  'BTC-USD': { label: 'Bitcoin',        short: 'BTC' },
 }
 
 const INDEX_TICKERS = Object.keys(INDEX_DISPLAY)
 
-const COMMANDS = [
-  { cmd: 'AAPL',      desc: 'View equity overview',       icon: '◆' },
-  { cmd: 'AAPL GP',   desc: 'Launch chart with indicators', icon: '◇' },
-  { cmd: 'AAPL OPT',  desc: 'Options chain + surface',    icon: '△' },
-  { cmd: 'SCR pe<15', desc: 'Screen stocks by fundamentals', icon: '⊞' },
-  { cmd: 'BOND',      desc: 'Treasury yield curve',       icon: '═' },
-  { cmd: 'ASK why...', desc: 'Ask AI about current screen', icon: '◈' },
+const QUICK_ACTIONS = [
+  { cmd: 'AAPL',       label: 'EQUI',     desc: 'Equity overview',  accent: '#00D964' },
+  { cmd: 'AAPL GP',    label: 'GP',       desc: 'Price chart',      accent: '#3B82F6' },
+  { cmd: 'AAPL OPT',   label: 'OPT',      desc: 'Options chain',    accent: '#A855F7' },
+  { cmd: 'SCR pe<15',  label: 'SCR',      desc: 'Screener',         accent: '#F59E0B' },
+  { cmd: 'BOND',       label: 'BOND',     desc: 'Yield curve',      accent: '#06B6D4' },
+  { cmd: 'MACRO',      label: 'MACRO',    desc: 'Economic data',    accent: '#EF4444' },
+  { cmd: 'N',          label: 'NEWS',     desc: 'Market news',      accent: '#EC4899' },
+  { cmd: 'FX',         label: 'FX',       desc: 'Currencies',       accent: '#10B981' },
 ]
 
-// ─── Index pulse tile ────────────────────────────────────────────────────────────
+// ─── Index row ──────────────────────────────────────────────────────────────────
 
-function IndexPulseTile({ quote }: { quote: IndexQuote | undefined }) {
+function IndexRow({ quote, ticker }: { quote: IndexQuote | undefined; ticker: string }) {
+  const [hovered, setHovered] = useState(false)
+  const info = INDEX_DISPLAY[ticker]
   const price = quote?.price ?? null
   const change = quote?.change ?? null
   const changePct = quote?.change_pct ?? null
-  const isLoading = !quote
-  const [hovered, setHovered] = useState(false)
-  const changePctAbs = changePct !== null ? Math.abs(changePct * 100) : 0
-  const isBigMove = changePctAbs > 3
-  const isHugeMove = changePctAbs > 5
+  const isUp = (change ?? 0) >= 0
+  const accentColor = change !== null ? (isUp ? color.accentPositive : color.accentNegative) : color.textTertiary
 
   const sparkData = useMemo<(number | null)[]>(() => {
     if (price === null || change === null) return []
-    const direction = change >= 0 ? 1 : -1
-    const points: number[] = []
-    for (let i = 0; i < 12; i++) {
-      const noise = (Math.random() - 0.5) * Math.abs(change) * 0.3
-      points.push(price + direction * (i / 12) * Math.abs(change) + noise)
+    const dir = change >= 0 ? 1 : -1
+    const pts: number[] = []
+    for (let i = 0; i < 16; i++) {
+      const noise = (Math.random() - 0.5) * Math.abs(change) * 0.25
+      pts.push(price - dir * Math.abs(change) + dir * (i / 15) * Math.abs(change) + noise)
     }
-    return points
+    return pts
   }, [price, change])
 
   return (
@@ -68,113 +87,84 @@ function IndexPulseTile({ quote }: { quote: IndexQuote | undefined }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '3px',
-        padding: '10px 12px',
-        minWidth: 0,
-        flex: '1 1 0',
-        // Glass card effect
-        background: hovered ? C.glassHover : C.glass,
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
-        borderRadius: '8px',
-        border: `1px solid ${hovered ? C.glassBorderHover : C.glassBorder}`,
-        transition: 'all 200ms ease',
-        boxShadow: hovered ? C.shadow1 : 'none',
+        display: 'grid',
+        gridTemplateColumns: '80px 1fr 60px 90px',
+        alignItems: 'center',
+        padding: '10px 16px',
+        background: hovered ? 'rgba(255, 255, 255, 0.04)' : 'transparent',
+        borderRadius: radius.sm,
+        transition: `background ${motion.fast} ease`,
         cursor: 'default',
+        gap: '12px',
       }}
     >
+      {/* Ticker */}
       <span style={{
-        fontFamily: C.fontDisplay,
-        fontSize: '10px',
-        fontWeight: 700,
-        color: C.amber,
-        letterSpacing: '0.08em',
-        whiteSpace: 'nowrap',
-        textTransform: 'uppercase',
-      }}>
-        {quote?.label ?? INDEX_DISPLAY[quote?.ticker ?? ''] ?? quote?.ticker ?? '--'}
-      </span>
-      <span style={{
-        fontFamily: C.fontMono,
-        fontSize: '16px',
-        color: isLoading ? C.whiteGhost : (isHugeMove ? C.amberBright : C.white),
-        fontVariantNumeric: 'tabular-nums',
-        whiteSpace: 'nowrap',
-        lineHeight: 1.2,
+        fontFamily: font.mono,
+        fontSize: '12px',
         fontWeight: 600,
-        animation: isHugeMove ? 'neonFlash 600ms ease-out' : 'none',
+        color: color.textPrimary,
+        letterSpacing: '0.02em',
+      }}>
+        {info.short}
+      </span>
+
+      {/* Sparkline */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+        {sparkData.length >= 2 ? (
+          <Sparkline data={sparkData} width={80} height={20} color={accentColor} />
+        ) : (
+          <div style={{ width: 80, height: 20 }} />
+        )}
+      </div>
+
+      {/* Price */}
+      <span style={{
+        fontFamily: font.mono,
+        fontSize: '12px',
+        fontWeight: 400,
+        color: color.textPrimary,
+        fontVariantNumeric: 'tabular-nums',
+        textAlign: 'right',
       }}>
         {price !== null
-          ? price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-          : '--'}
+          ? price >= 10000
+            ? price.toLocaleString('en-US', { maximumFractionDigits: 0 })
+            : price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+          : '—'}
       </span>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-        {changePct !== null ? (
-          <ChangeIndicator value={changePct} decimals={2} size="sm" bright={isBigMove} />
-        ) : (
-          <span style={{ fontFamily: C.fontMono, fontSize: '10px', color: C.whiteGhost }}>
-            --
-          </span>
-        )}
-        <Sparkline
-          data={sparkData}
-          width={28}
-          height={9}
-          color={change !== null ? (change >= 0 ? (isBigMove ? C.greenBright : C.green) : (isBigMove ? C.redBright : C.red)) : C.amber}
-        />
+
+      {/* Change badge */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <span style={{
+          fontFamily: font.mono,
+          fontSize: '11px',
+          fontWeight: 500,
+          color: changePct !== null ? color.textInverse : color.textTertiary,
+          background: changePct !== null ? accentColor : 'transparent',
+          padding: '3px 8px',
+          borderRadius: radius.sm,
+          fontVariantNumeric: 'tabular-nums',
+          textAlign: 'center',
+          minWidth: '64px',
+          display: 'inline-block',
+        }}>
+          {changePct !== null
+            ? `${isUp ? '+' : ''}${changePct.toFixed(2)}%`
+            : '—'}
+        </span>
       </div>
     </div>
-  )
-}
-
-// ─── Recent history item ────────────────────────────────────────────────────────
-
-function RecentItem({ cmd, onNavigate }: { cmd: string; onNavigate: (cmd: string) => void }) {
-  const [hovered, setHovered] = useState(false)
-
-  return (
-    <button
-      onClick={() => onNavigate(cmd)}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        background: hovered ? C.glassHover : 'transparent',
-        border: 'none',
-        borderLeft: hovered ? `2px solid ${C.amber}` : `2px solid transparent`,
-        cursor: 'pointer',
-        textAlign: 'left',
-        padding: '6px 10px',
-        width: '100%',
-        fontFamily: C.fontMono,
-        fontSize: '12px',
-        color: hovered ? C.amber : C.whiteGhost,
-        transition: 'all 150ms ease',
-        borderRadius: '0 4px 4px 0',
-      }}
-    >
-      &gt; {cmd}
-    </button>
   )
 }
 
 // ─── Main component ─────────────────────────────────────────────────────────────
 
 const HomeScreenV3: React.FC<Props> = ({ onNavigate }) => {
-  const [selectedCmd, setSelectedCmd] = useState(0)
-  const [showHints, setShowHints] = useState(false)
   const [recentHistory, setRecentHistory] = useState<string[]>([])
-  const selectedCmdRef = useRef(0)
   const bp = useBreakpoint()
   const isCompact = bp === 'compact'
-  const isExpanded = bp === 'expanded'
 
-  useEffect(() => {
-    selectedCmdRef.current = selectedCmd
-  }, [selectedCmd])
-
-  // ── Fetch market indices ────────────────────────────────────────────────────
   const { data: indices } = useQuery<IndexQuote[]>({
     queryKey: ['indices'],
     queryFn: fetchIndices,
@@ -184,52 +174,28 @@ const HomeScreenV3: React.FC<Props> = ({ onNavigate }) => {
 
   const indexMap = useMemo(() => {
     const map: Record<string, IndexQuote> = {}
-    if (indices) {
-      for (const q of indices) {
-        map[q.ticker] = q
-      }
+    if (Array.isArray(indices)) {
+      for (const q of indices) map[q.ticker] = q
     }
     return map
   }, [indices])
 
-  // ── Load recent command history from localStorage ───────────────────────────
   useEffect(() => {
     try {
       const raw = localStorage.getItem('bb_cmd_history')
       if (raw) {
         const parsed = JSON.parse(raw)
-        if (Array.isArray(parsed)) {
-          setRecentHistory(parsed.slice(-5).reverse())
-        }
+        if (Array.isArray(parsed)) setRecentHistory(parsed.slice(-8).reverse())
       }
     } catch {}
   }, [])
 
-  // ── Keyboard navigation ─────────────────────────────────────────────────────
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    // Ignore keys when focus is in an input/textarea (e.g. the command bar) —
-    // otherwise Enter here would hijack the user's typed command and navigate
-    // to COMMANDS[0] (AAPL), stomping commands like HOME, BOND, FX, etc.
-    const active = document.activeElement
-    const tag = active?.tagName
-    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (active as HTMLElement | null)?.isContentEditable) {
-      return
-    }
-
-    if (e.key === 'ArrowUp') {
+    const tag = document.activeElement?.tagName
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+    if (e.key === '?' && e.shiftKey) {
       e.preventDefault()
-      setSelectedCmd(prev => (prev - 1 + COMMANDS.length) % COMMANDS.length)
-    } else if (e.key === 'ArrowDown') {
-      e.preventDefault()
-      setSelectedCmd(prev => (prev + 1) % COMMANDS.length)
-    } else if (e.key === 'Enter') {
-      e.preventDefault()
-      onNavigate(COMMANDS[selectedCmdRef.current].cmd)
-    } else if (e.key === '?' && e.shiftKey) {
-      e.preventDefault()
-      setShowHints(prev => !prev)
-    } else if (e.key === 'Escape') {
-      setShowHints(false)
+      onNavigate('HELP')
     }
   }, [onNavigate])
 
@@ -238,368 +204,379 @@ const HomeScreenV3: React.FC<Props> = ({ onNavigate }) => {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [handleKeyDown])
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  // Time-based market status
+  const marketOpen = useMemo(() => {
+    const now = new Date()
+    const et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }))
+    const day = et.getDay()
+    if (day === 0 || day === 6) return false
+    const mins = et.getHours() * 60 + et.getMinutes()
+    return mins >= 570 && mins < 960 // 9:30 - 16:00
+  }, [])
+
   return (
     <div style={{
-      position: 'relative',
       display: 'flex',
       flexDirection: 'column',
       height: '100%',
-      background: C.surface0,
+      background: color.bgBase,
       overflowY: 'auto',
       overflowX: 'hidden',
+      position: 'relative',
     }}>
-      {/* Ambient background glow */}
+      {/* ═══ Ambient background glows ═══ */}
       <div style={{
         position: 'absolute',
-        top: '-10%',
+        top: '-80px',
         left: '30%',
-        width: '40%',
-        height: '40%',
-        background: `radial-gradient(ellipse, ${C.amberGlow}, transparent 70%)`,
+        transform: 'translateX(-50%)',
+        width: '700px',
+        height: '500px',
+        background: 'radial-gradient(ellipse at center, rgba(0, 217, 100, 0.12) 0%, rgba(0, 217, 100, 0.04) 35%, transparent 65%)',
         pointerEvents: 'none',
-        opacity: 0.6,
+        zIndex: 0,
       }} />
       <div style={{
         position: 'absolute',
-        bottom: '10%',
-        right: '20%',
-        width: '30%',
-        height: '30%',
-        background: `radial-gradient(ellipse, ${C.cyanGlow}, transparent 70%)`,
+        top: '60px',
+        right: '-100px',
+        width: '600px',
+        height: '500px',
+        background: 'radial-gradient(ellipse at center, rgba(59, 130, 246, 0.10) 0%, rgba(59, 130, 246, 0.03) 35%, transparent 65%)',
         pointerEvents: 'none',
-        opacity: 0.4,
+        zIndex: 0,
+      }} />
+      <div style={{
+        position: 'absolute',
+        bottom: '0',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '800px',
+        height: '300px',
+        background: 'radial-gradient(ellipse at center, rgba(0, 217, 100, 0.05) 0%, rgba(59, 130, 246, 0.04) 40%, transparent 70%)',
+        pointerEvents: 'none',
+        zIndex: 0,
       }} />
 
-      {/* Content wrapper */}
+      {/* ═══ SPECTRA TERMINAL wordmark — above everything ═══ */}
       <div style={{
-        position: 'relative',
-        zIndex: 1,
-        padding: '28px 28px 20px',
+        padding: '32px 20px 0 20px',
         display: 'flex',
         flexDirection: 'column',
-        height: '100%',
+        alignItems: 'center',
+        textAlign: 'center',
+        flexShrink: 0,
+        position: 'relative',
+        zIndex: 1,
+      }}>
+        <div style={{
+          fontFamily: font.sans,
+          fontSize: '26px',
+          fontWeight: 700,
+          color: color.textPrimary,
+          letterSpacing: '0.2em',
+          lineHeight: 1,
+          background: 'linear-gradient(135deg, #00D964 0%, #FFFFFF 40%, #3B82F6 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+        }}>
+          SPECTRA
+        </div>
+        <div style={{
+          fontFamily: font.sans,
+          fontSize: '9px',
+          fontWeight: 500,
+          color: color.textTertiary,
+          letterSpacing: '0.6em',
+          marginTop: '5px',
+        }}>
+          TERMINAL
+        </div>
+        <div style={{
+          marginTop: '12px',
+          fontFamily: font.sans,
+          fontSize: '11px',
+          color: color.textTertiary,
+          opacity: 0.7,
+        }}>
+          Type a command or ticker in the bar above
+        </div>
+      </div>
+
+      {/* ═══ Content grid ═══ */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: isCompact ? '1fr' : '2fr 320px',
+        gap: '16px',
+        padding: '20px',
+        flex: 1,
+        minHeight: 0,
+        position: 'relative',
+        zIndex: 1,
       }}>
 
-        {/* ═══ 1. WORDMARK — dramatic hero ═══════════════════════════════════ */}
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          paddingTop: '20px',
-          paddingBottom: '28px',
-        }}>
-          <div style={{
-            fontFamily: C.fontDisplay,
-            fontSize: isCompact ? '28px' : isExpanded ? '48px' : '36px',
-            fontWeight: 700,
-            // Gradient text
-            background: C.gradientHero,
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-            letterSpacing: '0.25em',
-            lineHeight: 1,
-            position: 'relative',
-          }}>
-            SPECTRA
-            {/* Glow behind wordmark */}
-            <div style={{
-              position: 'absolute',
-              inset: '-8px',
-              background: C.amberGlow,
-              filter: 'blur(20px)',
-              opacity: 0.4,
-              pointerEvents: 'none',
-              borderRadius: '50%',
-            }} />
-          </div>
-          <div style={{
-            fontFamily: C.fontMono,
-            fontSize: isCompact ? '9px' : '11px',
-            fontWeight: 400,
-            color: C.whiteGhost,
-            letterSpacing: isCompact ? '0.5em' : '0.8em',
-            marginTop: '10px',
-            textTransform: 'uppercase',
-          }}>
-            Terminal
-          </div>
-          {/* Horizontal accent line */}
-          <div style={{
-            width: '120px',
-            height: '1px',
-            background: `linear-gradient(90deg, transparent, ${C.amber}60, transparent)`,
-            marginTop: '16px',
-          }} />
-        </div>
+        {/* ═══ Left column — Markets ═══ */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minHeight: 0 }}>
 
-        {/* ═══ 2. MARKET PULSE — glass card row ══════════════════════════════ */}
-        <div style={{
-          marginBottom: '24px',
-          // Glass card container
-          background: C.glass,
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
-          borderRadius: '12px',
-          border: `1px solid ${C.glassBorder}`,
-          padding: '14px',
-          boxShadow: C.shadow1,
-        }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            marginBottom: '10px',
-          }}>
-            <span style={{
-              fontFamily: C.fontDisplay,
-              fontSize: '10px',
-              fontWeight: 700,
-              color: C.whiteGhost,
-              letterSpacing: '0.18em',
-              textTransform: 'uppercase',
+          {/* ── Market overview panel ── */}
+          <div style={{ ...glass, padding: '0', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            {/* Panel header */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '14px 20px',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+              flexShrink: 0,
+              background: 'linear-gradient(90deg, rgba(0, 217, 100, 0.08) 0%, rgba(0, 217, 100, 0.02) 50%, transparent 100%)',
+              borderRadius: `${radius.lg} ${radius.lg} 0 0`,
             }}>
-              Market Pulse
-            </span>
-            <LiveDot size={5} color={indices ? C.green : C.whiteGhost} active={!!indices} />
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px' }}>
-            {INDEX_TICKERS.map((ticker, i) => (
-              <div key={ticker} style={{ animation: 'fadeSlideUp 300ms ease both', animationDelay: `${Math.min(i * 30, 500)}ms` }}>
-                <IndexPulseTile quote={indexMap[ticker]} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{
+                  fontFamily: font.sans,
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: color.textPrimary,
+                }}>
+                  Markets
+                </span>
+                <span style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: '50%',
+                  background: marketOpen ? color.accentPositive : color.textTertiary,
+                  display: 'inline-block',
+                  boxShadow: marketOpen ? `0 0 10px ${color.accentPositive}, 0 0 20px ${color.accentPositive}40` : 'none',
+                }} />
+                <span style={{
+                  fontFamily: font.sans,
+                  fontSize: '11px',
+                  color: marketOpen ? color.accentPositive : color.textTertiary,
+                  fontWeight: 600,
+                }}>
+                  {marketOpen ? 'LIVE' : 'CLOSED'}
+                </span>
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ═══ 3. COMMAND SUGGESTIONS — interactive list ═════════════════════ */}
-        <div style={{ marginBottom: '24px', flex: 1 }}>
-          <div style={{
-            fontFamily: C.fontDisplay,
-            fontSize: '10px',
-            fontWeight: 700,
-            color: C.whiteGhost,
-            letterSpacing: '0.18em',
-            marginBottom: '10px',
-            textTransform: 'uppercase',
-          }}>
-            Quick Launch
-          </div>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: isCompact ? '1fr' : isExpanded ? '1fr 1fr 1fr' : '1fr 1fr',
-            gap: '2px',
-            background: C.glass,
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-            borderRadius: '12px',
-            border: `1px solid ${C.glassBorder}`,
-            overflow: 'hidden',
-          }}>
-            {COMMANDS.map((item, i) => {
-              const isActive = i === selectedCmd
-              return (
-                <button
-                  key={item.cmd}
-                  onClick={() => onNavigate(item.cmd)}
-                  onMouseEnter={() => setSelectedCmd(i)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    padding: '10px 14px',
-                    border: 'none',
-                    borderLeft: isActive
-                      ? `3px solid ${C.amber}`
-                      : '3px solid transparent',
-                    background: isActive ? C.amberGlow : 'transparent',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    transition: 'all 200ms ease',
-                    width: '100%',
-                    animation: 'fadeSlideUp 300ms ease both',
-                    animationDelay: `${Math.min(i * 30, 500)}ms`,
-                  }}
-                >
-                  {/* Icon */}
-                  <span style={{
-                    fontFamily: C.fontMono,
-                    fontSize: '12px',
-                    color: isActive ? C.amberBright : C.amberMute,
-                    width: '20px',
-                    textAlign: 'center',
-                    transition: 'color 200ms',
-                  }}>
-                    {item.icon}
-                  </span>
-                  <span style={{
-                    fontFamily: C.fontMono,
-                    fontSize: '13px',
-                    color: isActive ? C.amberBright : C.amber,
-                    whiteSpace: 'nowrap',
-                    fontWeight: 700,
-                    letterSpacing: '0.04em',
-                    transition: 'color 200ms',
-                  }}>
-                    {item.cmd}
-                  </span>
-                  <span style={{
-                    fontSize: '12px',
-                    color: isActive ? C.whiteDim : C.whiteGhost,
-                    transition: 'color 200ms',
-                  }}>
-                    {item.desc}
-                  </span>
-                  {/* Arrow indicator */}
-                  {isActive && (
-                    <span style={{
-                      marginLeft: 'auto',
-                      color: C.amber,
-                      fontSize: '12px',
-                      fontFamily: C.fontMono,
-                      animation: 'fadeSlideUp 200ms ease',
-                    }}>
-                      ↵
-                    </span>
-                  )}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* ═══ 4. RECENT ACTIVITY ═══════════════════════════════════════════ */}
-        {recentHistory.length > 0 && (
-          <div style={{ marginBottom: '20px' }}>
-            <div style={{
-              fontFamily: C.fontDisplay,
-              fontSize: '10px',
-              fontWeight: 700,
-              color: C.whiteGhost,
-              letterSpacing: '0.18em',
-              marginBottom: '8px',
-              textTransform: 'uppercase',
-            }}>
-              Recent
+              <span style={{
+                fontFamily: font.mono,
+                fontSize: '10px',
+                color: color.textTertiary,
+              }}>
+                30s refresh
+              </span>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                {recentHistory.map((cmd, i) => (
-                <RecentItem key={`${cmd}-${i}-${cmd.length}`} cmd={cmd} onNavigate={onNavigate} />
+
+            {/* Column headers */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '80px 1fr 60px 90px',
+              padding: '8px 16px',
+              gap: '12px',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+              flexShrink: 0,
+            }}>
+              {['SYMBOL', '', 'LAST', 'CHG %'].map((h, i) => (
+                <span key={h || i} style={{
+                  fontFamily: font.sans,
+                  fontSize: '10px',
+                  fontWeight: 600,
+                  color: color.textTertiary,
+                  textTransform: 'uppercase' as const,
+                  letterSpacing: '0.06em',
+                  textAlign: i >= 2 ? 'right' : 'left',
+                }}>
+                  {h}
+                </span>
+              ))}
+            </div>
+
+            {/* Index rows */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '4px 0' }}>
+              {INDEX_TICKERS.map(ticker => (
+                <IndexRow key={ticker} quote={indexMap[ticker]} ticker={ticker} />
               ))}
             </div>
           </div>
-        )}
-
-        {/* ═══ 5. KEYBOARD HINTS ═══════════════════════════════════════════ */}
-        <div style={{ marginTop: 'auto', display: isCompact ? 'none' : 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-            {['F1-F10: Nav', '↑↓: Select', 'Enter: Go', '⇧Enter: New Panel', 'Tab: Complete'].map(hint => (
-              <span key={hint} style={{
-                fontFamily: C.fontMono,
-                fontSize: '9px',
-                color: C.whiteGhost,
-                letterSpacing: '0.04em',
-                padding: '3px 8px',
-                background: C.glass,
-                borderRadius: '4px',
-                border: `1px solid ${C.glassBorder}`,
-              }}>
-                {hint}
-              </span>
-            ))}
-          </div>
-
-          {/* Help button */}
-          <button
-            onClick={() => setShowHints(prev => !prev)}
-            style={{
-              background: C.glass,
-              border: `1px solid ${C.glassBorder}`,
-              color: C.whiteGhost,
-              fontFamily: C.fontMono,
-              fontSize: '10px',
-              cursor: 'pointer',
-              padding: '4px 10px',
-              letterSpacing: '0.06em',
-              borderRadius: '6px',
-              transition: 'all 200ms ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = C.amberDim
-              e.currentTarget.style.color = C.amber
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = C.glassBorder
-              e.currentTarget.style.color = C.whiteGhost
-            }}
-          >
-            ? help
-          </button>
         </div>
 
-        {/* ═══ HINTS OVERLAY — glassmorphic floating panel ══════════════════ */}
-        {showHints && (
-          <div style={{
-            position: 'absolute',
-            bottom: '28px',
-            right: '28px',
-            background: 'rgba(8, 8, 26, 0.9)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            border: `1px solid ${C.glassBorder}`,
-            borderRadius: '12px',
-            padding: '16px 20px',
-            zIndex: 1000,
-            boxShadow: C.shadow3,
-            animation: 'fadeSlideUp 200ms ease',
-          }}>
+        {/* ═══ Right column ═══ */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minHeight: 0, alignSelf: 'start' }}>
+
+          {/* ── Quick launch ── */}
+          <div style={{ ...glass, padding: '0', display: 'flex', flexDirection: 'column' }}>
             <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '10px',
-              paddingBottom: '8px',
-              borderBottom: `1px solid ${C.glassBorder}`,
+              padding: '14px 20px',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+              flexShrink: 0,
+              background: 'linear-gradient(90deg, rgba(59, 130, 246, 0.08) 0%, rgba(59, 130, 246, 0.02) 50%, transparent 100%)',
+              borderRadius: `${radius.lg} ${radius.lg} 0 0`,
             }}>
               <span style={{
-                fontFamily: C.fontDisplay,
-                fontSize: '11px',
-                fontWeight: 700,
-                color: C.amber,
-                letterSpacing: '0.12em',
+                fontFamily: font.sans,
+                fontSize: '13px',
+                fontWeight: 600,
+                color: color.textPrimary,
               }}>
-                KEYBOARD SHORTCUTS
+                Quick Launch
               </span>
-              <button
-                onClick={() => setShowHints(false)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: C.whiteGhost,
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  lineHeight: 1,
-                  padding: '0 4px',
-                  fontFamily: C.fontMono,
-                }}
-              >
-                ×
-              </button>
             </div>
-            <div style={{
-              fontFamily: C.fontMono,
-              fontSize: '11px',
-              color: C.whiteDim,
-              lineHeight: 2,
-            }}>
-              F1–F10: Quick nav · Enter: Execute · Esc: Clear · Tab: Autocomplete · ↑↓: Navigate
+            <div style={{ flex: 1, overflowY: 'auto', padding: '10px' }}>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '8px',
+              }}>
+                {QUICK_ACTIONS.map(item => (
+                  <QuickTile
+                    key={item.cmd}
+                    label={item.label}
+                    desc={item.desc}
+                    accent={item.accent}
+                    onClick={() => onNavigate(item.cmd)}
+                  />
+                ))}
+              </div>
             </div>
           </div>
-        )}
+
+          {/* ── Recent ── */}
+          {recentHistory.length > 0 && (
+            <div style={{ ...glass, padding: '0', flexShrink: 0, maxHeight: '220px', overflow: 'hidden' }}>
+              <div style={{
+                padding: '12px 20px',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+                background: 'linear-gradient(90deg, rgba(168, 85, 247, 0.08) 0%, rgba(168, 85, 247, 0.02) 50%, transparent 100%)',
+                borderRadius: `${radius.lg} ${radius.lg} 0 0`,
+              }}>
+                <span style={{
+                  fontFamily: font.sans,
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: color.textPrimary,
+                }}>
+                  Recent
+                </span>
+              </div>
+              <div style={{ padding: '6px 8px' }}>
+                {recentHistory.map((cmd, i) => (
+                  <RecentRow key={`${cmd}-${i}`} cmd={cmd} onNavigate={onNavigate} />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
+  )
+}
+
+// ─── Quick launch tile ──────────────────────────────────────────────────────────
+
+function QuickTile({ label, desc, accent, onClick }: { label: string; desc: string; accent: string; onClick: () => void }) {
+  const [hovered, setHovered] = useState(false)
+
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        ...glassInner,
+        padding: '14px 14px',
+        cursor: 'pointer',
+        textAlign: 'left',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '3px',
+        position: 'relative',
+        overflow: 'hidden',
+        background: hovered ? 'rgba(255, 255, 255, 0.06)' : glassInner.background,
+        border: hovered ? `1px solid ${accent}40` : glassInner.border,
+        boxShadow: hovered
+          ? `0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 0 20px ${accent}15`
+          : glassInner.boxShadow,
+        transition: `all ${motion.fast} ease`,
+      }}
+    >
+      {/* Accent bar */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '3px',
+        height: '100%',
+        background: accent,
+        opacity: hovered ? 1 : 0.4,
+        transition: `opacity ${motion.fast} ease`,
+        borderRadius: '2px 0 0 2px',
+      }} />
+      <span style={{
+        fontFamily: font.mono,
+        fontSize: '12px',
+        fontWeight: 600,
+        color: hovered ? accent : color.textSecondary,
+        letterSpacing: '0.04em',
+        transition: `color ${motion.fast} ease`,
+        paddingLeft: '6px',
+      }}>
+        {label}
+      </span>
+      <span style={{
+        fontFamily: font.sans,
+        fontSize: '11px',
+        color: color.textTertiary,
+        paddingLeft: '6px',
+      }}>
+        {desc}
+      </span>
+    </button>
+  )
+}
+
+// ─── Recent row ─────────────────────────────────────────────────────────────────
+
+function RecentRow({ cmd, onNavigate }: { cmd: string; onNavigate: (cmd: string) => void }) {
+  const [hovered, setHovered] = useState(false)
+
+  return (
+    <button
+      onClick={() => onNavigate(cmd)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        width: '100%',
+        padding: '8px 12px',
+        background: hovered ? 'rgba(255, 255, 255, 0.04)' : 'transparent',
+        border: 'none',
+        borderRadius: radius.sm,
+        cursor: 'pointer',
+        textAlign: 'left',
+        transition: `background ${motion.fast} ease`,
+        gap: '8px',
+      }}
+    >
+      <span style={{
+        fontFamily: font.mono,
+        fontSize: '11px',
+        color: hovered ? color.accentPositive : color.textTertiary,
+        transition: `color ${motion.fast} ease`,
+      }}>
+        {cmd}
+      </span>
+      {hovered && (
+        <span style={{
+          marginLeft: 'auto',
+          fontFamily: font.mono,
+          fontSize: '10px',
+          color: color.accentPositive,
+        }}>
+          ↵
+        </span>
+      )}
+    </button>
   )
 }
 

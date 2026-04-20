@@ -9,9 +9,9 @@ interface Props {
 
 /**
  * Renders a value as a coloured span:
- *   positive → .bb-gain  (green)
- *   negative → .bb-loss  (red)
- *   zero / null → amber (#ff9900)
+ *   positive → accentPositive (green)
+ *   negative → accentNegative (red)
+ *   zero / null → textSecondary
  *
  * Automatically prepends "+" for positive values.
  * Shows "—" when value is null.
@@ -24,7 +24,7 @@ const TickerBadge: React.FC<Props> = ({
 }) => {
   if (value === null) {
     return (
-      <span style={{ color: '#F59E0B' }}>
+      <span style={{ color: '#9AA0A6' }}>
         {prefix}—
       </span>
     )
@@ -42,7 +42,7 @@ const TickerBadge: React.FC<Props> = ({
   return (
     <span
       className={className || undefined}
-      style={value === 0 ? { color: '#F59E0B' } : undefined}
+      style={value === 0 ? { color: '#9AA0A6' } : undefined}
     >
       {display}
     </span>

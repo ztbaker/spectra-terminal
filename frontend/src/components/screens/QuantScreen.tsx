@@ -1,7 +1,7 @@
 import Panel from '../Terminal/Panel'
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
 import Metric from '../shared/Metric'
 import DataGrid from '../shared/DataGrid'
 import LiveDot from '../shared/LiveDot'
@@ -20,12 +20,12 @@ import {
   type UTCTimestamp,
 } from 'lightweight-charts'
 
+const { color, font } = theme
+
 interface Props {
   ticker: string
   onNavigate: (cmd: string) => void
 }
-
-// ─── Inline chart for rolling vol / drawdown ─────────────────────────────────
 
 interface InlineChartProps {
   data: { time: string; value: number }[]
@@ -35,7 +35,7 @@ interface InlineChartProps {
   title?: string
 }
 
-const InlineChart: React.FC<InlineChartProps> = ({ data, color, inverted = false, height = 160, title }) => {
+const InlineChart: React.FC<InlineChartProps> = ({ data, color: lineColor, inverted = false, height = 160, title }) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<IChartApi | null>(null)
 
@@ -46,24 +46,24 @@ const InlineChart: React.FC<InlineChartProps> = ({ data, color, inverted = false
       width: containerRef.current.clientWidth,
       height,
       layout: {
-        background: { color: C.surface1 },
-        textColor: C.whiteGhost,
-        fontFamily: C.fontMono,
+        background: { color: color.bgElevated },
+        textColor: color.textTertiary,
+        fontFamily: font.mono,
         fontSize: 10,
       },
       grid: {
-        vertLines: { color: C.border0 },
-        horzLines: { color: C.border0 },
+        vertLines: { color: 'rgba(255, 255, 255, 0.04)' },
+        horzLines: { color: 'rgba(255, 255, 255, 0.04)' },
       },
       crosshair: { mode: CrosshairMode.Normal },
-      rightPriceScale: { borderColor: C.border1 },
-      timeScale: { borderColor: C.border1, timeVisible: false },
+      rightPriceScale: { borderColor: color.borderSubtle },
+      timeScale: { borderColor: color.borderSubtle, timeVisible: false },
     })
 
     const series = chart.addSeries(AreaSeries, {
-      topColor: color,
-      bottomColor: inverted ? 'transparent' : `${color}11`,
-      lineColor: color,
+      topColor: lineColor,
+      bottomColor: inverted ? 'transparent' : `${lineColor}11`,
+      lineColor: lineColor,
       lineWidth: 1,
       priceFormat: { type: 'percent' },
     })
@@ -88,14 +88,14 @@ const InlineChart: React.FC<InlineChartProps> = ({ data, color, inverted = false
       ro.disconnect()
       chart.remove()
     }
-  }, [data, color, inverted, height])
+  }, [data, lineColor, inverted, height])
 
   return (
     <div style={{ position: 'relative' }}>
       {title && (
         <div style={{
           position: 'absolute', top: 8, left: 12, zIndex: 2,
-          color: C.amberMute, fontSize: 10, fontFamily: C.fontDisplay, fontWeight: 700, letterSpacing: '0.06em',
+          color: color.textSecondary, fontSize: 11, fontFamily: font.sans, fontWeight: 600,
         }}>
           {title}
         </div>
@@ -105,33 +105,27 @@ const InlineChart: React.FC<InlineChartProps> = ({ data, color, inverted = false
   )
 }
 
-// ─── Main screen ──────────────────────────────────────────────────────────────
-
 export default function QuantScreen({ ticker, onNavigate: _onNavigate }: Props) {
   const sym = ticker.toUpperCase()
 
-  // Summary stats
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['analytics-summary', sym],
     queryFn: () => fetchAnalyticsSummary(sym),
     staleTime: 300_000,
   })
 
-  // Chart data for drawdown computation
   const { data: chartData } = useQuery({
     queryKey: ['chart', sym, '2y', '1d'],
     queryFn: () => fetchChart(sym, '2y'),
     staleTime: 300_000,
   })
 
-  // Fama-French
   const { data: ff, isLoading: ffLoading } = useQuery({
     queryKey: ['analytics-fama-french', sym],
     queryFn: () => fetchAnalyticsFamaFrench(sym),
     staleTime: 300_000,
   })
 
-  // Cointegration state
   const [cointTicker1, setCointTicker1] = useState(sym)
   const [cointTicker2, setCointTicker2] = useState('SPY')
   const [cointResult, setCointResult] = useState<any>(null)
@@ -149,7 +143,6 @@ export default function QuantScreen({ ticker, onNavigate: _onNavigate }: Props) 
     }
   }, [cointTicker1, cointTicker2])
 
-  // Compute rolling volatility and drawdown from price data
   const rollingVol = useMemo(() => {
     if (!chartData?.ohlcv || chartData.ohlcv.length < 252) return []
     const closes = chartData.ohlcv.map((b: any) => b.close)
@@ -184,42 +177,29 @@ export default function QuantScreen({ ticker, onNavigate: _onNavigate }: Props) 
     return result
   }, [chartData])
 
-  // Fama-French table rows
   const ffRows = useMemo(() => {
     if (!ff) return []
     return [
-      {
-        factor: 'Mkt-RF',
-        beta: ff.mkt_beta,
-        label: 'Market Risk Premium',
-      },
-      {
-        factor: 'SMB',
-        beta: ff.smb_beta,
-        label: 'Small Minus Big',
-      },
-      {
-        factor: 'HML',
-        beta: ff.hml_beta,
-        label: 'High Minus Low',
-      },
+      { factor: 'Mkt-RF', beta: ff.mkt_beta, label: 'Market Risk Premium' },
+      { factor: 'SMB', beta: ff.smb_beta, label: 'Small Minus Big' },
+      { factor: 'HML', beta: ff.hml_beta, label: 'High Minus Low' },
     ]
   }, [ff])
 
   const ffColumns = [
     { key: 'factor', header: 'FACTOR', type: 'text' as const, width: '80px', render: (row: any) => (
-      <span style={{ color: C.amberBright, fontWeight: 700 }}>{row.factor}</span>
+      <span style={{ color: color.textPrimary, fontWeight: 600 }}>{row.factor}</span>
     )},
     { key: 'label', header: 'DESCRIPTION', type: 'text' as const },
     { key: 'beta', header: 'BETA', type: 'number' as const, width: '80px', render: (row: any) => {
       const b = row.beta
       return (
         <span style={{
-          color: b != null ? (Math.abs(b) > 1 ? C.amber : b > 0 ? C.green : C.red) : C.whiteGhost,
-          fontFamily: C.fontMono,
+          color: b != null ? (Math.abs(b) > 1 ? color.accentWarning : b > 0 ? color.accentPositive : color.accentNegative) : color.textTertiary,
+          fontFamily: font.mono,
           fontVariantNumeric: 'tabular-nums',
         }}>
-          {b != null ? b.toFixed(4) : '—'}
+          {b != null ? b.toFixed(4) : '\u2014'}
         </span>
       )
     }},
@@ -228,49 +208,46 @@ export default function QuantScreen({ ticker, onNavigate: _onNavigate }: Props) 
   const isLoading = statsLoading || ffLoading
 
   return (
-    <Panel title={`QUANT — ${sym}`} actions={<LiveDot label={isLoading ? 'LOADING' : 'LIVE'} active={!isLoading} />}>
+    <Panel title={`QUANT \u2014 ${sym}`} actions={<LiveDot label={isLoading ? 'LOADING' : 'LIVE'} active={!isLoading} />}>
       <LoadingBar loading={isLoading} />
 
       <div style={{ flex: 1, overflow: 'auto', padding: '0 0 16px' }}>
-        {/* ── Summary stats ─────────────────────────────────────────────── */}
         {stats && (
           <div style={{ padding: '12px 16px' }}>
-            <div style={{ color: C.amberMute, fontSize: 10, fontFamily: C.fontDisplay, fontWeight: 700, letterSpacing: '0.08em', marginBottom: 8 }}>
+            <div style={{ color: color.textSecondary, fontSize: 11, fontFamily: font.sans, fontWeight: 600, marginBottom: 8 }}>
               DISTRIBUTION STATISTICS
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
               <Metric label="MEAN" value={stats.mean} format="pct" size="sm" />
-              <Metric label="STD DEV" value={stats.std} format="pct" size="sm" />
+              <Metric label="STD DEV" value={stats.std} format="number" size="sm" />
               <Metric label="SKEW" value={stats.skew} format="number" size="sm" />
               <Metric label="KURTOSIS" value={stats.kurtosis} format="number" size="sm" />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 8 }}>
-              <Metric label="SHARPE" value={stats.sharpe} format="number" size="sm" color={stats.sharpe != null && stats.sharpe > 1 ? C.green : undefined} />
-              <Metric label="MAX DD" value={stats.max_drawdown} format="pct" size="sm" color={C.red} />
-              <Metric label="VaR 95%" value={stats.var_95} format="pct" size="sm" color={C.red} />
-              <Metric label="ALPHA" value={ff?.alpha} format="pct" size="sm" color={ff?.alpha != null && ff.alpha > 0 ? C.green : undefined} />
+              <Metric label="SHARPE" value={stats.sharpe} format="number" size="sm" color={stats.sharpe != null && stats.sharpe > 1 ? color.accentPositive : undefined} />
+              <Metric label="MAX DD" value={stats.max_drawdown} format="pct" size="sm" color={color.accentNegative} />
+              <Metric label="VaR 95%" value={stats.var_95} format="pct" size="sm" color={color.accentNegative} />
+              <Metric label="ALPHA" value={ff?.alpha} format="pct" size="sm" color={ff?.alpha != null && ff.alpha > 0 ? color.accentPositive : undefined} />
             </div>
           </div>
         )}
 
-        {/* ── Rolling volatility chart ───────────────────────────────────── */}
         {rollingVol.length > 0 && (
           <div style={{ padding: '8px 16px' }}>
             <InlineChart
               data={rollingVol}
-              color={C.amber}
+              color={color.textPrimary}
               height={160}
               title="ROLLING VOLATILITY (252D)"
             />
           </div>
         )}
 
-        {/* ── Drawdown chart ─────────────────────────────────────────────── */}
         {drawdown.length > 0 && (
           <div style={{ padding: '8px 16px' }}>
             <InlineChart
               data={drawdown}
-              color={C.red}
+              color={color.accentNegative}
               inverted={true}
               height={140}
               title="DRAWDOWN"
@@ -278,10 +255,9 @@ export default function QuantScreen({ ticker, onNavigate: _onNavigate }: Props) 
           </div>
         )}
 
-        {/* ── Fama-French table ─────────────────────────────────────────── */}
         <div style={{ padding: '12px 16px' }}>
-          <div style={{ color: C.amberMute, fontSize: 10, fontFamily: C.fontDisplay, fontWeight: 700, letterSpacing: '0.08em', marginBottom: 8 }}>
-            FAMA-FRENCH FACTORS {ff?.cached && <span style={{ color: C.amberMute, fontWeight: 400 }}>(CACHED)</span>}
+          <div style={{ color: color.textSecondary, fontSize: 11, fontFamily: font.sans, fontWeight: 600, marginBottom: 8 }}>
+            FAMA-FRENCH FACTORS {ff?.cached && <span style={{ color: color.textTertiary, fontWeight: 400 }}>(CACHED)</span>}
           </div>
           <DataGrid
             columns={ffColumns}
@@ -292,9 +268,8 @@ export default function QuantScreen({ ticker, onNavigate: _onNavigate }: Props) 
           />
         </div>
 
-        {/* ── Cointegration test ─────────────────────────────────────────── */}
         <div style={{ padding: '12px 16px' }}>
-          <div style={{ color: C.amberMute, fontSize: 10, fontFamily: C.fontDisplay, fontWeight: 700, letterSpacing: '0.08em', marginBottom: 8 }}>
+          <div style={{ color: color.textSecondary, fontSize: 11, fontFamily: font.sans, fontWeight: 600, marginBottom: 8 }}>
             COINTEGRATION QUICK-TEST
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
@@ -303,26 +278,26 @@ export default function QuantScreen({ ticker, onNavigate: _onNavigate }: Props) 
               onChange={e => setCointTicker1(e.target.value.toUpperCase())}
               style={{
                 width: 80,
-                background: C.surface2,
-                border: `1px solid ${C.border1}`,
-                color: C.white,
-                fontFamily: C.fontMono,
+                background: color.bgSurface,
+                border: `1px solid ${color.borderSubtle}`,
+                color: color.textPrimary,
+                fontFamily: font.mono,
                 fontSize: 12,
                 padding: '5px 8px',
                 borderRadius: 2,
                 outline: 'none',
               }}
             />
-            <span style={{ color: C.whiteDim, fontSize: 11 }}>vs</span>
+            <span style={{ color: color.textSecondary, fontSize: 11 }}>vs</span>
             <input
               value={cointTicker2}
               onChange={e => setCointTicker2(e.target.value.toUpperCase())}
               style={{
                 width: 80,
-                background: C.surface2,
-                border: `1px solid ${C.border1}`,
-                color: C.white,
-                fontFamily: C.fontMono,
+                background: color.bgSurface,
+                border: `1px solid ${color.borderSubtle}`,
+                color: color.textPrimary,
+                fontFamily: font.mono,
                 fontSize: 12,
                 padding: '5px 8px',
                 borderRadius: 2,
@@ -333,20 +308,19 @@ export default function QuantScreen({ ticker, onNavigate: _onNavigate }: Props) 
               onClick={handleCointTest}
               disabled={cointLoading}
               style={{
-                background: C.amberMute,
-                color: C.amber,
-                border: `1px solid ${C.amberMute}`,
+                background: color.accentPositiveDim,
+                color: color.accentPositive,
+                border: `1px solid ${color.accentPositive}`,
                 padding: '5px 16px',
                 fontSize: 11,
-                fontFamily: C.fontMono,
+                fontFamily: font.mono,
                 fontWeight: 700,
                 cursor: cointLoading ? 'wait' : 'pointer',
-                letterSpacing: '0.05em',
                 borderRadius: 2,
                 transition: 'all 150ms ease',
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = C.amberDim; e.currentTarget.style.color = C.white }}
-              onMouseLeave={e => { e.currentTarget.style.background = C.amberMute; e.currentTarget.style.color = C.amber }}
+              onMouseEnter={e => { e.currentTarget.style.background = color.accentPositive; e.currentTarget.style.color = color.textInverse }}
+              onMouseLeave={e => { e.currentTarget.style.background = color.accentPositiveDim; e.currentTarget.style.color = color.accentPositive }}
             >
               {cointLoading ? '...' : 'TEST'}
             </button>
@@ -354,17 +328,17 @@ export default function QuantScreen({ ticker, onNavigate: _onNavigate }: Props) 
 
           {cointResult && !cointResult.error && (
             <div style={{
-              background: C.surface2,
-              border: `1px solid ${C.border0}`,
+              background: color.bgSurface,
+              border: `1px solid ${color.borderSubtle}`,
               padding: 12,
               display: 'grid',
               gridTemplateColumns: 'repeat(3, 1fr)',
               gap: 8,
             }}>
               <Metric label="ADF STAT" value={cointResult.adf_statistic} format="number" size="sm"
-                color={cointResult.adf_statistic != null && cointResult.adf_statistic < -3.4 ? C.green : C.red} />
+                color={cointResult.adf_statistic != null && cointResult.adf_statistic < -3.4 ? color.accentPositive : color.accentNegative} />
               <Metric label="P-VALUE" value={cointResult.p_value} format="number" size="sm"
-                color={cointResult.p_value != null && cointResult.p_value < 0.05 ? C.green : C.amberBright} />
+                color={cointResult.p_value != null && cointResult.p_value < 0.05 ? color.accentPositive : color.textPrimary} />
               <Metric label="CRITICAL 5%" value={cointResult.critical_values?.['5%'] ?? null} format="number" size="sm" />
               <div style={{ gridColumn: '1 / -1' }}>
                 <span style={{
@@ -372,12 +346,11 @@ export default function QuantScreen({ ticker, onNavigate: _onNavigate }: Props) 
                   padding: '3px 8px',
                   borderRadius: 2,
                   fontSize: 10,
-                  fontFamily: C.fontMono,
+                  fontFamily: font.mono,
                   fontWeight: 700,
-                  letterSpacing: '0.05em',
-                  background: cointResult.p_value < 0.05 ? C.greenDim : C.redDim,
-                  color: cointResult.p_value < 0.05 ? C.green : C.red,
-                  border: `1px solid ${cointResult.p_value < 0.05 ? C.green : C.red}`,
+                  background: cointResult.p_value < 0.05 ? color.accentPositiveDim : color.accentNegativeDim,
+                  color: cointResult.p_value < 0.05 ? color.accentPositive : color.accentNegative,
+                  border: `1px solid ${cointResult.p_value < 0.05 ? color.accentPositive : color.accentNegative}`,
                 }}>
                   {cointResult.p_value < 0.05 ? 'COINTEGRATED' : 'NOT COINTEGRATED'}
                 </span>
@@ -386,7 +359,7 @@ export default function QuantScreen({ ticker, onNavigate: _onNavigate }: Props) 
           )}
 
           {cointResult?.error && (
-            <div style={{ padding: 12, color: C.red, fontSize: 11, fontFamily: C.fontMono }}>
+            <div style={{ padding: 12, color: color.accentNegative, fontSize: 11, fontFamily: font.mono }}>
               {cointResult.error}
             </div>
           )}

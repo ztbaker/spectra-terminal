@@ -1,6 +1,6 @@
 import React from 'react'
 import type { FAOverview } from '../../types'
-import C from '../../lib/colors'
+import { color, font } from '../../lib/theme'
 import { fmtCurrency } from './_format'
 
 interface Props {
@@ -12,16 +12,16 @@ const dash = '\u2014'
 
 export default function OverviewStrip({ overview, ticker }: Props) {
   const labelStyle: React.CSSProperties = {
-    fontSize: '9px',
-    letterSpacing: '0.08em',
-    textTransform: 'uppercase' as const,
-    color: C.amberMute,
+    fontSize: '11px',
+    letterSpacing: '0.02em',
+    color: color.textSecondary,
+    fontFamily: font.sans,
     lineHeight: 1.3,
   }
   const valStyle: React.CSSProperties = {
     fontSize: '13px',
-    color: C.white,
-    fontFamily: C.fontMono,
+    color: color.textPrimary,
+    fontFamily: font.mono,
     lineHeight: 1.4,
   }
 
@@ -46,7 +46,7 @@ export default function OverviewStrip({ overview, ticker }: Props) {
   const Cell: React.FC<{ lab: string; children: React.ReactNode; wide?: boolean }> = ({ lab, children, wide }) => (
     <div style={{
       padding: '8px 12px',
-      borderRight: `1px solid ${C.border0}`,
+      borderRight: `1px solid ${color.borderSubtle}`,
       flex: wide ? '2 0 0' : '1 0 0',
       minWidth: 0,
       overflow: 'hidden',
@@ -57,11 +57,11 @@ export default function OverviewStrip({ overview, ticker }: Props) {
   )
 
   return (
-    <div style={{ display: 'flex', borderBottom: `1px solid ${C.border0}`, background: C.surface1 }}>
+    <div style={{ display: 'flex', borderBottom: `1px solid ${color.borderSubtle}`, background: 'rgba(19, 22, 25, 0.8)' }}>
       <Cell lab="" wide>
-        <div style={{ ...valStyle, fontSize: '14px', fontWeight: 700, color: C.amber }}>{ticker}</div>
+        <div style={{ ...valStyle, fontSize: '14px', fontWeight: 600, color: color.ticker }}>{ticker}</div>
         <div style={{ ...valStyle, fontSize: '12px' }}>{overview.company_name ?? dash}</div>
-        <div style={{ fontSize: '10px', color: C.whiteDim, marginTop: 2 }}>
+        <div style={{ fontSize: '11px', color: color.textSecondary, marginTop: 2, fontFamily: font.sans }}>
           {[overview.sector, overview.industry].filter(Boolean).join(' / ') || dash}
         </div>
       </Cell>
@@ -69,8 +69,8 @@ export default function OverviewStrip({ overview, ticker }: Props) {
       <Cell lab="Price">
         <span>{price}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2, minWidth: 0 }}>
-          <span style={{ fontSize: '10px', color: C.whiteDim, flexShrink: 0 }}>{low}</span>
-          <div style={{ position: 'relative', flex: '1 1 auto', minWidth: 16, maxWidth: 60, height: 4, background: C.border1, borderRadius: 2 }}>
+          <span style={{ fontSize: '10px', color: color.textSecondary, flexShrink: 0 }}>{low}</span>
+          <div style={{ position: 'relative', flex: '1 1 auto', minWidth: 16, maxWidth: 60, height: 3, background: color.borderMedium, borderRadius: 2 }}>
             {rangePct !== null && (
               <div style={{
                 position: 'absolute',
@@ -79,16 +79,16 @@ export default function OverviewStrip({ overview, ticker }: Props) {
                 width: 6,
                 height: 6,
                 borderRadius: 3,
-                background: C.amber,
+                background: color.accentPositive,
                 transform: 'translateX(-50%)',
               }} />
             )}
           </div>
-          <span style={{ fontSize: '10px', color: C.whiteDim, flexShrink: 0 }}>{high}</span>
+          <span style={{ fontSize: '10px', color: color.textSecondary, flexShrink: 0 }}>{high}</span>
         </div>
       </Cell>
 
-      <Cell lab="Mkt Cap">{fmtCurrency(mktCap)}</Cell>
+      <Cell lab="Mkt cap">{fmtCurrency(mktCap)}</Cell>
       <Cell lab="Employees">{overview.employees !== null ? overview.employees.toLocaleString() : dash}</Cell>
       <Cell lab="Beta">{overview.beta !== null ? overview.beta.toFixed(2) : dash}</Cell>
       <Cell lab="Exchange">{overview.exchange ?? dash}</Cell>

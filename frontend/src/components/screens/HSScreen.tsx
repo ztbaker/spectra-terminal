@@ -1,11 +1,3 @@
-/**
- * HSScreen — Historical Spread (Bloomberg HS style)
- *
- * Two-pane chart:
- *   Pane 0: Amber area chart — absolute spread level
- *   Pane 1: Green/red histogram — deviation from period average
- * Right sidebar: PRICE SUMMARY stats panel
- */
 import React, { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -22,13 +14,13 @@ import {
 import { fetchSpread } from '../../lib/api'
 import type { SpreadData } from '../../types'
 import LoadingBar from '../shared/LoadingBar'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
 
-// ─── Button styles ────────────────────────────────────────────────────────────
+const { color, font } = theme
 
 const ACTIVE_BTN: React.CSSProperties = {
-  background:  C.amber,
-  color:       C.surface0,
+  background:  color.accentPositive,
+  color:       color.textInverse,
   border:      'none',
   fontWeight:  700,
   padding:     '1px 8px',
@@ -39,15 +31,13 @@ const ACTIVE_BTN: React.CSSProperties = {
 
 const INACTIVE_BTN: React.CSSProperties = {
   background:  'transparent',
-  color:       C.amberMute,
+  color:       color.textTertiary,
   border:      'none',
   padding:     '1px 8px',
   fontSize:    10,
   fontFamily:  'inherit',
   cursor:      'pointer',
 }
-
-// ─── Presets ──────────────────────────────────────────────────────────────────
 
 interface Preset { id: string; label: string; ticker1: string; ticker2: string; desc: string }
 
@@ -60,8 +50,6 @@ const PRESETS: Preset[] = [
 const PERIODS = ['1y', '2y', '5y', 'max'] as const
 type PeriodKey = typeof PERIODS[number]
 const PERIOD_LABELS: Record<PeriodKey, string> = { '1y': '1Y', '2y': '2Y', '5y': '5Y', 'max': 'MAX' }
-
-// ─── PRICE SUMMARY sidebar ────────────────────────────────────────────────────
 
 interface SummaryProps {
   data:         SpreadData | undefined
@@ -81,13 +69,13 @@ const PriceSummary: React.FC<SummaryProps> = ({ data, crosshairVal }) => {
     return s + n.toFixed(2)
   }
 
-  const offAvgColor = offAvg == null ? C.white : offAvg >= 0 ? C.green : C.red
-  const lastColor   = last   == null ? C.amberMute : last   >= 0 ? C.green : C.red
+  const offAvgColor = offAvg == null ? color.textPrimary : offAvg >= 0 ? color.accentPositive : color.accentNegative
+  const lastColor   = last   == null ? color.textTertiary : last   >= 0 ? color.accentPositive : color.accentNegative
 
-  const Row = ({ label, value, color = C.white }: { label: string; value: string; color?: string }) => (
+  const Row = ({ label, value, clr = color.textPrimary }: { label: string; value: string; clr?: string }) => (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-      <span style={{ color: C.amberMute, fontSize: 9, letterSpacing: '0.05em' }}>{label}</span>
-      <span style={{ color, fontSize: 12, fontWeight: 600, fontFamily: 'inherit' }}>{value}</span>
+      <span style={{ color: color.textTertiary, fontSize: 9, letterSpacing: '0.05em' }}>{label}</span>
+      <span style={{ color: clr, fontSize: 12, fontWeight: 600, fontFamily: 'inherit' }}>{value}</span>
     </div>
   )
 
@@ -95,50 +83,45 @@ const PriceSummary: React.FC<SummaryProps> = ({ data, crosshairVal }) => {
     <div style={{
       width:         160,
       flexShrink:    0,
-      background:    C.surface0,
-      borderLeft: `1px solid ${C.whiteGhost}`,
+      background:    color.bgBase,
+      borderLeft: `1px solid ${color.borderSubtle}`,
       padding:       '10px 12px',
-      fontFamily:    "'JetBrains Mono','Courier New',monospace",
+      fontFamily:    font.mono,
       display:       'flex',
       flexDirection: 'column',
     }}>
-      {/* Title */}
       <div style={{
-        color:         C.amber,
+        color:         color.textPrimary,
         fontSize:      10,
         letterSpacing: '0.1em',
         marginBottom:  10,
         paddingBottom: 6,
-        borderBottom: `1px solid ${C.border1}`,
+        borderBottom: `1px solid ${color.borderSubtle}`,
       }}>
         PRICE SUMMARY
       </div>
 
-      {/* Last — large prominent value */}
       <div style={{ marginBottom: 12 }}>
-        <div style={{ color: C.amberMute, fontSize: 9, letterSpacing: '0.08em', marginBottom: 3 }}>LAST</div>
+        <div style={{ color: color.textTertiary, fontSize: 9, letterSpacing: '0.08em', marginBottom: 3 }}>LAST</div>
         <div style={{ color: lastColor, fontSize: 22, fontWeight: 700, lineHeight: 1, marginBottom: 2 }}>
           {fv(last)}
         </div>
       </div>
 
-      {/* Stats rows */}
-      <div style={{ borderTop: `1px solid ${C.border0}`, paddingTop: 8 }}>
+      <div style={{ borderTop: `1px solid ${color.borderSubtle}`, paddingTop: 8 }}>
         <Row
           label="Off Avg"
           value={fv(offAvg, true)}
-          color={offAvgColor}
+          clr={offAvgColor}
         />
-        <Row label="High"  value={fv(high)}  color={C.white} />
-        <Row label="Low"   value={fv(low)}   color={C.white} />
-        <Row label="Avg"   value={fv(avg)}   color={C.amberDim} />
+        <Row label="High"  value={fv(high)}  />
+        <Row label="Low"   value={fv(low)}   />
+        <Row label="Avg"   value={fv(avg)}   clr={color.textSecondary} />
       </div>
 
     </div>
   )
 }
-
-// ─── Ticker input ─────────────────────────────────────────────────────────────
 
 const TickerInput: React.FC<{
   placeholder: string
@@ -152,10 +135,10 @@ const TickerInput: React.FC<{
     onChange={e => onChange(e.target.value.toUpperCase())}
     onKeyDown={e => { if (e.key === 'Enter') onEnter() }}
     style={{
-      background:  C.surface1,
-      border: `1px solid ${C.border1}`,
-      color:       C.amber,
-      fontFamily:  "'JetBrains Mono','Courier New',monospace",
+      background:  color.bgElevated,
+      border: `1px solid ${color.borderSubtle}`,
+      color:       color.accentInfo,
+      fontFamily:  font.mono,
       fontSize:    11,
       padding:     '2px 6px',
       width:       70,
@@ -164,8 +147,6 @@ const TickerInput: React.FC<{
     spellCheck={false}
   />
 )
-
-// ─── Main component ───────────────────────────────────────────────────────────
 
 interface Props { onNavigate: (cmd: string) => void }
 
@@ -195,7 +176,6 @@ const HSScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
   const areaRef      = useRef<ISeriesApi<'Area'> | null>(null)
   const histRef      = useRef<ISeriesApi<'Histogram'> | null>(null)
 
-  // ── Mount chart ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!containerRef.current) return
 
@@ -203,48 +183,45 @@ const HSScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
       width:  containerRef.current.clientWidth,
       height: containerRef.current.clientHeight,
       layout: {
-        background: { color: C.surface0 },
-        textColor:  C.amberDim,
-        fontFamily: "'JetBrains Mono','Courier New',monospace",
+        background: { color: color.bgBase },
+        textColor:  color.textSecondary,
+        fontFamily: font.mono,
         fontSize:   11,
       },
       grid: {
-        vertLines: { color: C.surfaceGlow },
-        horzLines: { color: C.surfaceGlow },
+        vertLines: { color: 'rgba(255,255,255,0.04)' },
+        horzLines: { color: 'rgba(255,255,255,0.04)' },
       },
       rightPriceScale: {
-        borderColor: C.border1,
-        textColor:   C.amberDim,
+        borderColor: color.borderSubtle,
+        textColor:   color.textSecondary,
       },
       timeScale: {
-        borderColor:    C.border1,
+        borderColor:    color.borderSubtle,
         timeVisible:    true,
         secondsVisible: false,
       },
       crosshair: {
-        vertLine: { color: C.amberGlowStrong, width: 1, style: LineStyle.Dashed, labelBackgroundColor: C.redDim },
-        horzLine: { color: C.amberGlowStrong, width: 1, style: LineStyle.Dashed, labelBackgroundColor: C.redDim },
+        vertLine: { color: color.borderMedium, width: 1, style: LineStyle.Dashed, labelBackgroundColor: color.bgElevated },
+        horzLine: { color: color.borderMedium, width: 1, style: LineStyle.Dashed, labelBackgroundColor: color.bgElevated },
       },
     })
 
-    // Pane 0: amber area — spread level (saturated fill)
     const area = chart.addSeries(AreaSeries, {
-      lineColor:    C.amber,
-      topColor:     'rgba(255,153,0,0.55)',
-      bottomColor:  'rgba(255,100,0,0.03)',
+      lineColor:    color.accentPositive,
+      topColor:     'rgba(0,217,100,0.15)',
+      bottomColor:  'rgba(0,217,100,0.0)',
       lineWidth:    2,
       priceScaleId: 'right',
     }, 0) as ISeriesApi<'Area'>
 
-    // Pane 1: deviation histogram
     const hist = chart.addSeries(HistogramSeries, {
       priceScaleId: 'offavg',
-      color:        C.green,
+      color:        color.accentPositive,
       priceFormat:  { type: 'price', precision: 2, minMove: 0.01 },
     }, 1) as ISeriesApi<'Histogram'>
     hist.priceScale().applyOptions({ scaleMargins: { top: 0.1, bottom: 0.1 } })
 
-    // Size panes: top ~70%, bottom ~30%
     try {
       const panes = chart.panes() as unknown as Array<{ setStretch?: (v: number) => void }>
       if (panes.length >= 2 && panes[0].setStretch && panes[1].setStretch) {
@@ -278,7 +255,6 @@ const HSScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
     return () => { ro.disconnect(); chart.remove() }
   }, [])
 
-  // ── Update data ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!areaRef.current || !histRef.current || !data?.spread.length) return
 
@@ -318,42 +294,39 @@ const HSScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
   const label2     = data?.label2 ?? ticker2
   const isInverted = (data?.current ?? 0) < 0
 
-  // ─── Render ──────────────────────────────────────────────────────────────────
   return (
     <div style={{
       display:       'flex',
       flexDirection: 'column',
       height:        '100%',
-      background:    C.surface0,
+      background:    color.bgBase,
       overflow:      'hidden',
-      fontFamily:    "'JetBrains Mono','Courier New',monospace",
+      fontFamily:    font.mono,
     }}>
       <LoadingBar loading={isLoading} />
 
-      {/* ── Toolbar ────────────────────────────────────────────────────────── */}
       <div style={{
         flexShrink:   0,
-        background:   C.surface1,
-        borderBottom: `1px solid ${C.border1}`,
+        background:   color.bgElevated,
+        borderBottom: `1px solid ${color.borderSubtle}`,
         padding:      '6px 12px',
       }}>
-        {/* Row 1: title + instruments + inversion badge + period buttons */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 5 }}>
-          <span style={{ color: C.amber, fontSize: 13, fontWeight: 700 }}>HS</span>
-          <span style={{ color: C.amberMute, fontSize: 10, letterSpacing: '0.06em' }}>HISTORICAL SPREAD</span>
+          <span style={{ color: color.textPrimary, fontSize: 13, fontWeight: 700 }}>HS</span>
+          <span style={{ color: color.textTertiary, fontSize: 10, letterSpacing: '0.06em' }}>HISTORICAL SPREAD</span>
 
-          <span style={{ color: C.whiteGhost, fontSize: 11 }}>|</span>
+          <span style={{ color: color.textTertiary, fontSize: 11 }}>|</span>
 
-          <span style={{ color: C.white, fontSize: 11 }}>{label1}</span>
-          <span style={{ color: C.amberMute, fontSize: 11 }}>−</span>
-          <span style={{ color: C.white, fontSize: 11 }}>{label2}</span>
+          <span style={{ color: color.textPrimary, fontSize: 11 }}>{label1}</span>
+          <span style={{ color: color.textTertiary, fontSize: 11 }}>−</span>
+          <span style={{ color: color.textPrimary, fontSize: 11 }}>{label2}</span>
 
           {presetId !== 'custom' && isInverted && data != null && (
             <span style={{
-              color:         C.red,
+              color:         color.accentNegative,
               fontSize:      10,
               fontWeight:    700,
-              border: `1px solid ${C.red}`,
+              border: `1px solid ${color.accentNegative}`,
               padding:       '1px 6px',
               letterSpacing: '0.06em',
             }}>
@@ -374,9 +347,8 @@ const HSScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
           </div>
         </div>
 
-        {/* Row 2: preset selector */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ color: C.border1, fontSize: 10, marginRight: 2 }}>PRESET:</span>
+          <span style={{ color: color.textTertiary, fontSize: 10, marginRight: 2 }}>PRESET:</span>
           {PRESETS.map(p => (
             <button
               key={p.id}
@@ -397,7 +369,7 @@ const HSScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
           {presetId === 'custom' && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 8 }}>
               <TickerInput placeholder="SEC1" value={pendingT1} onChange={setPendingT1} onEnter={applyCustom} />
-              <span style={{ color: C.amberMute }}>−</span>
+              <span style={{ color: color.textTertiary }}>−</span>
               <TickerInput placeholder="SEC2" value={pendingT2} onChange={setPendingT2} onEnter={applyCustom} />
               <button style={INACTIVE_BTN} onClick={applyCustom}>GO</button>
             </div>
@@ -405,10 +377,8 @@ const HSScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
         </div>
       </div>
 
-      {/* ── Content: chart + sidebar ──────────────────────────────────────── */}
       <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
 
-        {/* Chart */}
         <div style={{ flex: 1, position: 'relative', minWidth: 0 }}>
           {error && !isLoading ? (
             <div style={{
@@ -417,7 +387,7 @@ const HSScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
               display:        'flex',
               alignItems:     'center',
               justifyContent: 'center',
-              color:          C.red,
+              color:          color.accentNegative,
               fontSize:       12,
             }}>
               ERR: {(error as Error).message}
@@ -427,18 +397,16 @@ const HSScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
           )}
         </div>
 
-        {/* Stats sidebar */}
         <PriceSummary data={data} crosshairVal={crosshairVal} />
       </div>
 
-      {/* ── Bottom label ──────────────────────────────────────────────────── */}
       <div style={{
         flexShrink:  0,
-        background:  C.surface0,
-        borderTop: `1px solid ${C.border1}`,
+        background:  color.bgBase,
+        borderTop: `1px solid ${color.borderSubtle}`,
         padding:     '3px 12px',
         textAlign:   'center',
-        color:       C.amberMute,
+        color:       color.textTertiary,
         fontSize:    10,
         letterSpacing: '0.1em',
       }}>

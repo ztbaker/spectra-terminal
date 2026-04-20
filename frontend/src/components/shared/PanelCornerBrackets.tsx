@@ -1,33 +1,34 @@
 import React from 'react'
+import { color } from '../../lib/theme'
 
 interface Props {
-  color: string
-  glow: string
   size?: number
   thickness?: number
   inset?: number
 }
 
+/**
+ * Subtle corner brackets for panel decoration.
+ * Uses borderSubtle color — no glow effects.
+ */
 const PanelCornerBrackets: React.FC<Props> = ({
-  color,
-  glow,
   size = 12,
-  thickness = 1.5,
+  thickness = 1,
   inset = 6,
 }) => {
+  const bracketColor = color.borderSubtle
   const common: React.CSSProperties = {
     position: 'absolute',
     width: size,
     height: size,
     pointerEvents: 'none',
-    filter: `drop-shadow(0 0 3px ${glow})`,
   }
   const sideStyle = (sides: { top?: boolean; right?: boolean; bottom?: boolean; left?: boolean }): React.CSSProperties => ({
     ...common,
-    borderTop:    sides.top    ? `${thickness}px solid ${color}` : 'none',
-    borderRight:  sides.right  ? `${thickness}px solid ${color}` : 'none',
-    borderBottom: sides.bottom ? `${thickness}px solid ${color}` : 'none',
-    borderLeft:   sides.left   ? `${thickness}px solid ${color}` : 'none',
+    borderTop:    sides.top    ? `${thickness}px solid ${bracketColor}` : 'none',
+    borderRight:  sides.right  ? `${thickness}px solid ${bracketColor}` : 'none',
+    borderBottom: sides.bottom ? `${thickness}px solid ${bracketColor}` : 'none',
+    borderLeft:   sides.left   ? `${thickness}px solid ${bracketColor}` : 'none',
   })
 
   return (

@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchIndices } from '../../lib/api'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
 import { usePriceFlash } from '../../lib/usePriceFlash'
 import LiveDot from '../shared/LiveDot'
 import Sparkline from '../shared/Sparkline'
 import type { IndexQuote } from '../../types'
+
+const { color, font } = theme
 
 // ─── Market status ────────────────────────────────────────────────────────────
 
@@ -35,10 +37,10 @@ function getMarketStatus(now: Date): MarketStatus {
 
 function marketStatusDotColor(status: MarketStatus): string {
   switch (status) {
-    case 'OPEN':   return C.green
-    case 'PRE':    return C.amberBright
-    case 'AFTER':  return C.amberBright
-    case 'CLOSED': return C.red
+    case 'OPEN':   return color.accentPositive
+    case 'PRE':    return color.accentWarning
+    case 'AFTER':  return color.accentWarning
+    case 'CLOSED': return color.accentNegative
   }
 }
 
@@ -94,28 +96,28 @@ function IndexPrice({ quote }: { quote: IndexQuote }) {
     }
   }, [quote.price, triggerFlash])
 
-  const price = quote.price !== null ? quote.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'
+  const price = quote.price !== null ? quote.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '\u2014'
 
-  return <span style={{ color: C.white, ...flashStyle }}>{price}</span>
+  return <span style={{ color: color.textPrimary, ...flashStyle }}>{price}</span>
 }
 
 function IndexItem({ q }: { q: IndexQuote }): React.ReactElement {
-  const change = q.change !== null ? q.change.toFixed(2) : '—'
-  const pct = q.change_pct !== null ? q.change_pct.toFixed(2) : '—'
+  const change = q.change !== null ? q.change.toFixed(2) : '\u2014'
+  const pct = q.change_pct !== null ? q.change_pct.toFixed(2) : '\u2014'
   const isPos = q.change !== null && q.change > 0
   const isNeg = q.change !== null && q.change < 0
 
-  const color = isPos ? C.green : isNeg ? C.red : C.amber
+  const chgColor = isPos ? color.accentPositive : isNeg ? color.accentNegative : color.textSecondary
   const sign = isPos ? '+' : ''
 
   const sparkData = generateMicroSparkline(q)
-  const sparkColor = isPos ? C.green : isNeg ? C.red : C.amberDim
+  const sparkColor = isPos ? color.accentPositive : isNeg ? color.accentNegative : color.textTertiary
 
   return (
     <span style={{ marginRight: '28px', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-      <span style={{ color: C.amberDim }}>{q.label}</span>
+      <span style={{ color: color.textSecondary }}>{q.label}</span>
       <IndexPrice quote={q} />
-      <span style={{ color }}>{sign}{change} ({sign}{pct}%)</span>
+      <span style={{ color: chgColor }}>{sign}{change} ({sign}{pct}%)</span>
       {sparkData.length >= 2 && (
         <Sparkline data={sparkData} width={32} height={8} color={sparkColor} />
       )}
@@ -206,9 +208,9 @@ const StatusBar: React.FC = () => {
         left: 0,
         right: 0,
         height: '28px',
-        background: C.surface1,
-        borderTop: `1px solid ${C.border1}`,
-        fontFamily: C.fontMono,
+        background: color.bgElevated,
+        borderTop: `1px solid ${color.borderSubtle}`,
+        fontFamily: font.mono,
         fontSize: '11px',
         display: 'flex',
         alignItems: 'center',
@@ -222,7 +224,7 @@ const StatusBar: React.FC = () => {
           paddingLeft: '10px',
           paddingRight: '10px',
           whiteSpace: 'nowrap',
-          borderRight: `1px solid ${C.border0}`,
+          borderRight: `1px solid ${color.borderSubtle}`,
           height: '100%',
           display: 'flex',
           alignItems: 'center',
@@ -237,10 +239,10 @@ const StatusBar: React.FC = () => {
         />
         <span
           style={{
-            color: statusDotColor,
+            color: status === 'OPEN' ? color.accentPositive : status === 'CLOSED' ? color.accentNegative : color.accentWarning,
             fontSize: '10px',
             letterSpacing: '0.08em',
-            fontFamily: C.fontMono,
+            fontFamily: font.mono,
           }}
         >
           {statusLabel}
@@ -278,7 +280,7 @@ const StatusBar: React.FC = () => {
             ))}
           </div>
         ) : (
-          <span style={{ color: C.amberMute, paddingLeft: '8px' }}>
+          <span style={{ color: color.textTertiary, paddingLeft: '8px' }}>
             LOADING MARKET DATA...
           </span>
         )}
@@ -290,7 +292,7 @@ const StatusBar: React.FC = () => {
           paddingLeft: '10px',
           paddingRight: '10px',
           whiteSpace: 'nowrap',
-          borderLeft: `1px solid ${C.border0}`,
+          borderLeft: `1px solid ${color.borderSubtle}`,
           height: '100%',
           display: 'flex',
           alignItems: 'center',
@@ -305,15 +307,15 @@ const StatusBar: React.FC = () => {
           gap: '4px',
           fontVariantNumeric: 'tabular-nums',
         }}>
-          <span style={{ color: C.amberMute, fontSize: '10px', letterSpacing: '0.06em' }}>NY</span>
-          <span style={{ color: C.white, fontVariantNumeric: 'tabular-nums' }}>{nyTime}</span>
+          <span style={{ color: color.textTertiary, fontSize: '10px', letterSpacing: '0.06em' }}>NY</span>
+          <span style={{ color: color.textPrimary, fontVariantNumeric: 'tabular-nums' }}>{nyTime}</span>
         </span>
 
         {/* Thin separator */}
         <span style={{
           width: '1px',
           height: '12px',
-          background: C.border1,
+          background: color.borderMedium,
           margin: '0 8px',
           display: 'inline-block',
         }} />
@@ -325,15 +327,15 @@ const StatusBar: React.FC = () => {
           gap: '4px',
           fontVariantNumeric: 'tabular-nums',
         }}>
-          <span style={{ color: C.amberMute, fontSize: '10px', letterSpacing: '0.06em' }}>LON</span>
-          <span style={{ color: C.white, fontVariantNumeric: 'tabular-nums' }}>{lonTime}</span>
+          <span style={{ color: color.textTertiary, fontSize: '10px', letterSpacing: '0.06em' }}>LON</span>
+          <span style={{ color: color.textPrimary, fontVariantNumeric: 'tabular-nums' }}>{lonTime}</span>
         </span>
 
         {/* Thin separator */}
         <span style={{
           width: '1px',
           height: '12px',
-          background: C.border1,
+          background: color.borderMedium,
           margin: '0 8px',
           display: 'inline-block',
         }} />
@@ -345,15 +347,15 @@ const StatusBar: React.FC = () => {
           gap: '4px',
           fontVariantNumeric: 'tabular-nums',
         }}>
-          <span style={{ color: C.amberMute, fontSize: '10px', letterSpacing: '0.06em' }}>TKY</span>
-          <span style={{ color: C.white, fontVariantNumeric: 'tabular-nums' }}>{tkyTime}</span>
+          <span style={{ color: color.textTertiary, fontSize: '10px', letterSpacing: '0.06em' }}>TKY</span>
+          <span style={{ color: color.textPrimary, fontVariantNumeric: 'tabular-nums' }}>{tkyTime}</span>
         </span>
 
         {/* Thin separator */}
         <span style={{
           width: '1px',
           height: '12px',
-          background: C.border1,
+          background: color.borderMedium,
           margin: '0 8px',
           display: 'inline-block',
         }} />
@@ -361,7 +363,7 @@ const StatusBar: React.FC = () => {
         {/* Connection indicator */}
         <LiveDot
           size={6}
-          color={backendHealthy ? C.green : C.red}
+          color={backendHealthy ? color.accentPositive : color.accentNegative}
           active={true}
           label={backendHealthy ? 'LIVE' : 'OFFLINE'}
         />

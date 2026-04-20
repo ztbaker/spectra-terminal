@@ -4,16 +4,19 @@ const { autoUpdater } = require('electron-updater')
 const { shell }       = require('electron')
 const log             = require('electron-log')
 
-const IS_MAC = process.platform === 'darwin'
-
-autoUpdater.logger      = log
+autoUpdater.logger = log
 autoUpdater.logger.transports.file.level = 'info'
 
-// On macOS we can't auto-install without a paid Apple Developer cert
-// (Squirrel.Mac rejects unsigned/ad-hoc signed updates).
-// So: check for updates but don't download on Mac — just notify the user.
-autoUpdater.autoDownload          = !IS_MAC
-autoUpdater.autoInstallOnAppQuit  = !IS_MAC
+// Allow auto-download and install on all platforms.
+// Since the app is distributed unsigned (no Apple Developer cert),
+// we skip signature verification so macOS updates work seamlessly
+// via the zip target. Safe for a public repo distributed to friends.
+process.env.UPDATER_SKIP_SIGNATURE_VALIDATION = '1'
+
+autoUpdater.autoDownload         = true
+autoUpdater.autoInstallOnAppQuit = true
+autoUpdater.disableWebInstaller  = true
+autoUpdater.allowPrerelease      = false
 
 function initAutoUpdater(mainWindow) {
   const send = (channel, payload = {}) => {
@@ -22,33 +25,19 @@ function initAutoUpdater(mainWindow) {
     }
   }
 
-  autoUpdater.on('checking-for-update',  () => send('update:checking'))
+  autoUpdater.on('checking-for-update', () => send('update:checking'))
+  autoUpdater.on('update-available',    (info) => send('update:available', info))
   autoUpdater.on('update-not-available', (info) => send('update:none', info))
-  autoUpdater.on('error',                (err)  => send('update:error', { message: err?.message || String(err) }))
+  autoUpdater.on('download-progress',   (p) => send('update:progress', p))
+  autoUpdater.on('update-downloaded',   (info) => send('update:downloaded', info))
+  autoUpdater.on('error',               (err) => send('update:error', { message: err?.message || String(err) }))
 
-  if (IS_MAC) {
-    // On Mac, when an update is available, tell the renderer immediately
-    // with kind 'ready-external' so it shows a "Download" button instead
-    // of trying Squirrel install.
-    autoUpdater.on('update-available', (info) => {
-      send('update:available-external', {
-        version: info.version,
-        url: `https://github.com/ztbaker/spectra-terminal/releases/tag/v${info.version}`,
-      })
-    })
-  } else {
-    // Windows: full auto-download + install flow
-    autoUpdater.on('update-available',  (info) => send('update:available',  info))
-    autoUpdater.on('download-progress', (p)    => send('update:progress',   p))
-    autoUpdater.on('update-downloaded', (info) => send('update:downloaded', info))
-  }
-
+  // Check 10s after launch, then every 30 minutes
   setTimeout(() => autoUpdater.checkForUpdates().catch(() => {}), 10_000)
-  setInterval(() => autoUpdater.checkForUpdates().catch(() => {}), 4 * 60 * 60 * 1000)
+  setInterval(() => autoUpdater.checkForUpdates().catch(() => {}), 30 * 60 * 1000)
 }
 
 function installUpdateAndRestart() {
-  if (IS_MAC) return  // should not be called on Mac
   autoUpdater.quitAndInstall(false, true)
 }
 

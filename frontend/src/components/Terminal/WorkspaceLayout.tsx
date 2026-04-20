@@ -1,7 +1,9 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
 import { useBreakpoint } from '../../lib/useBreakpoint'
 import type { WorkspaceState, WorkspaceLayoutType } from '../../types'
+
+const T = theme
 
 interface WorkspaceLayoutProps {
   state: WorkspaceState
@@ -214,7 +216,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
           ...(isVert
             ? { top: '50%', left: '20%', right: '20%', height: '2px', transform: 'translateY(-50%)' }
             : { left: '50%', top: '20%', bottom: '20%', width: '2px', transform: 'translateX(-50%)' }),
-          background: C.border1,
+          background: T.color.borderMedium,
           borderRadius: '1px',
           transition: 'background 150ms ease, box-shadow 150ms ease',
         }} />
@@ -242,7 +244,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
           minHeight: 0,
           overflow: 'hidden',
           borderRadius: '6px',
-          outline: isDropTarget ? `2px dashed ${C.amber}` : 'none',
+          outline: isDropTarget ? `2px dashed ${T.color.accentPositive}` : 'none',
           outlineOffset: '-2px',
           opacity: isDragging ? 0.3 : 1,
           transition: 'outline 150ms ease, opacity 200ms ease',
@@ -270,7 +272,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         pointerEvents: 'none',
         opacity: 0.85,
         transform: 'scale(1.02)',
-        boxShadow: `0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px ${C.amber}60, 0 0 30px ${C.amberGlow}`,
+        boxShadow: `0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px ${T.color.borderStrong}`,
         borderRadius: '8px',
         overflow: 'hidden',
       }}
@@ -292,7 +294,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
             bottom: '30px',
             left: 0,
             right: 0,
-            background: C.surface0,
+            background: T.color.bgBase,
             padding,
           }}
           onClick={() => {
@@ -330,7 +332,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
             bottom: '30px',
             left: 0,
             right: 0,
-            background: C.surface0,
+            background: T.color.bgBase,
             padding,
             display: 'flex',
             flexDirection: 'column',
@@ -376,7 +378,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
           bottom: '30px',
           left: 0,
           right: 0,
-          background: C.surface0,
+          background: T.color.bgBase,
           padding,
           display: 'flex',
           flexDirection: isVerticalAxis ? 'column' : 'row',

@@ -1,6 +1,8 @@
 import React from 'react'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
 import { useBreakpoint } from '../../lib/useBreakpoint'
+
+const { color, font } = theme
 
 interface HelpScreenProps {
   onNavigate: (cmd: string) => void
@@ -57,19 +59,18 @@ const HelpScreen: React.FC<HelpScreenProps> = ({ onNavigate }) => {
     }}>
       {/* Header */}
       <div style={{
-        fontFamily: C.fontDisplay,
+        fontFamily: font.sans,
         fontSize: isCompact ? '14px' : '18px',
         fontWeight: 700,
-        letterSpacing: '0.15em',
-        color: C.amber,
+        color: color.textPrimary,
         marginBottom: '6px',
       }}>
-        COMMAND REFERENCE
+        Command Reference
       </div>
       <div style={{
-        fontFamily: C.fontMono,
+        fontFamily: font.mono,
         fontSize: isCompact ? '10px' : '11px',
-        color: C.whiteDim,
+        color: color.textSecondary,
         marginBottom: isCompact ? '16px' : '24px',
       }}>
         Type a command in the bar above, or click any command below to navigate.
@@ -83,55 +84,49 @@ const HelpScreen: React.FC<HelpScreenProps> = ({ onNavigate }) => {
           : '100px 100px 1fr',
         gap: '0',
         fontSize: isCompact ? '11px' : '12px',
-        fontFamily: C.fontMono,
+        fontFamily: font.mono,
       }}>
         {/* Header row */}
         <div style={{
           padding: '6px 8px',
-          color: C.whiteGhost,
-          letterSpacing: '0.1em',
-          fontSize: '10px',
-          fontWeight: 700,
-          borderBottom: `1px solid ${C.border1}`,
-          textTransform: 'uppercase',
+          color: color.textSecondary,
+          fontSize: '11px',
+          fontWeight: 600,
+          borderBottom: `1px solid ${color.borderSubtle}`,
         }}>Command</div>
         {!isCompact && (
           <div style={{
             padding: '6px 8px',
-            color: C.whiteGhost,
-            letterSpacing: '0.1em',
-            fontSize: '10px',
-            fontWeight: 700,
-            borderBottom: `1px solid ${C.border1}`,
-            textTransform: 'uppercase',
+            color: color.textSecondary,
+            fontSize: '11px',
+            fontWeight: 600,
+            borderBottom: `1px solid ${color.borderSubtle}`,
           }}>Aliases</div>
         )}
         <div style={{
           padding: '6px 8px',
-          color: C.whiteGhost,
-          letterSpacing: '0.1em',
-          fontSize: '10px',
-          fontWeight: 700,
-          borderBottom: `1px solid ${C.border1}`,
-          textTransform: 'uppercase',
+          color: color.textSecondary,
+          fontSize: '11px',
+          fontWeight: 600,
+          borderBottom: `1px solid ${color.borderSubtle}`,
         }}>Description</div>
 
         {/* Data rows */}
         {COMMANDS.map((cmd, i) => {
-          const bg = i % 2 === 0 ? 'transparent' : C.surface2
+          const bg = i % 2 === 0 ? 'transparent' : color.bgSurface
           return (
             <React.Fragment key={cmd.command}>
               <div
                 onClick={() => onNavigate(cmd.command)}
                 style={{
                   padding: '6px 8px',
-                  color: C.amberBright,
+                  color: color.ticker,
                   cursor: 'pointer',
                   background: bg,
                   borderRadius: '2px',
                   transition: 'background 100ms ease',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = C.amberGlow }}
+                onMouseEnter={e => { e.currentTarget.style.background = color.bgHover }}
                 onMouseLeave={e => { e.currentTarget.style.background = bg }}
               >
                 {cmd.command}{cmd.needsTicker ? ' <T>' : ''}
@@ -139,7 +134,7 @@ const HelpScreen: React.FC<HelpScreenProps> = ({ onNavigate }) => {
               {!isCompact && (
                 <div style={{
                   padding: '6px 8px',
-                  color: C.whiteDim,
+                  color: color.textSecondary,
                   background: bg,
                   fontStyle: cmd.aliases ? 'normal' : 'italic',
                 }}>
@@ -148,7 +143,7 @@ const HelpScreen: React.FC<HelpScreenProps> = ({ onNavigate }) => {
               )}
               <div style={{
                 padding: '6px 8px',
-                color: C.white,
+                color: color.textPrimary,
                 background: bg,
                 fontSize: isCompact ? '11px' : '12px',
               }}>
@@ -163,15 +158,14 @@ const HelpScreen: React.FC<HelpScreenProps> = ({ onNavigate }) => {
       <div style={{
         marginTop: isCompact ? '16px' : '24px',
         paddingTop: '12px',
-        borderTop: `1px solid ${C.border0}`,
-        fontFamily: C.fontMono,
+        borderTop: `1px solid ${color.borderSubtle}`,
+        fontFamily: font.mono,
         fontSize: '10px',
-        color: C.whiteGhost,
-        letterSpacing: '0.05em',
+        color: color.textTertiary,
       }}>
-        <span style={{ color: C.amber }}>T</span> = ticker required &nbsp;·&nbsp;
-        <span style={{ color: C.amber }}>SHIFT+ENTER</span> = open in new panel &nbsp;·&nbsp;
-        <span style={{ color: C.amber }}>F1-F10</span> = quick access keys
+        <span style={{ color: color.accentPositive }}>T</span> = ticker required &nbsp;·&nbsp;
+        <span style={{ color: color.accentPositive }}>SHIFT+ENTER</span> = open in new panel &nbsp;·&nbsp;
+        <span style={{ color: color.accentPositive }}>F1-F10</span> = quick access keys
       </div>
     </div>
   )

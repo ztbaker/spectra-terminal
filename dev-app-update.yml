@@ -1,0 +1,4 @@
+provider: github
+owner: ztbaker
+repo: spectra-terminal
+private: true

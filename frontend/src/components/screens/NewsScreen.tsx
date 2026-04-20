@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchNews, fetchNewsCompany, fetchNewsWorld } from '../../lib/api'
 import type { NewsItem } from '../../types'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
 import TabBar from '../shared/TabBar'
 import DataGrid from '../shared/DataGrid'
 import LoadingBar from '../shared/LoadingBar'
@@ -18,25 +18,25 @@ type Tab = 'COMPANY' | 'WORLD' | 'SENTIMENT'
 type WorldTopic = 'general' | 'technology' | 'business' | 'science'
 
 const TABS = [
-  { key: 'COMPANY', label: 'COMPANY' },
-  { key: 'WORLD', label: 'WORLD' },
-  { key: 'SENTIMENT', label: 'SENTIMENT' },
+  { key: 'COMPANY', label: 'Company' },
+  { key: 'WORLD', label: 'World' },
+  { key: 'SENTIMENT', label: 'Sentiment' },
 ]
 
 const WORLD_TOPICS: { key: WorldTopic; label: string }[] = [
-  { key: 'general', label: 'ECONOMY' },
-  { key: 'technology', label: 'TECH' },
-  { key: 'business', label: 'ENERGY' },
-  { key: 'science', label: 'CRYPTO' },
-  { key: 'general', label: 'POLITICS' },
+  { key: 'general', label: 'Economy' },
+  { key: 'technology', label: 'Tech' },
+  { key: 'business', label: 'Energy' },
+  { key: 'science', label: 'Crypto' },
+  { key: 'general', label: 'Politics' },
 ]
 
 const TOPIC_MAP: Record<string, WorldTopic> = {
-  ECONOMY: 'general',
-  TECH: 'technology',
-  ENERGY: 'business',
-  CRYPTO: 'science',
-  POLITICS: 'general',
+  Economy: 'general',
+  Tech: 'technology',
+  Energy: 'business',
+  Crypto: 'science',
+  Politics: 'general',
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -53,9 +53,9 @@ function formatTimestamp(unixSeconds: number): string {
 }
 
 function sentimentColor(s: NewsItem['sentiment']): string {
-  if (s === 'positive') return C.green
-  if (s === 'negative') return C.red
-  return C.amberBright
+  if (s === 'positive') return theme.color.accentPositive
+  if (s === 'negative') return theme.color.accentNegative
+  return theme.color.textSecondary
 }
 
 function sentimentLabel(s: NewsItem['sentiment']): string {
@@ -66,8 +66,8 @@ function sentimentLabel(s: NewsItem['sentiment']): string {
 }
 
 function sentimentBg(s: NewsItem['sentiment']): string {
-  if (s === 'positive') return C.greenDim
-  if (s === 'negative') return C.redDim
+  if (s === 'positive') return theme.color.accentPositiveDim
+  if (s === 'negative') return theme.color.accentNegativeDim
   return 'transparent'
 }
 
@@ -81,7 +81,7 @@ const SentimentBadge: React.FC<{ sentiment: NewsItem['sentiment'] }> = ({ sentim
     background: sentimentBg(sentiment),
     padding: '0 5px',
     fontSize: 10,
-    fontFamily: C.fontMono,
+    fontFamily: theme.font.mono,
     fontWeight: 700,
     letterSpacing: '0.06em',
     borderRadius: 2,
@@ -103,31 +103,31 @@ const NewsRow: React.FC<NewsRowProps> = ({ item, onOpen }) => {
   return (
     <div
       style={{
-        borderBottom: `1px solid ${C.border0}`,
+        borderBottom: `1px solid ${theme.color.borderSubtle}`,
         padding: '8px 12px',
         borderLeft: item.sentiment ? `2px solid ${sentimentColor(item.sentiment)}` : `2px solid transparent`,
         cursor: 'pointer',
         transition: 'background 150ms ease',
-        background: hovered ? C.surfaceGlow : 'transparent',
+        background: hovered ? theme.color.bgHover : 'transparent',
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onClick={() => onOpen(item)}
     >
       <div style={{ lineHeight: 1.45, wordBreak: 'break-word' }}>
-        <span style={{ color: C.amberBright, marginRight: 6, fontSize: 11, fontWeight: 700 }}>
+        <span style={{ color: theme.color.textSecondary, marginRight: 6, fontSize: 11, fontWeight: 600, fontFamily: theme.font.mono }}>
           [{item.source.toUpperCase()}]
         </span>
-        <span style={{ color: C.white, fontSize: 13, fontWeight: 500 }}>{item.headline}</span>
+        <span style={{ color: theme.color.textPrimary, fontSize: 13, fontWeight: 500 }}>{item.headline}</span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, fontSize: 11 }}>
-        <span style={{ color: C.whiteGhost }}>{formatTimestamp(item.datetime)}</span>
+        <span style={{ color: theme.color.textTertiary, fontFamily: theme.font.mono }}>{formatTimestamp(item.datetime)}</span>
         <SentimentBadge sentiment={item.sentiment} />
       </div>
       {hovered && item.summary && (
         <div style={{
           marginTop: 6,
-          color: C.whiteDim,
+          color: theme.color.textSecondary,
           fontSize: 11,
           lineHeight: 1.4,
           maxHeight: 36,
@@ -154,33 +154,31 @@ const SentimentHistogram: React.FC<SentimentHistogramProps> = ({ items }) => {
     const neg = items.filter(i => i.sentiment === 'negative').length
     const total = pos + neu + neg || 1
     return [
-      { label: 'POSITIVE', count: pos, pct: (pos / total) * 100, color: C.green },
-      { label: 'NEUTRAL', count: neu, pct: (neu / total) * 100, color: C.amberBright },
-      { label: 'NEGATIVE', count: neg, pct: (neg / total) * 100, color: C.red },
+      { label: 'Positive', count: pos, pct: (pos / total) * 100, color: theme.color.accentPositive },
+      { label: 'Neutral',  count: neu, pct: (neu / total) * 100, color: theme.color.textSecondary },
+      { label: 'Negative', count: neg, pct: (neg / total) * 100, color: theme.color.accentNegative },
     ]
   }, [items])
 
   return (
     <div style={{ padding: '12px 16px' }}>
-      <div style={{ color: C.amberMute, fontSize: 10, letterSpacing: '0.08em', marginBottom: 10, fontFamily: C.fontDisplay, fontWeight: 700 }}>
-        SENTIMENT DISTRIBUTION
+      <div style={{ ...theme.type.caption, color: theme.color.textTertiary, marginBottom: 10 }}>
+        Sentiment distribution
       </div>
       {bins.map(bin => (
         <div key={bin.label} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-          <span style={{ color: C.whiteDim, fontSize: 10, fontFamily: C.fontMono, width: 70, textAlign: 'right' }}>{bin.label}</span>
-          <div style={{ flex: 1, height: 14, background: C.surface2, borderRadius: 2, position: 'relative', overflow: 'hidden' }}>
+          <span style={{ color: theme.color.textSecondary, fontSize: 10, fontFamily: theme.font.mono, width: 70, textAlign: 'right' }}>{bin.label}</span>
+          <div style={{ flex: 1, height: 14, background: theme.color.bgSurface, borderRadius: 2, position: 'relative', overflow: 'hidden' }}>
             <div style={{
               height: '100%',
               width: `${bin.pct}%`,
-              background: bin.label === 'POSITIVE' ? `linear-gradient(90deg, ${C.greenDim}, ${C.green})`
-                : bin.label === 'NEGATIVE' ? `linear-gradient(90deg, ${C.redDim}, ${C.red})`
-                : bin.color,
+              background: bin.color,
               borderRadius: 2,
               transition: 'width 400ms ease',
               minWidth: bin.count > 0 ? 4 : 0,
             }} />
           </div>
-          <span style={{ color: bin.color, fontSize: 11, fontFamily: C.fontMono, fontVariantNumeric: 'tabular-nums', width: 55, textAlign: 'right' }}>
+          <span style={{ color: bin.color, fontSize: 11, fontFamily: theme.font.mono, fontVariantNumeric: 'tabular-nums', width: 55, textAlign: 'right' }}>
             {bin.count} ({bin.pct.toFixed(0)}%)
           </span>
         </div>
@@ -193,7 +191,7 @@ const SentimentHistogram: React.FC<SentimentHistogramProps> = ({ items }) => {
 
 const NewsScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
   const [activeTab, setActiveTab] = useState<Tab>('COMPANY')
-  const [worldTopic, setWorldTopic] = useState<string>('ECONOMY')
+  const [worldTopic, setWorldTopic] = useState<string>('Economy')
   const [reading, setReading] = useState<NewsItem | null>(null)
 
   // COMPANY data
@@ -241,17 +239,17 @@ const NewsScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
   }, [activeTab, companyItems, worldItems])
 
   const sentimentColumns = [
-    { key: 'headline', header: 'HEADLINE', type: 'text' as const, render: (row: any) => (
-      <span style={{ color: C.white, fontSize: 12, fontWeight: 500 }}>{row.headline}</span>
+    { key: 'headline', header: 'Headline', type: 'text' as const, render: (row: any) => (
+      <span style={{ color: theme.color.textPrimary, fontSize: 12, fontWeight: 500 }}>{row.headline}</span>
     )},
-    { key: 'source', header: 'SOURCE', type: 'text' as const, width: '90px', render: (row: any) => (
-      <span style={{ color: C.cyan, fontSize: 10, background: C.surface2, padding: '1px 5px', borderRadius: 2 }}>{(row.source || '').toUpperCase()}</span>
+    { key: 'source', header: 'Source', type: 'text' as const, width: '90px', render: (row: any) => (
+      <span style={{ color: theme.color.accentInfo, fontSize: 10, background: theme.color.bgSurface, padding: '1px 5px', borderRadius: 2, fontFamily: theme.font.mono }}>{(row.source || '').toUpperCase()}</span>
     )},
-    { key: 'sentiment', header: 'SENT', type: 'text' as const, width: '55px', render: (row: any) => (
+    { key: 'sentiment', header: 'Sent', type: 'text' as const, width: '55px', render: (row: any) => (
       <SentimentBadge sentiment={row.sentiment} />
     )},
-    { key: 'sentiment_score', header: 'SCORE', type: 'number' as const, width: '60px', render: (row: any) => (
-      <span style={{ color: row.sentiment_score > 0 ? C.green : row.sentiment_score < 0 ? C.red : C.amberBright }}>
+    { key: 'sentiment_score', header: 'Score', type: 'number' as const, width: '60px', render: (row: any) => (
+      <span style={{ color: row.sentiment_score > 0 ? theme.color.accentPositive : row.sentiment_score < 0 ? theme.color.accentNegative : theme.color.textSecondary }}>
         {row.sentiment_score > 0 ? '+1' : row.sentiment_score < 0 ? '-1' : '0'}
       </span>
     )},
@@ -264,7 +262,7 @@ const NewsScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
       <LoadingBar loading={isLoading} />
 
       {/* Tab bar */}
-      <div style={{ padding: '8px 12px 0', borderBottom: `1px solid ${C.border1}` }}>
+      <div style={{ padding: '8px 12px 0', borderBottom: `1px solid ${theme.color.borderMedium}` }}>
         <TabBar tabs={TABS} activeKey={activeTab} onChange={(k) => setActiveTab(k as Tab)} />
       </div>
 
@@ -272,7 +270,7 @@ const NewsScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
       {activeTab === 'COMPANY' && (
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {companyItems.length === 0 && !companyLoading && (
-            <div style={{ padding: 24, color: C.whiteGhost, textAlign: 'center' }}>
+            <div style={{ padding: 24, color: theme.color.textTertiary, textAlign: 'center' }}>
               {ticker ? `No news found for ${ticker}` : 'No market news available'}
             </div>
           )}
@@ -286,7 +284,7 @@ const NewsScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
       {activeTab === 'WORLD' && (
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {/* Topic chips */}
-          <div style={{ display: 'flex', gap: 6, padding: '8px 12px', borderBottom: `1px solid ${C.border0}`, background: C.surface1 }}>
+          <div style={{ display: 'flex', gap: 6, padding: '8px 12px', borderBottom: `1px solid ${theme.color.borderSubtle}`, background: theme.color.bgElevated }}>
             {WORLD_TOPICS.map(t => {
               const isActive = worldTopic === t.label
               return (
@@ -294,16 +292,15 @@ const NewsScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
                   key={t.label}
                   onClick={() => setWorldTopic(t.label)}
                   style={{
-                    background: isActive ? C.amberMute : 'transparent',
-                    color: isActive ? C.amber : C.whiteDim,
-                    border: `1px solid ${isActive ? C.amberMute : C.border1}`,
+                    background: isActive ? theme.color.bgSurface : 'transparent',
+                    color: isActive ? theme.color.textPrimary : theme.color.textSecondary,
+                    border: `1px solid ${isActive ? theme.color.borderStrong : theme.color.borderMedium}`,
                     padding: '4px 10px',
-                    fontSize: 10,
-                    fontFamily: C.fontMono,
-                    fontWeight: isActive ? 700 : 400,
+                    fontSize: 11,
+                    fontFamily: theme.font.sans,
+                    fontWeight: isActive ? 600 : 400,
                     cursor: 'pointer',
-                    borderRadius: 2,
-                    letterSpacing: '0.05em',
+                    borderRadius: 4,
                     transition: 'all 150ms ease',
                   }}
                 >
@@ -314,7 +311,7 @@ const NewsScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
           </div>
 
           {worldItems.length === 0 && !worldLoading && (
-            <div style={{ padding: 24, color: C.whiteGhost, textAlign: 'center' }}>No world news available</div>
+            <div style={{ padding: 24, color: theme.color.textTertiary, textAlign: 'center' }}>No world news available</div>
           )}
           {worldItems.map((item, idx) => (
             <NewsRow key={`${item.datetime}-${idx}`} item={item} onOpen={setReading} />
@@ -326,7 +323,7 @@ const NewsScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
       {activeTab === 'SENTIMENT' && (
         <div style={{ flex: 1, overflowY: 'auto' }}>
           <SentimentHistogram items={companyItems} />
-          <div style={{ borderTop: `1px solid ${C.border1}` }}>
+          <div style={{ borderTop: `1px solid ${theme.color.borderMedium}` }}>
             <DataGrid
               columns={sentimentColumns}
               data={sentimentData as any}
@@ -339,7 +336,7 @@ const NewsScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
       )}
 
       {companyData?.cached && (
-        <div style={{ padding: '4px 12px', color: C.amberMute, fontSize: 9, fontFamily: C.fontMono, letterSpacing: '0.05em', textAlign: 'right' }}>
+        <div style={{ padding: '4px 12px', color: theme.color.textTertiary, fontSize: 9, fontFamily: theme.font.mono, letterSpacing: '0.05em', textAlign: 'right' }}>
           CACHED
         </div>
       )}

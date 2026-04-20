@@ -3,7 +3,9 @@ import { useQuery } from '@tanstack/react-query'
 import { chatNotifications } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import type { ChatNotification } from '../types'
-import C from '../lib/colors'
+import theme from '../lib/theme'
+
+const { color, font } = theme
 
 const STORAGE_KEY = 'spectra_chat_last_seen_id'
 const TOAST_DURATION_MS = 8_000
@@ -92,14 +94,14 @@ export default function ChatNotificationToast({ onNavigate }: Props) {
         bottom: '52px',
         right: '16px',
         zIndex: 1100,
-        background: C.surface1,
-        border: `1px solid ${C.amber}`,
-        boxShadow: `0 0 20px ${C.amberGlow}`,
+        background: 'rgba(19, 22, 25, 0.8)',
+        border: `1px solid ${color.borderSubtle}`,
+        boxShadow: theme.shadow.md,
         padding: '12px 16px',
         maxWidth: '360px',
         minWidth: '260px',
         cursor: 'pointer',
-        fontFamily: C.fontMono,
+        fontFamily: font.mono,
         animation: 'slideInRight 200ms ease-out',
       }}
     >
@@ -112,10 +114,10 @@ export default function ChatNotificationToast({ onNavigate }: Props) {
       }}>
         <div style={{
           fontSize: '9px',
-          fontFamily: C.fontDisplay,
+          fontFamily: font.sans,
           fontWeight: 700,
           letterSpacing: '0.2em',
-          color: C.amber,
+          color: color.textPrimary,
         }}>
           NEW MESSAGE
         </div>
@@ -124,7 +126,7 @@ export default function ChatNotificationToast({ onNavigate }: Props) {
           style={{
             background: 'none',
             border: 'none',
-            color: C.whiteGhost,
+            color: color.textTertiary,
             fontSize: '14px',
             cursor: 'pointer',
             padding: '0 0 0 8px',
@@ -144,12 +146,12 @@ export default function ChatNotificationToast({ onNavigate }: Props) {
         alignItems: 'baseline',
       }}>
         <span style={{
-          color: visible.kind === 'room' ? C.amber : C.cyan,
+          color: visible.kind === 'room' ? color.accentPositive : color.accentInfo,
           fontWeight: 700,
         }}>
           {label}
         </span>
-        <span style={{ color: C.whiteDim, fontSize: '11px' }}>
+        <span style={{ color: color.textSecondary, fontSize: '11px' }}>
           {visible.sender_username}
         </span>
       </div>
@@ -157,7 +159,7 @@ export default function ChatNotificationToast({ onNavigate }: Props) {
       {/* Message preview */}
       <div style={{
         fontSize: '11px',
-        color: C.white,
+        color: color.textPrimary,
         whiteSpace: 'nowrap',
         overflow: 'hidden',
         textOverflow: 'ellipsis',
