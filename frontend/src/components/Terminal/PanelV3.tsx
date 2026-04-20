@@ -1,14 +1,13 @@
 import React, { forwardRef, useState, useRef, useCallback } from 'react'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
 import { useBreakpoint } from '../../lib/useBreakpoint'
 import { FreshnessProvider, useFreshness } from '../../lib/freshness'
-import PanelCornerBrackets from '../shared/PanelCornerBrackets'
 
-type AccentColor = 'amber' | 'cyan' | 'green' | 'red' | 'violet'
+const { color, font, radius, motion } = theme
 
 interface PanelV3Props {
   title: string
-  accent?: AccentColor
+  accent?: string  // kept for API compat but ignored — all panels are neutral now
   focused?: boolean
   panelId?: string
   onDragStart?: (panelId: string, e: React.PointerEvent<HTMLElement>) => void
@@ -17,68 +16,22 @@ interface PanelV3Props {
   children: React.ReactNode
 }
 
-const ACCENT_MAP: Record<AccentColor, {
-  border: string; glow: string; text: string; dim: string; gradient: string
-}> = {
-  amber: {
-    border: C.amber,
-    glow: C.amberGlow,
-    text: C.amberBright,
-    dim: C.amberDim,
-    gradient: `linear-gradient(135deg, ${C.amberGlow}, transparent 60%)`,
-  },
-  cyan: {
-    border: C.cyan,
-    glow: C.cyanGlow,
-    text: C.cyanBright,
-    dim: C.cyanDim,
-    gradient: `linear-gradient(135deg, ${C.cyanGlow}, transparent 60%)`,
-  },
-  green: {
-    border: C.green,
-    glow: C.greenGlow,
-    text: C.greenBright,
-    dim: C.greenDim,
-    gradient: `linear-gradient(135deg, ${C.greenGlow}, transparent 60%)`,
-  },
-  red: {
-    border: C.red,
-    glow: C.redGlow,
-    text: C.redBright,
-    dim: C.redDim,
-    gradient: `linear-gradient(135deg, ${C.redGlow}, transparent 60%)`,
-  },
-  violet: {
-    border: C.violet,
-    glow: C.violetGlow,
-    text: C.violetBright,
-    dim: C.violetDim,
-    gradient: `linear-gradient(135deg, ${C.violetGlow}, transparent 60%)`,
-  },
-}
-
-// Small subcomponent that reads freshness from the Panel's FreshnessProvider context
+// Freshness dot — shows data staleness
 const PanelFreshnessDot: React.FC<{ focused: boolean }> = ({ focused }) => {
   const { status } = useFreshness()
   if (status === 'none') return null
-  const color =
-    status === 'fresh' ? C.greenBright :
-    status === 'stale' ? C.amberBright :
-    C.redBright
-  const glow =
-    status === 'fresh' ? C.greenGlow :
-    status === 'stale' ? C.amberGlow :
-    C.redGlow
+  const dotColor =
+    status === 'fresh' ? color.accentPositive :
+    status === 'stale' ? color.accentWarning :
+    color.accentNegative
   return (
     <span
       title={`Data ${status}`}
       style={{
-        width: 6,
-        height: 6,
+        width: 5,
+        height: 5,
         borderRadius: '50%',
-        background: color,
-        boxShadow: `0 0 6px ${glow}, 0 0 12px ${glow}`,
-        animation: 'pulseGlow 2s ease-in-out infinite',
+        background: dotColor,
         display: 'inline-block',
         marginLeft: 8,
         opacity: focused ? 1 : 0.6,
@@ -89,7 +42,6 @@ const PanelFreshnessDot: React.FC<{ focused: boolean }> = ({ focused }) => {
 
 const PanelV3 = forwardRef<HTMLDivElement, PanelV3Props>(({
   title,
-  accent = 'amber',
   focused = false,
   panelId,
   onDragStart,
@@ -97,21 +49,17 @@ const PanelV3 = forwardRef<HTMLDivElement, PanelV3Props>(({
   onMaximize,
   children,
 }, ref) => {
-  const a = ACCENT_MAP[accent]
   const bp = useBreakpoint()
   const isCompact = bp === 'compact'
-  const btnSize = isCompact ? '20px' : '24px'
-  const headerPad = isCompact ? '8px 10px' : '8px 14px'
+  const btnSize = isCompact ? '22px' : '24px'
 
-  // ── Mac-style drag state ──────────────────────────────────────────────────
+  // ── Drag state ──────────────────────────────────────────────────────────
   const [dragging, setDragging] = useState(false)
   const dragStartRef = useRef<{ x: number; y: number } | null>(null)
   const headerRef = useRef<HTMLDivElement>(null)
 
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLElement>) => {
-    // Only left-click
     if (e.button !== 0) return
-    // Don't start drag from buttons
     if ((e.target as HTMLElement).closest('button')) return
     if (!panelId || !onDragStart) return
     e.preventDefault()
@@ -127,7 +75,6 @@ const PanelV3 = forwardRef<HTMLDivElement, PanelV3Props>(({
     if (!dragStartRef.current || !panelId || !onDragStart) return
     const dx = e.clientX - dragStartRef.current.x
     const dy = e.clientY - dragStartRef.current.y
-    // Require 4px threshold before starting drag (prevents accidental drags on click)
     if (!dragging && Math.sqrt(dx * dx + dy * dy) < 4) return
     if (!dragging) {
       setDragging(true)
@@ -143,67 +90,53 @@ const PanelV3 = forwardRef<HTMLDivElement, PanelV3Props>(({
   const headerCursor = panelId ? 'grab' : 'default'
   const headerDraggingCursor = dragging ? 'grabbing' : headerCursor
 
+  const bracketSize = '12px'
+  const bracketThick = '2px'
+  const bracketColor = focused ? color.accentPositive : 'rgba(255, 255, 255, 0.15)'
+  const bracketStyle = (top: boolean, left: boolean): React.CSSProperties => ({
+    position: 'absolute',
+    width: bracketSize,
+    height: bracketSize,
+    pointerEvents: 'none',
+    ...(top ? { top: '3px' } : { bottom: '3px' }),
+    ...(left ? { left: '3px' } : { right: '3px' }),
+    borderColor: bracketColor,
+    borderStyle: 'solid',
+    borderWidth: 0,
+    ...(top && left ? { borderTopWidth: bracketThick, borderLeftWidth: bracketThick } : {}),
+    ...(top && !left ? { borderTopWidth: bracketThick, borderRightWidth: bracketThick } : {}),
+    ...(!top && left ? { borderBottomWidth: bracketThick, borderLeftWidth: bracketThick } : {}),
+    ...(!top && !left ? { borderBottomWidth: bracketThick, borderRightWidth: bracketThick } : {}),
+    transition: `border-color ${motion.normal} ${motion.ease}`,
+  })
+
   return (
     <FreshnessProvider>
     <div
       ref={ref}
-      className="bb-glass-refract"
       style={{
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
         position: 'relative',
-        background: C.surface1,
-        borderRadius: '8px',
+        background: focused ? 'rgba(19, 22, 25, 0.85)' : 'rgba(19, 22, 25, 0.70)',
+        backdropFilter: 'blur(30px) saturate(1.2)',
+        WebkitBackdropFilter: 'blur(30px) saturate(1.2)',
+        borderRadius: radius.md,
+        border: focused ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.06)',
         overflow: 'hidden',
+        transition: `all ${motion.normal} ${motion.ease}`,
         boxShadow: focused
-          ? `0 0 0 1px ${a.border}40, ${C.shadowGlow}, 0 0 60px ${a.glow}, inset 1px 1px 0 rgba(255,255,255,0.06), inset -1px -1px 0 rgba(0,0,0,0.35)`
-          : `0 0 0 1px ${C.glassBorder}, ${C.shadow2}, inset 1px 1px 0 rgba(255,255,255,0.04), inset -1px -1px 0 rgba(0,0,0,0.30)`,
-        transform: focused ? 'scale(1.002)' : 'scale(1)',
-        filter: focused ? 'brightness(1)' : 'brightness(0.92)',
-        animation: 'panelSlideIn 400ms cubic-bezier(0.16, 1, 0.3, 1) both',
-        transition: 'box-shadow 300ms ease, border-color 300ms ease, transform 300ms ease, filter 300ms ease',
+          ? '0 8px 32px rgba(0, 0, 0, 0.3), 0 0 30px rgba(0, 217, 100, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+          : '0 4px 16px rgba(0, 0, 0, 0.2)',
       }}
     >
-      {/* Ambient gradient glow in top-left corner */}
-      <div style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: '80px',
-        background: focused ? a.gradient : 'none',
-        opacity: focused ? 0.6 : 0,
-        transition: 'opacity 400ms ease',
-        pointerEvents: 'none',
-        zIndex: 1,
-      }} />
-
-      {/* Corner brackets — focused panels only */}
-      {focused && (
-        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 3 }}>
-          <PanelCornerBrackets color={a.border} glow={a.glow} />
-        </div>
-      )}
-
-      {/* Grain intensity overlay — stronger on unfocused panels to pull focus to active one */}
-      {!focused && (
-        <div
-          aria-hidden
-          style={{
-            position: 'absolute',
-            inset: 0,
-            pointerEvents: 'none',
-            zIndex: 2,
-            background:
-              "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E\")",
-            mixBlendMode: 'overlay',
-            opacity: 0.55,
-          }}
-        />
-      )}
-
-      {/* Header — frosted glass bar, pointer-drag for Mac-style move */}
+      {/* Corner brackets */}
+      <div style={bracketStyle(true, true)} />
+      <div style={bracketStyle(true, false)} />
+      <div style={bracketStyle(false, true)} />
+      <div style={bracketStyle(false, false)} />
+      {/* Header */}
       <div
         ref={headerRef}
         onPointerDown={onPointerDown}
@@ -216,46 +149,25 @@ const PanelV3 = forwardRef<HTMLDivElement, PanelV3Props>(({
           justifyContent: 'space-between',
           height: '36px',
           flexShrink: 0,
-          position: 'relative',
-          zIndex: 2,
-          background: focused
-            ? `rgba(14, 14, 36, 0.8)`
-            : C.surface2,
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
-          borderBottom: `1px solid ${focused ? `${a.border}30` : C.border0}`,
-          padding: headerPad,
-          transition: 'background 300ms ease, border-color 300ms ease',
+          padding: isCompact ? '0 10px' : '0 14px',
+          borderBottom: `1px solid ${color.borderSubtle}`,
           cursor: headerDraggingCursor,
           userSelect: dragging ? 'none' : 'auto',
         }}
       >
-        {/* Accent dot + title */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', pointerEvents: 'none' }}>
-          {/* Accent indicator dot */}
-          <div style={{
-            width: '6px',
-            height: '6px',
-            borderRadius: '50%',
-            background: focused ? a.border : C.whiteGhost,
-            boxShadow: focused ? `0 0 8px ${a.glow}, 0 0 16px ${a.glow}` : `0 0 6px ${a.glow}`,
-            transition: 'background 200ms, box-shadow 600ms ease-out',
-            animation: focused ? 'borderBreathe 3s ease-in-out infinite' : 'none',
-          }} />
+        {/* Title */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
           <span
-            className={focused ? 'bb-chroma' : undefined}
             style={{
-              fontFamily: C.fontDisplay,
-              fontSize: '11px',
-              fontWeight: 700,
-              letterSpacing: '0.12em',
-              color: focused ? a.text : C.whiteGhost,
-              textShadow: focused ? `0 0 12px ${a.glow}` : 'none',
-              transition: 'color 200ms ease, text-shadow 200ms ease',
+              fontFamily: font.sans,
+              fontSize: '12px',
+              fontWeight: 600,
+              letterSpacing: '0.02em',
+              color: focused ? color.textPrimary : color.textSecondary,
               overflow: 'hidden',
               textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap' as const,
-              maxWidth: 'calc(100% - 100px)',
+              whiteSpace: 'nowrap',
+              transition: `color ${motion.normal} ${motion.ease}`,
             }}>
             {title}
           </span>
@@ -263,37 +175,35 @@ const PanelV3 = forwardRef<HTMLDivElement, PanelV3Props>(({
         </div>
 
         {/* Window controls */}
-        <div style={{ display: 'flex', gap: '6px' }}>
+        <div style={{ display: 'flex', gap: '4px' }}>
           {onMaximize && (
             <button
               onClick={onMaximize}
               style={{
                 background: 'none',
-                border: `1px solid ${C.glassBorder}`,
-                color: C.whiteGhost,
+                border: 'none',
+                color: color.textTertiary,
                 cursor: 'pointer',
-                fontSize: '10px',
+                fontSize: '12px',
                 width: btnSize,
                 height: btnSize,
                 lineHeight: btnSize,
                 textAlign: 'center',
-                borderRadius: '4px',
-                fontFamily: C.fontMono,
-                transition: 'all 150ms ease',
+                borderRadius: radius.sm,
+                fontFamily: font.mono,
                 padding: 0,
+                transition: `all ${motion.fast} ${motion.ease}`,
               }}
               onMouseEnter={e => {
-                e.currentTarget.style.borderColor = a.border
-                e.currentTarget.style.color = a.text
-                e.currentTarget.style.background = a.glow
+                e.currentTarget.style.color = color.textPrimary
+                e.currentTarget.style.background = color.bgHover
               }}
               onMouseLeave={e => {
-                e.currentTarget.style.borderColor = C.glassBorder
-                e.currentTarget.style.color = C.whiteGhost
+                e.currentTarget.style.color = color.textTertiary
                 e.currentTarget.style.background = 'none'
               }}
             >
-              □
+              ⬜
             </button>
           )}
           {onClose && (
@@ -301,27 +211,25 @@ const PanelV3 = forwardRef<HTMLDivElement, PanelV3Props>(({
               onClick={onClose}
               style={{
                 background: 'none',
-                border: `1px solid ${C.glassBorder}`,
-                color: C.whiteGhost,
+                border: 'none',
+                color: color.textTertiary,
                 cursor: 'pointer',
-                fontSize: '12px',
+                fontSize: '14px',
                 width: btnSize,
                 height: btnSize,
                 lineHeight: btnSize,
                 textAlign: 'center',
-                borderRadius: '4px',
-                fontFamily: C.fontMono,
-                transition: 'all 150ms ease',
+                borderRadius: radius.sm,
+                fontFamily: font.mono,
                 padding: 0,
+                transition: `all ${motion.fast} ${motion.ease}`,
               }}
               onMouseEnter={e => {
-                e.currentTarget.style.borderColor = C.red
-                e.currentTarget.style.color = C.redBright
-                e.currentTarget.style.background = C.redGlow
+                e.currentTarget.style.color = color.accentNegative
+                e.currentTarget.style.background = color.accentNegativeDim
               }}
               onMouseLeave={e => {
-                e.currentTarget.style.borderColor = C.glassBorder
-                e.currentTarget.style.color = C.whiteGhost
+                e.currentTarget.style.color = color.textTertiary
                 e.currentTarget.style.background = 'none'
               }}
             >
@@ -331,30 +239,13 @@ const PanelV3 = forwardRef<HTMLDivElement, PanelV3Props>(({
         </div>
       </div>
 
-      {/* Content area with subtle inner shadow */}
-      <div style={{
+      {/* Content */}
+      <div className="bb-screen-enter" style={{
         flex: 1,
         overflow: 'auto',
-        position: 'relative',
-        zIndex: 2,
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.02)',
+        margin: '12px 28px 28px',
       }}>
         {children}
-      </div>
-
-      {/* Bottom accent line — animated width on focus */}
-      <div style={{
-        height: '1px',
-        flexShrink: 0,
-        position: 'relative',
-        overflow: 'hidden',
-      }}>
-        <div style={{
-          height: '100%',
-          background: `linear-gradient(90deg, transparent, ${a.border}60, transparent)`,
-          width: focused ? '100%' : '0%',
-          transition: 'width 400ms cubic-bezier(0.16, 1, 0.3, 1)',
-        }} />
       </div>
     </div>
     </FreshnessProvider>

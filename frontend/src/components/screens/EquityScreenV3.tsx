@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
 import { useBreakpoint } from '../../lib/useBreakpoint'
 import { fetchEquity, fetchChart } from '../../lib/api'
 import { useLivePrice } from '../../hooks/useLivePrice'
@@ -8,6 +8,8 @@ import ChangeIndicator from '../shared/ChangeIndicator'
 import LiveDot from '../shared/LiveDot'
 import Sparkline from '../shared/Sparkline'
 import LoadingBar from '../shared/LoadingBar'
+
+const { color, font } = theme
 
 // ─── Formatting helpers ───────────────────────────────────────────────────────
 
@@ -31,9 +33,9 @@ function formatPct(n: number | null | undefined): string {
   return (n * 100).toFixed(2) + '%'
 }
 
-// ─── Neon price flash hook ──────────────────────────────────────────────────
+// ─── Price flash hook ──────────────────────────────────────────────────────────
 
-function useNeonFlash(): {
+function usePriceFlashStyle(): {
   flashStyle: React.CSSProperties
   triggerFlash: (value: number, prevValue?: number | null) => void
 } {
@@ -58,14 +60,18 @@ function useNeonFlash(): {
   useEffect(() => () => clearTimer(), [clearTimer])
 
   const flashStyle: React.CSSProperties = {
-    filter: flash !== 'none' ? 'brightness(2.5) saturate(1.5)' : 'brightness(1) saturate(1)',
-    transition: 'filter 300ms ease-out',
+    transition: 'color 300ms ease-out',
+    color: flash === 'up'
+      ? color.accentPositive
+      : flash === 'down'
+      ? color.accentNegative
+      : color.textPrimary,
   }
 
   return { flashStyle, triggerFlash }
 }
 
-// ─── Range bar with gradient and glowing position dot ─────────────────────────
+// ─── Range bar ─────────────────────────────────────────────────────────────────
 
 const RangeBar: React.FC<{
   low: number | null
@@ -82,30 +88,26 @@ const RangeBar: React.FC<{
     <div style={{ marginBottom: '10px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
         <span style={{
-          color: C.whiteDim,
-          fontSize: '9px',
-          fontFamily: C.fontDisplay,
-          letterSpacing: '0.08em',
-          fontWeight: 600,
-          textTransform: 'uppercase',
+          color: color.textSecondary,
+          fontSize: '11px',
+          fontFamily: font.sans,
+          fontWeight: 500,
         }}>
           {label}
         </span>
-        <span style={{ fontSize: '10px', fontFamily: C.fontMono, fontVariantNumeric: 'tabular-nums' }}>
-          <span style={{ color: C.white }}>{formatPrice(low)}</span>
-          <span style={{ color: C.whiteGhost, margin: '0 8px' }}>—</span>
-          <span style={{ color: C.white }}>{formatPrice(high)}</span>
+        <span style={{ fontSize: '12px', fontFamily: font.mono, fontVariantNumeric: 'tabular-nums' }}>
+          <span style={{ color: color.textPrimary }}>{formatPrice(low)}</span>
+          <span style={{ color: color.textTertiary, margin: '0 8px' }}>—</span>
+          <span style={{ color: color.textPrimary }}>{formatPrice(high)}</span>
         </span>
       </div>
       <div
         style={{
           position: 'relative',
-          height: '4px',
+          height: '3px',
           borderRadius: '4px',
-          // Gradient fill
-          background: `linear-gradient(to right, ${C.amberDim}30, ${C.amber}80, ${C.amberDim}30)`,
+          background: color.borderSubtle,
           overflow: 'visible',
-          boxShadow: `0 0 4px ${C.amberGlow}`,
         }}
       >
         {pct != null && (
@@ -114,13 +116,12 @@ const RangeBar: React.FC<{
               position: 'absolute',
               left: `${pct}%`,
               top: '-4px',
-              width: '12px',
-              height: '12px',
+              width: '11px',
+              height: '11px',
               borderRadius: '50%',
-              background: C.cyan,
+              background: color.textPrimary,
               transform: 'translateX(-50%)',
-              boxShadow: `0 0 12px ${C.cyanGlow.replace('0.15', '0.6')}, 0 0 4px ${C.cyan}`,
-              border: `1px solid ${C.cyanBright}`,
+              border: `1px solid ${color.borderMedium}`,
             }}
           />
         )}
@@ -129,7 +130,7 @@ const RangeBar: React.FC<{
   )
 }
 
-// ─── Metric card — glassmorphic with hover effect ────────────────────────────
+// ─── Metric card ───────────────────────────────────────────────────────────────
 
 const MetricCard: React.FC<{
   label: string
@@ -144,37 +145,31 @@ const MetricCard: React.FC<{
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        // Glass card
-        background: hovered ? C.glassHover : C.glass,
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
-        border: `1px solid ${hovered ? C.glassBorderHover : C.glassBorder}`,
+        background: hovered ? color.bgHover : color.bgElevated,
+        border: `1px solid ${color.borderSubtle}`,
         borderRadius: '8px',
         padding: '12px 14px',
         display: 'flex',
         flexDirection: 'column',
         gap: '4px',
-        transition: 'all 200ms ease',
-        boxShadow: hovered ? C.shadow1 : 'none',
+        transition: 'background 150ms ease',
       }}
     >
       <span
         style={{
-          color: C.whiteDim,
-          fontSize: '9px',
-          fontFamily: C.fontDisplay,
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-          fontWeight: 600,
+          color: color.textSecondary,
+          fontSize: '11px',
+          fontFamily: font.sans,
+          fontWeight: 500,
         }}
       >
         {label}
       </span>
       <span
         style={{
-          color: accent ? (accentColor ?? C.cyan) : C.white,
+          color: accent ? (accentColor ?? color.accentInfo) : color.textPrimary,
           fontSize: '15px',
-          fontFamily: C.fontMono,
+          fontFamily: font.mono,
           fontVariantNumeric: 'tabular-nums',
           fontWeight: 600,
         }}
@@ -185,7 +180,7 @@ const MetricCard: React.FC<{
   )
 }
 
-// ─── Action pill — gradient border with glow ─────────────────────────────────
+// ─── Action pill ───────────────────────────────────────────────────────────────
 
 const ActionPill: React.FC<{
   label: string
@@ -199,21 +194,18 @@ const ActionPill: React.FC<{
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        background: hovered ? C.cyanGlow : C.glass,
-        color: hovered ? C.cyanBright : C.cyan,
-        border: `1px solid ${hovered ? C.cyan : C.cyanDim}40`,
+        background: hovered ? color.bgSurface : color.bgElevated,
+        color: hovered ? color.textPrimary : color.textSecondary,
+        border: `1px solid ${hovered ? color.borderMedium : color.borderSubtle}`,
         borderRadius: '100px',
         padding: '7px 18px',
-        fontSize: '10px',
-        fontFamily: C.fontMono,
-        fontWeight: 700,
-        letterSpacing: '0.12em',
+        fontSize: '12px',
+        fontFamily: font.mono,
+        fontWeight: 600,
+        letterSpacing: '0.04em',
         cursor: 'pointer',
-        boxShadow: hovered ? `0 0 16px ${C.cyanGlow}` : 'none',
-        transition: 'all 200ms ease',
+        transition: 'all 150ms ease',
         outline: 'none',
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
       }}
     >
       {label}
@@ -263,21 +255,18 @@ const EquityScreenV3: React.FC<Props> = ({ ticker, onNavigate }) => {
   const isPositive = (liveChange ?? 0) >= 0
   const changePctAbs = Math.abs(liveChangePct ?? 0)
   const isBigMove = changePctAbs > 3
-  const isHugeMove = changePctAbs > 5
-  const changeColor = isPositive
-    ? (isBigMove ? C.greenBright : C.green)
-    : (isBigMove ? C.redBright : C.red)
+  const changeColor = isPositive ? color.accentPositive : color.accentNegative
   const volumeHighlight = liveVolume != null && equity?.avg_volume != null && liveVolume > equity.avg_volume * 2
 
-  // ── Neon price flash ──
-  const { flashStyle: neonFlashStyle, triggerFlash: triggerNeonFlash } = useNeonFlash()
+  // ── Price flash ──
+  const { flashStyle: priceFlashStyle, triggerFlash } = usePriceFlashStyle()
   const prevPriceRef = useRef<number | null>(null)
   useEffect(() => {
     if (livePrice != null && typeof livePrice === 'number') {
-      triggerNeonFlash(livePrice, prevPriceRef.current)
+      triggerFlash(livePrice, prevPriceRef.current)
       prevPriceRef.current = livePrice
     }
-  }, [livePrice, triggerNeonFlash])
+  }, [livePrice, triggerFlash])
 
   // ── Quick actions ──
   const quickActions = [
@@ -301,7 +290,7 @@ const EquityScreenV3: React.FC<Props> = ({ ticker, onNavigate }) => {
     { label: 'Next Earnings', value: equity?.next_earnings || '—' },
     { label: 'Short Float', value: equity?.short_ratio != null ? equity.short_ratio.toFixed(1) : '—' },
     { label: 'Target Price', value: formatPrice(equity?.target_price) },
-    { label: 'Recommendation', value: equity?.recommendation ? equity.recommendation.toUpperCase() : '—' },
+    { label: 'Recommendation', value: equity?.recommendation ? equity.recommendation : '—' },
   ]
 
   return (
@@ -310,7 +299,7 @@ const EquityScreenV3: React.FC<Props> = ({ ticker, onNavigate }) => {
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        background: C.surface0,
+        background: 'transparent',
         overflow: 'auto',
       }}
     >
@@ -321,11 +310,11 @@ const EquityScreenV3: React.FC<Props> = ({ ticker, onNavigate }) => {
       {error && !isLoading && (
         <div style={{
           padding: '10px 16px',
-          color: C.red,
-          fontSize: '11px',
-          fontFamily: C.fontMono,
-          borderBottom: `1px solid ${C.redDim}`,
-          background: C.redGlow,
+          color: color.accentNegative,
+          fontSize: '12px',
+          fontFamily: font.sans,
+          borderBottom: `1px solid ${color.accentNegativeDim}`,
+          background: color.accentNegativeDim,
         }}>
           ERR: {(error as Error).message ?? 'Failed to load equity data'}
         </div>
@@ -339,39 +328,34 @@ const EquityScreenV3: React.FC<Props> = ({ ticker, onNavigate }) => {
         padding: '16px 20px 12px',
       }}>
         <span style={{
-          fontFamily: C.fontDisplay,
+          fontFamily: font.mono,
           fontWeight: 700,
-          fontSize: '28px',
-          color: C.amber,
-          letterSpacing: '0.04em',
-          textShadow: `0 0 20px ${C.amberGlow}`,
+          fontSize: '24px',
+          color: color.ticker,
+          letterSpacing: '0.02em',
         }}>
           {ticker}
         </span>
         {equity?.company_name && (
           <span style={{
-            fontFamily: C.fontBody,
+            fontFamily: font.sans,
             fontWeight: 400,
             fontSize: '14px',
-            color: C.whiteDim,
+            color: color.textSecondary,
           }}>
             {equity.company_name}
           </span>
         )}
         {equity?.sector && (
           <span style={{
-            background: C.glass,
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-            color: C.cyan,
-            border: `1px solid ${C.cyanDim}50`,
+            background: color.bgSurface,
+            color: color.textSecondary,
+            border: `1px solid ${color.borderSubtle}`,
             borderRadius: '100px',
             padding: '3px 12px',
-            fontSize: '10px',
-            fontFamily: C.fontDisplay,
-            fontWeight: 600,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
+            fontSize: '11px',
+            fontFamily: font.sans,
+            fontWeight: 500,
           }}>
             {equity.sector}
           </span>
@@ -379,29 +363,24 @@ const EquityScreenV3: React.FC<Props> = ({ ticker, onNavigate }) => {
         <LiveDot active size={7} />
       </div>
 
-      {/* ── PRICE HERO — dramatic glass section ── */}
+      {/* ── PRICE HERO ── */}
       <div style={{
         margin: '0 20px 16px',
         padding: '20px 24px 16px',
-        // Glass card
-        background: C.glass,
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-        borderRadius: '12px',
-        border: `1px solid ${C.glassBorder}`,
-        boxShadow: C.shadow2,
+        background: 'rgba(19, 22, 25, 0.6)',
+        borderRadius: '8px',
+        border: `1px solid ${color.borderSubtle}`,
       }}>
         {/* Price + Change */}
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '14px', marginBottom: '16px' }}>
           <span
             style={{
-              fontFamily: C.fontMono,
-              fontWeight: 700,
+              fontFamily: font.mono,
+              fontWeight: 600,
               fontSize: isCompact ? '24px' : isExpanded ? '42px' : '32px',
-              color: C.white,
               fontVariantNumeric: 'tabular-nums',
               lineHeight: 1,
-              ...neonFlashStyle,
+              ...priceFlashStyle,
             }}
           >
             {formatPrice(livePrice)}
@@ -414,11 +393,10 @@ const EquityScreenV3: React.FC<Props> = ({ ticker, onNavigate }) => {
           {liveChangePct != null && typeof liveChangePct === 'number' && (
             <span
               style={{
-                fontFamily: C.fontMono,
+                fontFamily: font.mono,
                 fontSize: '14px',
-                fontWeight: 600,
+                fontWeight: 500,
                 color: changeColor,
-                animation: isHugeMove ? 'neonFlash 600ms ease-out' : 'none',
               }}
             >
               ({liveChangePct >= 0 ? '+' : ''}{liveChangePct.toFixed(2)}%)
@@ -428,13 +406,13 @@ const EquityScreenV3: React.FC<Props> = ({ ticker, onNavigate }) => {
 
         {/* Range bars */}
         <RangeBar
-          label="Day Range"
+          label="Day range"
           low={liveDayLow ?? null}
           high={liveDayHigh ?? null}
           current={livePrice ?? null}
         />
         <RangeBar
-          label="52W Range"
+          label="52-week range"
           low={equity?.low_52w ?? null}
           high={equity?.high_52w ?? null}
           current={livePrice ?? null}
@@ -446,42 +424,44 @@ const EquityScreenV3: React.FC<Props> = ({ ticker, onNavigate }) => {
         <div style={{
           margin: '0 20px 16px',
           padding: '12px 16px',
-          background: C.glass,
+          background: 'rgba(19, 22, 25, 0.6)',
           borderRadius: '8px',
-          border: `1px solid ${C.glassBorder}`,
+          border: `1px solid ${color.borderSubtle}`,
         }}>
           <span style={{
-            color: C.whiteGhost,
-            fontSize: '9px',
-            fontFamily: C.fontDisplay,
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-            fontWeight: 600,
+            color: color.textTertiary,
+            fontSize: '11px',
+            fontFamily: font.sans,
+            fontWeight: 500,
           }}>
-            5D Price Action
+            5D price action
           </span>
           <div style={{ marginTop: '8px', textAlign: 'center' }}>
             <Sparkline
               data={sparklineData}
               width={320}
               height={70}
-              color={isPositive ? C.greenBright : C.redBright}
+              color={isPositive ? color.accentPositive : color.accentNegative}
             />
           </div>
         </div>
       )}
 
-      {/* ── METRICS GRID (3x4) — glass cards ── */}
+      {/* ── METRICS GRID (3x4) ── */}
       <div style={{ padding: '0 20px 16px' }}>
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
           gap: '8px',
         }}>
-          {metrics.map((m, i) => (
-            <div key={m.label} style={{ animation: 'fadeSlideUp 300ms ease both', animationDelay: `${Math.min(i * 30, 500)}ms` }}>
-              <MetricCard label={m.label} value={m.value} accent={m.accent} accentColor={m.label === 'Volume' && volumeHighlight ? C.cyanBright : undefined} />
-            </div>
+          {metrics.map((m) => (
+            <MetricCard
+              key={m.label}
+              label={m.label}
+              value={m.value}
+              accent={m.accent}
+              accentColor={m.label === 'Volume' && volumeHighlight ? color.accentPositive : undefined}
+            />
           ))}
         </div>
       </div>
@@ -493,10 +473,8 @@ const EquityScreenV3: React.FC<Props> = ({ ticker, onNavigate }) => {
         padding: '0 20px 16px',
         flexWrap: 'wrap',
       }}>
-        {quickActions.map(({ label, cmd }, i) => (
-          <div key={label} style={{ animation: 'fadeSlideUp 300ms ease both', animationDelay: `${Math.min(i * 30, 500)}ms` }}>
-            <ActionPill label={label} onClick={() => onNavigate(cmd)} />
-          </div>
+        {quickActions.map(({ label, cmd }) => (
+          <ActionPill key={label} label={label} onClick={() => onNavigate(cmd)} />
         ))}
       </div>
 
@@ -507,38 +485,32 @@ const EquityScreenV3: React.FC<Props> = ({ ticker, onNavigate }) => {
           style={{
             background: 'transparent',
             border: 'none',
-            color: C.cyan,
-            fontSize: '10px',
-            fontFamily: C.fontMono,
-            fontWeight: 700,
-            letterSpacing: '0.1em',
+            color: color.textSecondary,
+            fontSize: '12px',
+            fontFamily: font.sans,
+            fontWeight: 500,
             cursor: 'pointer',
             padding: '12px 0 8px',
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
             outline: 'none',
-            textTransform: 'uppercase',
           }}
         >
-          Company Info {infoExpanded ? '▲' : '▼'}
+          Company info {infoExpanded ? '▲' : '▼'}
         </button>
 
         {infoExpanded && (
           <div
             style={{
-              // Glass panel
-              background: C.glass,
-              backdropFilter: 'blur(12px)',
-              WebkitBackdropFilter: 'blur(12px)',
-              border: `1px solid ${C.glassBorder}`,
-              borderLeft: `3px solid ${C.cyan}`,
+              background: 'rgba(19, 22, 25, 0.6)',
+              border: `1px solid ${color.borderSubtle}`,
+              borderLeft: `3px solid ${color.borderMedium}`,
               borderRadius: '8px',
               padding: '16px 20px',
               display: 'grid',
               gridTemplateColumns: isCompact ? '1fr' : '1fr 1fr',
               gap: '12px 28px',
-              boxShadow: C.shadow1,
             }}
           >
             {[
@@ -551,19 +523,17 @@ const EquityScreenV3: React.FC<Props> = ({ ticker, onNavigate }) => {
             ].map(({ label, value }) => (
               <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                 <span style={{
-                  color: C.whiteDim,
-                  fontSize: '9px',
-                  fontFamily: C.fontDisplay,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  fontWeight: 600,
+                  color: color.textSecondary,
+                  fontSize: '11px',
+                  fontFamily: font.sans,
+                  fontWeight: 500,
                 }}>
                   {label}
                 </span>
                 <span style={{
-                  color: C.white,
-                  fontSize: '12px',
-                  fontFamily: C.fontBody,
+                  color: color.textPrimary,
+                  fontSize: '13px',
+                  fontFamily: font.sans,
                 }}>
                   {value ?? '—'}
                 </span>

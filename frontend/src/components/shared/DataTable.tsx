@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react'
-import C from '../../lib/colors'
+import { color, font } from '../../lib/theme'
 
 export interface Column<T> {
   key: string
@@ -45,7 +45,7 @@ function compareValues(a: unknown, b: unknown, dir: SortDir): number {
 }
 
 /**
- * Reusable Bloomberg-style sortable data table.
+ * Reusable sortable data table.
  * Supports client-side sorting by clicking column headers,
  * alternating row colours, optional max-height scrolling,
  * and an optional row-click callback.
@@ -90,7 +90,7 @@ function DataTable<T>({
     >
       <table className="bb-table">
         <thead>
-          <tr style={{ borderBottom: `2px solid ${C.amber}20` }}>
+          <tr style={{ borderBottom: `1px solid ${color.borderMedium}` }}>
             {columns.map((col, colIdx) => {
               const isActive = sortKey === col.key
               const arrow = isActive ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''
@@ -103,13 +103,13 @@ function DataTable<T>({
                     textAlign: col.align ?? (col.key === columns[0].key ? 'left' : 'right'),
                     cursor: col.sortable ? 'pointer' : 'default',
                     userSelect: 'none',
-                    color: isActive ? C.amber : C.whiteDim,
-                    fontWeight: 600,
-                    fontSize: '9px',
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase' as const,
+                    color: isActive ? color.textPrimary : color.textSecondary,
+                    fontWeight: 500,
+                    fontSize: '11px',
+                    letterSpacing: '0.02em',
+                    fontFamily: font.sans,
                     padding: '6px 8px',
-                    borderRight: isLast ? undefined : `1px solid ${C.border0}`,
+                    borderRight: isLast ? undefined : `1px solid ${color.borderSubtle}`,
                   }}
                 >
                   {col.header}{arrow}
@@ -127,8 +127,11 @@ function DataTable<T>({
                 onClick={() => onRowClick?.(row)}
                 onMouseEnter={() => setHoveredRowKey(key)}
                 onMouseLeave={() => setHoveredRowKey(prev => (prev === key ? null : prev))}
-                className={hoveredRowKey === key ? 'bb-row-hover' : undefined}
-                style={{ cursor: onRowClick ? 'pointer' : undefined }}
+                style={{
+                  background: hoveredRowKey === key ? color.bgHover : undefined,
+                  cursor: onRowClick ? 'pointer' : undefined,
+                  transition: 'background 100ms ease',
+                }}
               >
                 {columns.map((col, colIdx) => {
                   const content = col.render

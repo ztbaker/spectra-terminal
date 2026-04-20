@@ -14,7 +14,9 @@ import {
 } from '../../lib/api'
 import type { ChatMessage, ChatRoom, ChatDMThread } from '../../types'
 import { useAuth, errorMessage } from '../../lib/auth'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
+
+const { color, font } = theme
 
 type Thread =
   | { kind: 'none' }
@@ -153,16 +155,16 @@ export default function ChatScreen({ sub, onNavigate }: Props) {
       display: 'flex',
       flexDirection: 'column',
       height: '100%',
-      background: C.surface0,
-      color: C.white,
-      fontFamily: C.fontBody,
+      background: 'transparent',
+      color: color.textPrimary,
+      fontFamily: font.sans,
     }}>
       <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
         {/* ── Sidebar ───────────────────────────────────────────────── */}
         <div style={{
           width: '220px',
-          borderRight: `1px solid ${C.glassBorder}`,
-          background: C.surface1,
+          borderRight: `1px solid ${color.borderSubtle}`,
+          background: 'rgba(19, 22, 25, 0.6)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
@@ -181,11 +183,11 @@ export default function ChatScreen({ sub, onNavigate }: Props) {
                 active={thread.kind === 'room' && thread.slug.toLowerCase() === r.slug.toLowerCase()}
                 onClick={() => onNavigate(`CHAT #${r.slug}`)}
               >
-                <span style={{ color: C.amber }}>#</span>
+                <span style={{ color: color.accentPositive }}>#</span>
                 <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {r.slug}
                 </span>
-                <span style={{ color: C.whiteGhost, fontSize: '9px' }}>
+                <span style={{ color: color.textTertiary, fontSize: '9px' }}>
                   {r.member_count}
                 </span>
               </SidebarItem>
@@ -206,7 +208,7 @@ export default function ChatScreen({ sub, onNavigate }: Props) {
                 active={thread.kind === 'dm' && thread.username.toLowerCase() === t.peer_username.toLowerCase()}
                 onClick={() => onNavigate(`CHAT @${t.peer_username}`)}
               >
-                <span style={{ color: C.cyan }}>@</span>
+                <span style={{ color: color.accentInfo }}>@</span>
                 <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {t.peer_username}
                 </span>
@@ -225,15 +227,15 @@ export default function ChatScreen({ sub, onNavigate }: Props) {
           {/* Thread header */}
           <div style={{
             padding: '10px 16px',
-            borderBottom: `1px solid ${C.glassBorder}`,
-            background: C.surface1,
+            borderBottom: `1px solid ${color.borderSubtle}`,
+            background: 'rgba(19, 22, 25, 0.6)',
             display: 'flex',
             alignItems: 'center',
             gap: '12px',
           }}>
             <div style={{
-              color: C.amber,
-              fontFamily: C.fontDisplay,
+              color: color.textPrimary,
+              fontFamily: font.sans,
               fontSize: '13px',
               fontWeight: 700,
               letterSpacing: '0.12em',
@@ -241,7 +243,7 @@ export default function ChatScreen({ sub, onNavigate }: Props) {
               {titleText}
             </div>
             {activeRoom?.description && (
-              <div style={{ color: C.whiteDim, fontSize: '11px' }}>
+              <div style={{ color: color.textSecondary, fontSize: '11px' }}>
                 {activeRoom.description}
               </div>
             )}
@@ -267,7 +269,7 @@ export default function ChatScreen({ sub, onNavigate }: Props) {
               flex: 1,
               overflowY: 'auto',
               padding: '12px 16px',
-              fontFamily: C.fontMono,
+              fontFamily: font.mono,
               fontSize: '12px',
               lineHeight: 1.5,
             }}
@@ -275,8 +277,8 @@ export default function ChatScreen({ sub, onNavigate }: Props) {
             {thread.kind === 'none' && (
               <EmptyState>
                 Select a room or DM to start chatting.<br />
-                Type <code style={{ color: C.amber }}>CHAT #slug</code> or{' '}
-                <code style={{ color: C.cyan }}>CHAT @username</code>.
+                Type <code style={{ color: color.accentInfo }}>CHAT #slug</code> or{' '}
+                <code style={{ color: color.accentInfo }}>CHAT @username</code>.
               </EmptyState>
             )}
             {thread.kind !== 'none' && msgsQ.isLoading && (
@@ -298,8 +300,8 @@ export default function ChatScreen({ sub, onNavigate }: Props) {
           <form
             onSubmit={onSubmit}
             style={{
-              borderTop: `1px solid ${C.glassBorder}`,
-              background: C.surface1,
+              borderTop: `1px solid ${color.borderSubtle}`,
+              background: 'rgba(19, 22, 25, 0.6)',
               padding: '10px 12px',
               display: 'flex',
               gap: '8px',
@@ -339,8 +341,8 @@ export default function ChatScreen({ sub, onNavigate }: Props) {
             <div style={{
               padding: '6px 16px',
               background: '#1a0000',
-              borderTop: `1px solid ${C.redDim}`,
-              color: C.red,
+              borderTop: `1px solid ${color.accentNegativeDim}`,
+              color: color.accentNegative,
               fontSize: '11px',
               letterSpacing: '0.05em',
             }}>
@@ -391,9 +393,9 @@ function SidebarSection({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        borderBottom: `1px solid ${C.glassBorder}`,
-        color: C.amber,
-        fontFamily: C.fontDisplay,
+        borderBottom: `1px solid ${color.borderSubtle}`,
+        color: color.textPrimary,
+        fontFamily: font.sans,
         fontSize: '9px',
         fontWeight: 700,
         letterSpacing: '0.2em',
@@ -428,10 +430,10 @@ function SidebarItem({
         textAlign: 'left',
         padding: '6px 12px',
         border: 'none',
-        background: active ? C.surface2 : 'transparent',
-        borderLeft: `2px solid ${active ? C.amber : 'transparent'}`,
-        color: active ? C.amber : C.whiteDim,
-        fontFamily: C.fontMono,
+        background: active ? color.bgSurface : 'transparent',
+        borderLeft: `2px solid ${active ? color.accentPositive : 'transparent'}`,
+        color: active ? color.accentPositive : color.textSecondary,
+        fontFamily: font.mono,
         fontSize: '12px',
         cursor: 'pointer',
       }}
@@ -445,7 +447,7 @@ function SidebarHint({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
       padding: '8px 12px',
-      color: C.whiteGhost,
+      color: color.textTertiary,
       fontSize: '11px',
       fontStyle: 'italic',
     }}>
@@ -467,11 +469,11 @@ function TinyButton({
     <button
       onClick={onClick}
       style={{
-        background: primary ? C.amber : 'transparent',
-        color: primary ? C.surface0 : C.amberDim,
-        border: `1px solid ${primary ? C.amber : C.amberMute}`,
+        background: primary ? color.accentPositive : 'transparent',
+        color: primary ? color.textInverse : color.textSecondary,
+        border: `1px solid ${primary ? color.accentPositive : color.borderSubtle}`,
         padding: '2px 8px',
-        fontFamily: C.fontDisplay,
+        fontFamily: font.sans,
         fontSize: '9px',
         fontWeight: 700,
         letterSpacing: '0.12em',
@@ -490,10 +492,10 @@ function EmptyState({ children }: { children: React.ReactNode }) {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      color: C.whiteGhost,
+      color: color.textTertiary,
       fontSize: '11px',
       textAlign: 'center',
-      fontFamily: C.fontBody,
+      fontFamily: font.sans,
     }}>
       <div>{children}</div>
     </div>
@@ -515,7 +517,7 @@ function MessageRow({
       alignItems: 'baseline',
     }}>
       <span style={{
-        color: isSelf ? C.amber : C.cyan,
+        color: isSelf ? color.accentPositive : color.accentInfo,
         fontWeight: 700,
         minWidth: '120px',
         overflow: 'hidden',
@@ -525,14 +527,14 @@ function MessageRow({
         {message.sender_username}
       </span>
       <span style={{
-        color: C.whiteGhost,
+        color: color.textTertiary,
         fontSize: '10px',
         minWidth: '80px',
       }}>
         {formatTime(message.created_at)}
       </span>
       <span style={{
-        color: C.white,
+        color: color.textPrimary,
         flex: 1,
         wordBreak: 'break-word',
         whiteSpace: 'pre-wrap',
@@ -617,12 +619,12 @@ function NewRoomDialog({
             type="submit"
             disabled={mut.isPending}
             style={{
-              background: C.amber,
-              color: C.surface0,
+              background: color.accentPositive,
+              color: color.textInverse,
               border: 'none',
               padding: '6px 16px',
               fontSize: '11px',
-              fontFamily: C.fontDisplay,
+              fontFamily: font.sans,
               fontWeight: 700,
               letterSpacing: '0.15em',
               cursor: 'pointer',
@@ -670,11 +672,11 @@ function NewDMDialog({
       <div style={{
         maxHeight: '240px',
         overflowY: 'auto',
-        border: `1px solid ${C.glassBorder}`,
+        border: `1px solid ${color.borderSubtle}`,
         marginTop: '6px',
       }}>
         {usersQ.data?.length === 0 && (
-          <div style={{ padding: '10px', color: C.whiteGhost, fontSize: '11px' }}>
+          <div style={{ padding: '10px', color: color.textTertiary, fontSize: '11px' }}>
             No users found.
           </div>
         )}
@@ -689,14 +691,14 @@ function NewDMDialog({
               background: 'transparent',
               border: 'none',
               padding: '8px 12px',
-              color: C.white,
-              fontFamily: C.fontMono,
+              color: color.textPrimary,
+              fontFamily: font.mono,
               fontSize: '12px',
               cursor: 'pointer',
-              borderBottom: `1px solid ${C.glassBorder}`,
+              borderBottom: `1px solid ${color.borderSubtle}`,
             }}
           >
-            <span style={{ color: C.cyan }}>@</span>{u.username}
+            <span style={{ color: color.accentInfo }}>@</span>{u.username}
           </button>
         ))}
       </div>
@@ -728,24 +730,24 @@ function ModalShell({
     <div style={{
       position: 'fixed',
       inset: 0,
-      background: `${C.surface0}E6`,
+      background: `${color.bgBase}E6`,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       zIndex: 1200,
     }}>
       <div style={{
-        background: C.surface1,
-        border: `1px solid ${C.amber}`,
+        background: 'rgba(19, 22, 25, 0.6)',
+        border: `1px solid ${color.borderMedium}`,
         padding: '22px 26px',
         width: '380px',
         maxWidth: '90vw',
-        boxShadow: `0 0 28px ${C.amberGlow}`,
-        fontFamily: C.fontBody,
+        boxShadow: theme.shadow.md,
+        fontFamily: font.sans,
       }}>
         <div style={{
-          color: C.amber,
-          fontFamily: C.fontDisplay,
+          color: color.textPrimary,
+          fontFamily: font.sans,
           fontSize: '13px',
           fontWeight: 700,
           letterSpacing: '0.2em',
@@ -779,8 +781,8 @@ function DialogField({
 function DialogError({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
-      color: C.red,
-      border: `1px solid ${C.redDim}`,
+      color: color.accentNegative,
+      border: `1px solid ${color.accentNegativeDim}`,
       background: '#1a0000',
       padding: '6px 8px',
       fontSize: '11px',

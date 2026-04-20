@@ -29,7 +29,9 @@ import {
 } from 'lightweight-charts'
 import { fetchChart } from '../../lib/api'
 import LoadingBar from '../shared/LoadingBar'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
+
+const { color, font } = theme
 
 // ─── Config types ─────────────────────────────────────────────────────────────
 
@@ -114,15 +116,15 @@ const OhlcvOverlay: React.FC<OhlcvState> = ({ open, high, low, close, volume }) 
   return (
     <div style={{
       position: 'absolute', top: 8, left: 8, zIndex: 10,
-      background: `${C.surface0}BF`, border: `1px solid ${C.border1}`,
-      padding: '4px 8px', fontSize: 11, color: C.amberDim,
+      background: `${color.bgBase}BF`, border: `1px solid ${color.borderSubtle}`,
+      padding: '4px 8px', fontSize: 11, color: color.textSecondary,
       pointerEvents: 'none', display: 'flex', gap: 10,
     }}>
       <span>O: {fmt(open)}</span>
       <span>H: {fmt(high)}</span>
       <span>L: {fmt(low)}</span>
-      <span style={{ color: isUp ? C.green : C.red }}>C: {fmt(close)}</span>
-      <span style={{ color: C.amberMute }}>V: {fmtVol(volume)}</span>
+      <span style={{ color: isUp ? color.accentPositive : color.accentNegative }}>C: {fmt(close)}</span>
+      <span style={{ color: color.textTertiary }}>V: {fmtVol(volume)}</span>
     </div>
   )
 }
@@ -139,8 +141,8 @@ const SlotCard: React.FC<SlotCardProps> = ({ id, config, onClick }) => (
   <button
     onClick={onClick}
     style={{
-      background:   config ? C.surfaceGlow : C.surface0,
-      border:       `1px solid ${C.surfaceGlow}`,
+      background:   config ? color.bgElevated : color.bgBase,
+      border:       `1px solid ${color.borderSubtle}`,
       padding:      '12px 14px',
       textAlign:    'left',
       cursor:       'pointer',
@@ -151,15 +153,15 @@ const SlotCard: React.FC<SlotCardProps> = ({ id, config, onClick }) => (
       fontFamily:   'inherit',
       transition:   'border-color 0.1s',
     }}
-    onMouseEnter={e => (e.currentTarget.style.borderColor = C.amberMute)}
-    onMouseLeave={e => (e.currentTarget.style.borderColor = C.surfaceGlow)}
+    onMouseEnter={e => (e.currentTarget.style.borderColor = color.borderMedium)}
+    onMouseLeave={e => (e.currentTarget.style.borderColor = color.borderSubtle)}
   >
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <span style={{ color: C.amber, fontSize: 13, fontWeight: 700, letterSpacing: '0.05em' }}>
+      <span style={{ color: color.textPrimary, fontSize: 13, fontWeight: 700 }}>
         G{id}
       </span>
       {config && (
-        <span style={{ color: C.amberMute, fontSize: 9 }}>
+        <span style={{ color: color.textTertiary, fontSize: 9 }}>
           {config.chartType}
         </span>
       )}
@@ -167,17 +169,17 @@ const SlotCard: React.FC<SlotCardProps> = ({ id, config, onClick }) => (
 
     {config ? (
       <>
-        <div style={{ color: C.amberBright, fontSize: 12, fontWeight: 600 }}>
+        <div style={{ color: color.textPrimary, fontSize: 12, fontWeight: 600 }}>
           {config.ticker}
         </div>
-        <div style={{ color: C.amberMute, fontSize: 10 }}>{config.name}</div>
-        <div style={{ color: C.border1, fontSize: 9, marginTop: 4 }}>
+        <div style={{ color: color.textTertiary, fontSize: 10 }}>{config.name}</div>
+        <div style={{ color: color.textTertiary, fontSize: 9, marginTop: 4 }}>
           {config.period}
           {config.indicators.length > 0 && ` · ${config.indicators.join(' ')}`}
         </div>
       </>
     ) : (
-      <div style={{ color: C.border1, fontSize: 11, marginTop: 4 }}>
+      <div style={{ color: color.textTertiary, fontSize: 11, marginTop: 4 }}>
         (EMPTY)
       </div>
     )}
@@ -187,18 +189,17 @@ const SlotCard: React.FC<SlotCardProps> = ({ id, config, onClick }) => (
 // ─── Manager view ─────────────────────────────────────────────────────────────
 
 const GraphManager: React.FC<{ onNavigate: (cmd: string) => void }> = ({ onNavigate }) => {
-  // Re-render when localStorage changes (after a slot is saved in another tab, etc.)
   const [, tick] = useState(0)
   const slots = SLOT_IDS.map(id => ({ id, config: loadSlot(id) }))
 
   return (
-    <div style={{ height: '100%', overflow: 'auto', background: C.surface0, padding: '20px 24px' }}>
+    <div style={{ height: '100%', overflow: 'auto', background: 'transparent', padding: '20px 24px' }}>
       {/* Header */}
       <div style={{ marginBottom: 20 }}>
-        <div style={{ color: C.amber, fontSize: 14, fontWeight: 700, letterSpacing: '0.1em', marginBottom: 4 }}>
+        <div style={{ color: color.textPrimary, fontSize: 14, fontWeight: 700, marginBottom: 4 }}>
           GRAPH PAGES
         </div>
-        <div style={{ color: C.amberMute, fontSize: 10 }}>
+        <div style={{ color: color.textTertiary, fontSize: 10 }}>
           TYPE G1–G9 TO OPEN A GRAPH · CONFIGURE TICKER, PERIOD, AND INDICATORS · SAVE TO PRESERVE
         </div>
       </div>
@@ -222,15 +223,15 @@ const GraphManager: React.FC<{ onNavigate: (cmd: string) => void }> = ({ onNavig
       </div>
 
       {/* Keyboard hints */}
-      <div style={{ marginTop: 28, color: C.border1, fontSize: 10, lineHeight: 1.8 }}>
-        <div style={{ color: C.amberMute, marginBottom: 6 }}>QUICK ACCESS</div>
+      <div style={{ marginTop: 28, color: color.textTertiary, fontSize: 10, lineHeight: 1.8 }}>
+        <div style={{ color: color.textTertiary, marginBottom: 6 }}>QUICK ACCESS</div>
         {SLOT_IDS.map(id => {
           const c = loadSlot(id)
           return (
             <div key={id}>
-              <span style={{ color: C.amberDim }}>G{id}</span>
+              <span style={{ color: color.textSecondary }}>G{id}</span>
               {' → '}
-              <span style={{ color: C.white }}>{c ? `${c.ticker}  ${c.name}` : '(empty)'}</span>
+              <span style={{ color: color.textPrimary }}>{c ? `${c.ticker}  ${c.name}` : '(empty)'}</span>
             </div>
           )
         })}
@@ -323,22 +324,22 @@ const GraphSlotView: React.FC<GraphSlotViewProps> = ({ graphId, onNavigate }) =>
     if (!containerRef.current) return
     const chart = createChart(containerRef.current, {
       layout: {
-        background: { color: C.surface0 },
-        textColor:  C.amberDim,
-        fontFamily: "'JetBrains Mono', 'IBM Plex Mono', 'Courier New', monospace",
+        background: { color: color.bgBase },
+        textColor:  color.textSecondary,
+        fontFamily: font.mono,
         fontSize:   11,
       },
       grid: {
-        vertLines: { color: C.surfaceGlow },
-        horzLines: { color: C.surfaceGlow },
+        vertLines: { color: 'rgba(255,255,255,0.04)' },
+        horzLines: { color: 'rgba(255,255,255,0.04)' },
       },
       crosshair: {
         mode:     CrosshairMode.Normal,
-        vertLine: { color: C.amber, width: 1, style: 1, labelBackgroundColor: C.surfaceGlow },
-        horzLine: { color: C.amber, width: 1, style: 1, labelBackgroundColor: C.surfaceGlow },
+        vertLine: { color: 'rgba(255,255,255,0.20)', width: 1, style: 1, labelBackgroundColor: color.bgElevated },
+        horzLine: { color: 'rgba(255,255,255,0.20)', width: 1, style: 1, labelBackgroundColor: color.bgElevated },
       },
-      rightPriceScale: { borderColor: C.border1, textColor: C.amberDim },
-      timeScale:        { borderColor: C.border1, timeVisible: true, secondsVisible: false },
+      rightPriceScale: { borderColor: color.borderSubtle, textColor: color.textSecondary },
+      timeScale:        { borderColor: color.borderSubtle, timeVisible: true, secondsVisible: false },
       width:  containerRef.current.clientWidth,
       height: containerRef.current.clientHeight,
     })
@@ -382,9 +383,9 @@ const GraphSlotView: React.FC<GraphSlotViewProps> = ({ graphId, onNavigate }) =>
     // Main series
     if (config.chartType === 'CANDLE') {
       const s = addS(CandlestickSeries, {
-        upColor: C.green, downColor: C.red,
-        borderUpColor: C.green, borderDownColor: C.red,
-        wickUpColor: C.green, wickDownColor: C.red,
+        upColor: color.accentPositive, downColor: color.accentNegative,
+        borderUpColor: color.accentPositive, borderDownColor: color.accentNegative,
+        wickUpColor: color.accentPositive, wickDownColor: color.accentNegative,
         priceScaleId: 'right',
       })
       const d: CandlestickData[] = ohlcv.map(b => ({
@@ -392,13 +393,13 @@ const GraphSlotView: React.FC<GraphSlotViewProps> = ({ graphId, onNavigate }) =>
       }))
       s.setData(d); mainRef.current = s
     } else if (config.chartType === 'LINE') {
-      const s = addS(LineSeries, { color: C.amber, lineWidth: 2, priceScaleId: 'right' })
+      const s = addS(LineSeries, { color: color.accentPositive, lineWidth: 2, priceScaleId: 'right' })
       const d: LineData[] = ohlcv.map(b => ({ time: toTime(b.time), value: b.close }))
       s.setData(d); mainRef.current = s
     } else {
       const s = addS(AreaSeries, {
-        topColor: 'rgba(255,153,0,0.25)', bottomColor: 'rgba(255,153,0,0.0)',
-        lineColor: C.amber, lineWidth: 2, priceScaleId: 'right',
+        topColor: 'rgba(0,217,100,0.20)', bottomColor: 'rgba(0,217,100,0.0)',
+        lineColor: color.accentPositive, lineWidth: 2, priceScaleId: 'right',
       })
       const d: AreaData[] = ohlcv.map(b => ({ time: toTime(b.time), value: b.close }))
       s.setData(d); mainRef.current = s
@@ -406,19 +407,19 @@ const GraphSlotView: React.FC<GraphSlotViewProps> = ({ graphId, onNavigate }) =>
 
     // Volume
     const volS = addS(HistogramSeries, {
-      priceScaleId: 'vol', color: C.border1, priceFormat: { type: 'volume' },
+      priceScaleId: 'vol', color: color.borderSubtle, priceFormat: { type: 'volume' },
     })
     volS.priceScale().applyOptions({ scaleMargins: { top: 0.80, bottom: 0 } })
     const volData: HistogramData[] = ohlcv.map(b => ({
       time:  toTime(b.time),
       value: b.volume,
-      color: b.close >= b.open ? 'rgba(0,255,65,0.3)' : 'rgba(255,51,51,0.3)',
+      color: b.close >= b.open ? 'rgba(0,217,100,0.25)' : 'rgba(255,82,82,0.25)',
     }))
     volS.setData(volData); volRef.current = volS
 
     // SMAs
     const SMA_COLORS: Record<IndicatorKey, string> = {
-      SMA20: C.cyanBright, SMA50: C.amberBright, SMA200: C.amberDim,
+      SMA20: color.accentInfo, SMA50: color.textPrimary, SMA200: color.textSecondary,
     }
     const SMA_DATA: Record<IndicatorKey, (number | null)[]> = {
       SMA20: chartData.sma20, SMA50: chartData.sma50, SMA200: chartData.sma200,
@@ -461,12 +462,12 @@ const GraphSlotView: React.FC<GraphSlotViewProps> = ({ graphId, onNavigate }) =>
   const activeIndicators = new Set(config.indicators)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: C.surface0, overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'transparent', overflow: 'hidden' }}>
       <LoadingBar loading={isLoading} />
 
       {/* ── Toolbar ─────────────────────────────────────────────────────── */}
       <div style={{
-        flexShrink: 0, background: C.surface1, borderBottom: `1px solid ${C.border1}`,
+        flexShrink: 0, background: 'rgba(19, 22, 25, 0.6)', borderBottom: `1px solid ${color.borderSubtle}`,
         padding: '5px 8px', display: 'flex', flexDirection: 'column', gap: 4,
       }}>
         {/* Row 1: slot ID + name + ticker + chart type + period + SAVE + BACK */}
@@ -478,7 +479,7 @@ const GraphSlotView: React.FC<GraphSlotViewProps> = ({ graphId, onNavigate }) =>
           </button>
 
           {/* Slot ID badge */}
-          <span style={{ color: C.amber, fontSize: 13, fontWeight: 700, letterSpacing: '0.05em', marginLeft: 2 }}>
+          <span style={{ color: color.textPrimary, fontSize: 13, fontWeight: 700, marginLeft: 2 }}>
             G{graphId}
           </span>
 
@@ -491,13 +492,13 @@ const GraphSlotView: React.FC<GraphSlotViewProps> = ({ graphId, onNavigate }) =>
               onBlur={() => setEditingName(false)}
               onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Escape') setEditingName(false) }}
               style={{
-                background: C.surface1, border: `1px solid ${C.amber}`, color: C.amber,
+                background: 'rgba(19, 22, 25, 0.6)', border: `1px solid ${color.textPrimary}`, color: color.textPrimary,
                 fontSize: 11, padding: '1px 6px', width: 140, fontFamily: 'inherit', outline: 'none',
               }}
             />
           ) : (
             <span
-              style={{ color: C.amberMute, fontSize: 11, cursor: 'pointer' }}
+              style={{ color: color.textTertiary, fontSize: 11, cursor: 'pointer' }}
               onClick={() => setEditingName(true)}
               title="Click to rename"
             >
@@ -505,7 +506,7 @@ const GraphSlotView: React.FC<GraphSlotViewProps> = ({ graphId, onNavigate }) =>
             </span>
           )}
 
-          <span style={{ color: C.border1 }}>─</span>
+          <span style={{ color: color.textTertiary }}>─</span>
 
           {/* Ticker input */}
           <div style={{ display: 'flex', gap: 3 }}>
@@ -517,14 +518,14 @@ const GraphSlotView: React.FC<GraphSlotViewProps> = ({ graphId, onNavigate }) =>
               placeholder="TICKER"
               maxLength={5}
               style={{
-                background: C.surface1, border: `1px solid ${C.border1}`, color: C.amberBright,
+                background: 'rgba(19, 22, 25, 0.6)', border: `1px solid ${color.borderSubtle}`, color: color.textPrimary,
                 fontSize: 12, fontWeight: 700, padding: '1px 6px', width: 68,
                 fontFamily: 'inherit', outline: 'none', letterSpacing: '0.05em',
               }}
             />
           </div>
 
-          <span style={{ color: C.border1, margin: '0 2px' }}>|</span>
+          <span style={{ color: color.textTertiary, margin: '0 2px' }}>|</span>
 
           {/* Chart type */}
           {CHART_TYPES.map(t => (
@@ -538,7 +539,7 @@ const GraphSlotView: React.FC<GraphSlotViewProps> = ({ graphId, onNavigate }) =>
             </button>
           ))}
 
-          <span style={{ color: C.border1, margin: '0 2px' }}>|</span>
+          <span style={{ color: color.textTertiary, margin: '0 2px' }}>|</span>
 
           {/* Periods */}
           {PERIODS.map(p => (
@@ -559,8 +560,8 @@ const GraphSlotView: React.FC<GraphSlotViewProps> = ({ graphId, onNavigate }) =>
               marginLeft: 'auto',
               padding: '2px 12px',
               fontSize: 11,
-              color:   savedFlash ? C.green : isDirty ? C.amber : C.amberMute,
-              borderColor: savedFlash ? C.green : isDirty ? C.amber : C.border1,
+              color:   savedFlash ? color.accentPositive : isDirty ? color.accentPositive : color.textTertiary,
+              borderColor: savedFlash ? color.accentPositive : isDirty ? color.accentPositive : color.borderSubtle,
             }}
             onClick={handleSave}
           >
@@ -570,7 +571,7 @@ const GraphSlotView: React.FC<GraphSlotViewProps> = ({ graphId, onNavigate }) =>
 
         {/* Row 2: indicators */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ color: C.amberMute, fontSize: 10, marginRight: 4 }}>INDICATORS:</span>
+          <span style={{ color: color.textTertiary, fontSize: 10, marginRight: 4 }}>INDICATORS:</span>
           {INDICATORS.map(ind => (
             <button
               key={ind}
@@ -581,10 +582,10 @@ const GraphSlotView: React.FC<GraphSlotViewProps> = ({ graphId, onNavigate }) =>
               {ind}
             </button>
           ))}
-          {activeIndicators.has('SMA20')  && <span style={{ color: C.cyanBright, fontSize: 10, marginLeft: 6 }}>━ SMA20</span>}
-          {activeIndicators.has('SMA50')  && <span style={{ color: C.amberBright, fontSize: 10 }}>━ SMA50</span>}
-          {activeIndicators.has('SMA200') && <span style={{ color: C.amberDim, fontSize: 10 }}>╌ SMA200</span>}
-          <span style={{ marginLeft: 'auto', color: C.border1, fontSize: 10 }}>
+          {activeIndicators.has('SMA20')  && <span style={{ color: color.accentInfo, fontSize: 10, marginLeft: 6 }}>━ SMA20</span>}
+          {activeIndicators.has('SMA50')  && <span style={{ color: color.textPrimary, fontSize: 10 }}>━ SMA50</span>}
+          {activeIndicators.has('SMA200') && <span style={{ color: color.textSecondary, fontSize: 10 }}>╌ SMA200</span>}
+          <span style={{ marginLeft: 'auto', color: color.textTertiary, fontSize: 10 }}>
             {period.toUpperCase()} · {interval}
             {chartData?.ohlcv?.length ? ` · ${chartData.ohlcv.length} bars` : ''}
           </span>
@@ -600,10 +601,10 @@ const GraphSlotView: React.FC<GraphSlotViewProps> = ({ graphId, onNavigate }) =>
           <div style={{
             position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center', gap: 8,
-            color: C.amberMute, fontSize: 12, zIndex: 5,
+            color: color.textTertiary, fontSize: 12, zIndex: 5,
           }}>
             <div>ENTER A TICKER ABOVE TO BEGIN</div>
-            <div style={{ color: C.border1, fontSize: 10 }}>G{graphId} · {nameInput}</div>
+            <div style={{ color: color.textTertiary, fontSize: 10 }}>G{graphId} · {nameInput}</div>
           </div>
         )}
 

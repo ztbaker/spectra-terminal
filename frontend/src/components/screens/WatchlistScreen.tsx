@@ -10,9 +10,11 @@ import type { WatchlistQuote } from '../../types'
 import LoadingBar from '../shared/LoadingBar'
 import TickerBadge from '../shared/TickerBadge'
 import { usePolling } from '../../hooks/usePolling'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
 
-// ─── Formatting helpers ───────────────────────────────────────────────────────
+const { color, font } = theme
+
+// ─── Formatting helpers ──────────────��─────────────────────────────���──────────
 
 function formatLarge(n: number | null): string {
   if (n === null) return '—'
@@ -37,12 +39,12 @@ interface QuickNavProps {
 
 const QuickNav: React.FC<QuickNavProps> = ({ ticker, onNavigate }) => {
   return (
-    <span style={{ display: 'inline-flex', gap: '3px' }}>
+    <span style={{ display: 'inline-flex', gap: '4px' }}>
       {(['EQUITY', 'CHART', 'OPTIONS', 'NEWS'] as const).map(screen => (
         <button
           key={screen}
           className="bb-btn"
-          style={{ fontSize: '10px', padding: '1px 5px', letterSpacing: 0 }}
+          style={{ fontSize: '10px', padding: '2px 8px' }}
           onClick={e => {
             e.stopPropagation()
             onNavigate(`${ticker} ${screen}`)
@@ -55,7 +57,7 @@ const QuickNav: React.FC<QuickNavProps> = ({ ticker, onNavigate }) => {
   )
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+// ─── Main component ──────��─────────────────────────��──────────────────────���───
 
 interface Props {
   onNavigate: (cmd: string) => void
@@ -67,8 +69,6 @@ const WatchlistScreen: React.FC<Props> = ({ onNavigate }) => {
   const [expandedRow, setExpandedRow] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // ─── Query ────────────────────────────────────────────────────────────────
-
   const { data, isLoading, isError, refetch, isFetching, dataUpdatedAt } = useQuery<WatchlistQuote[]>({
     queryKey: ['watchlist', 'quotes'],
     queryFn: () => fetchWatchlistQuotes(),
@@ -78,8 +78,6 @@ const WatchlistScreen: React.FC<Props> = ({ onNavigate }) => {
   const lastUpdated = dataUpdatedAt ? new Date(dataUpdatedAt) : null
 
   usePolling(refetch, 15_000)
-
-  // ─── Mutations ────────────────────────────────────────────────────────────
 
   const addMutation = useMutation({
     mutationFn: (vars: { ticker: string }) => addToWatchlist(vars.ticker),
@@ -96,8 +94,6 @@ const WatchlistScreen: React.FC<Props> = ({ onNavigate }) => {
       queryClient.invalidateQueries({ queryKey: ['watchlist'] })
     },
   })
-
-  // ─── Handlers ─────────────────────────────────────────────────────────────
 
   const handleAdd = () => {
     const t = tickerInput.trim().toUpperCase()
@@ -117,16 +113,14 @@ const WatchlistScreen: React.FC<Props> = ({ onNavigate }) => {
     setExpandedRow(prev => (prev === ticker ? null : ticker))
   }
 
-  // ─── Render ───────────────────────────────────────────────────────────────
-
   const quotes = data ?? []
 
   return (
     <Panel
-      title="WL — WATCHLIST MONITOR"
+      title="Watchlist"
       actions={
-        <span className="bb-label" style={{ fontSize: '10px' }}>
-          {isFetching && !isLoading ? 'REFRESHING...' : `${quotes.length} SYMBOLS`}
+        <span style={{ fontSize: '11px', color: color.textTertiary, fontFamily: font.sans }}>
+          {isFetching && !isLoading ? 'Refreshing...' : `${quotes.length} symbols`}
         </span>
       }
     >
@@ -138,16 +132,17 @@ const WatchlistScreen: React.FC<Props> = ({ onNavigate }) => {
           display: 'flex',
           alignItems: 'center',
           gap: '8px',
-          padding: '6px 8px',
-          borderBottom: `1px solid ${C.border1}`,
-          background: C.surface1,
+          padding: '10px 16px',
+          borderBottom: `1px solid ${color.borderSubtle}`,
         }}
       >
-        <span className="bb-label" style={{ whiteSpace: 'nowrap' }}>ADD TICKER:</span>
+        <span style={{ color: color.textTertiary, fontSize: '11px', fontWeight: 500, fontFamily: font.sans, whiteSpace: 'nowrap' }}>
+          Add ticker
+        </span>
         <input
           ref={inputRef}
           className="bb-input"
-          style={{ width: '120px', fontSize: '13px' }}
+          style={{ width: '120px', fontSize: '13px', fontFamily: font.mono, padding: '6px 10px' }}
           value={tickerInput}
           onChange={handleTickerChange}
           onKeyDown={handleKeyDown}
@@ -161,44 +156,44 @@ const WatchlistScreen: React.FC<Props> = ({ onNavigate }) => {
           onClick={handleAdd}
           disabled={addMutation.isPending || !tickerInput.trim()}
         >
-          {addMutation.isPending ? 'ADDING...' : '[ADD]'}
+          {addMutation.isPending ? 'Adding...' : 'Add'}
         </button>
         {addMutation.isError && (
-          <span className="bb-loss" style={{ fontSize: '11px' }}>
-            ERROR: {(addMutation.error as Error)?.message ?? 'Failed'}
+          <span style={{ fontSize: '11px', color: color.accentNegative }}>
+            {(addMutation.error as Error)?.message ?? 'Failed'}
           </span>
         )}
       </div>
 
       {/* Table or empty state */}
       {isError ? (
-        <div style={{ padding: '24px', textAlign: 'center', color: C.red }}>
-          WATCHLIST UNAVAILABLE — BACKEND ERROR
+        <div style={{ padding: '24px', textAlign: 'center', color: color.accentNegative, fontFamily: font.sans, fontSize: '13px' }}>
+          Watchlist unavailable
         </div>
       ) : quotes.length === 0 && !isLoading ? (
         <div
           style={{
-            padding: '40px 24px',
+            padding: '48px 24px',
             textAlign: 'center',
-            color: C.amberMute,
-            fontSize: '12px',
-            letterSpacing: '0.05em',
+            color: color.textTertiary,
+            fontSize: '13px',
+            fontFamily: font.sans,
           }}
         >
-          WATCHLIST EMPTY — Type a ticker above and press [ADD]
+          No symbols yet — type a ticker above and press Add
         </div>
       ) : (
         <div style={{ overflowX: 'auto' }}>
           <table className="bb-table">
             <thead>
               <tr>
-                <th style={{ textAlign: 'left', width: '80px' }}>TICKER</th>
-                <th style={{ textAlign: 'left', minWidth: '140px' }}>COMPANY</th>
-                <th>PRICE</th>
-                <th>CHANGE</th>
-                <th>CHG%</th>
-                <th>VOLUME</th>
-                <th>MKT CAP</th>
+                <th style={{ textAlign: 'left', width: '80px' }}>Ticker</th>
+                <th style={{ textAlign: 'left', minWidth: '140px' }}>Company</th>
+                <th>Price</th>
+                <th>Change</th>
+                <th>%</th>
+                <th>Volume</th>
+                <th>Mkt Cap</th>
                 <th style={{ textAlign: 'center', width: '36px' }}></th>
                 <th style={{ textAlign: 'center', width: '24px' }}></th>
               </tr>
@@ -207,19 +202,17 @@ const WatchlistScreen: React.FC<Props> = ({ onNavigate }) => {
               {quotes.map(row => (
                 <React.Fragment key={row.ticker}>
                   <tr>
-                    {/* TICKER */}
                     <td
-                      style={{ color: C.amber, cursor: 'pointer', fontWeight: 'bold' }}
+                      style={{ color: color.ticker, cursor: 'pointer', fontWeight: 600, fontFamily: font.mono, fontSize: '12px' }}
                       onClick={() => onNavigate(`${row.ticker} EQUITY`)}
                     >
                       {row.ticker}
                     </td>
 
-                    {/* COMPANY */}
                     <td
                       style={{
                         textAlign: 'left',
-                        color: C.amberDim,
+                        color: color.textSecondary,
                         maxWidth: '180px',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -228,32 +221,26 @@ const WatchlistScreen: React.FC<Props> = ({ onNavigate }) => {
                       {row.company_name ?? '—'}
                     </td>
 
-                    {/* PRICE */}
-                    <td style={{ color: C.white }}>
+                    <td style={{ color: color.textPrimary, fontWeight: 500 }}>
                       {row.price !== null ? formatPrice(row.price) : '—'}
                     </td>
 
-                    {/* CHANGE */}
                     <td>
                       <TickerBadge value={row.change} decimals={2} prefix="$" />
                     </td>
 
-                    {/* CHG% */}
                     <td>
                       <TickerBadge value={row.change_pct} pct decimals={2} />
                     </td>
 
-                    {/* VOLUME */}
-                    <td style={{ color: C.white }}>{formatLarge(row.volume)}</td>
+                    <td style={{ color: color.textSecondary }}>{formatLarge(row.volume)}</td>
 
-                    {/* MKT CAP */}
-                    <td style={{ color: C.white }}>{formatLarge(row.market_cap)}</td>
+                    <td style={{ color: color.textSecondary }}>{formatLarge(row.market_cap)}</td>
 
-                    {/* Quick nav toggle */}
                     <td style={{ textAlign: 'center' }}>
                       <button
                         className="bb-btn"
-                        style={{ fontSize: '10px', padding: '1px 4px' }}
+                        style={{ fontSize: '10px', padding: '2px 6px' }}
                         title="Quick navigate"
                         onClick={e => {
                           e.stopPropagation()
@@ -264,15 +251,13 @@ const WatchlistScreen: React.FC<Props> = ({ onNavigate }) => {
                       </button>
                     </td>
 
-                    {/* Remove */}
                     <td style={{ textAlign: 'center' }}>
                       <button
                         className="bb-btn"
                         style={{
-                          fontSize: '11px',
-                          padding: '1px 5px',
-                          color: C.red,
-                          borderColor: C.redDim,
+                          fontSize: '12px',
+                          padding: '1px 6px',
+                          color: color.textTertiary,
                         }}
                         title={`Remove ${row.ticker}`}
                         onClick={e => {
@@ -280,6 +265,8 @@ const WatchlistScreen: React.FC<Props> = ({ onNavigate }) => {
                           removeMutation.mutate({ ticker: row.ticker })
                         }}
                         disabled={removeMutation.isPending}
+                        onMouseEnter={e => { e.currentTarget.style.color = color.accentNegative }}
+                        onMouseLeave={e => { e.currentTarget.style.color = color.textTertiary }}
                       >
                         ×
                       </button>
@@ -292,13 +279,13 @@ const WatchlistScreen: React.FC<Props> = ({ onNavigate }) => {
                       <td
                         colSpan={9}
                         style={{
-                          background: C.surfaceGlow,
-                          padding: '4px 12px',
-                          borderBottom: `1px solid ${C.border1}`,
+                          background: color.bgSurface,
+                          padding: '6px 16px',
+                          borderBottom: `1px solid ${color.borderSubtle}`,
                         }}
                       >
-                        <span className="bb-label" style={{ marginRight: '8px' }}>
-                          {row.ticker}:
+                        <span style={{ color: color.textTertiary, fontSize: '11px', marginRight: '10px', fontFamily: font.mono }}>
+                          {row.ticker}
                         </span>
                         <QuickNav ticker={row.ticker} onNavigate={onNavigate} />
                       </td>
@@ -311,23 +298,24 @@ const WatchlistScreen: React.FC<Props> = ({ onNavigate }) => {
         </div>
       )}
 
-      {/* Footer: last updated */}
+      {/* Footer */}
       <div
         style={{
-          padding: '3px 8px',
-          borderTop: `1px solid ${C.border1}`,
+          padding: '6px 16px',
+          borderTop: `1px solid ${color.borderSubtle}`,
           display: 'flex',
           justifyContent: 'space-between',
           fontSize: '10px',
-          color: C.amberMute,
+          color: color.textTertiary,
+          fontFamily: font.sans,
           flexShrink: 0,
         }}
       >
-        <span>RIGHT-CLICK ROW OR [→] FOR QUICK NAV</span>
+        <span>Click ticker to view · Arrow for quick nav</span>
         <span>
           {lastUpdated
-            ? `UPDATED ${lastUpdated.toLocaleTimeString('en-US', { hour12: false })}`
-            : 'AWAITING DATA'}
+            ? `Updated ${lastUpdated.toLocaleTimeString('en-US', { hour12: false })}`
+            : 'Awaiting data'}
         </span>
       </div>
     </Panel>

@@ -1,0 +1,27 @@
+/**
+ * Spectra Terminal — Gap Stack logo mark (ocean palette)
+ * Concentric arcs with phase-shifted gaps.
+ */
+export default function SpectraLogo({ size = 48 }: { size?: number }) {
+  return (
+    <svg
+      viewBox="0 0 1024 1024"
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      style={{ display: 'block', flexShrink: 0 }}
+    >
+      <rect width="1024" height="1024" rx="229" ry="229" fill="#0B0D10" />
+      <rect x="0.5" y="0.5" width="1023" height="1023" rx="229" ry="229" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
+      <path d="M662.35 566.72 A160 160 0 0 1 361.65 566.72" fill="none" stroke="#1E4FFF" strokeWidth="40" strokeLinecap="round" />
+      <path d="M361.65 457.28 A160 160 0 0 1 662.35 457.28" fill="none" stroke="#1E4FFF" strokeWidth="40" strokeLinecap="round" />
+      <path d="M613.43 729.51 A240 240 0 0 1 294.49 410.57" fill="none" stroke="#2B7BFF" strokeWidth="40" strokeLinecap="round" />
+      <path d="M410.57 294.49 A240 240 0 0 1 729.51 613.43" fill="none" stroke="#2B7BFF" strokeWidth="40" strokeLinecap="round" />
+      <path d="M402.55 812.70 A320 320 0 0 1 402.55 211.30" fill="none" stroke="#22B7FF" strokeWidth="40" strokeLinecap="round" />
+      <path d="M621.45 211.30 A320 320 0 0 1 621.45 812.70" fill="none" stroke="#22B7FF" strokeWidth="40" strokeLinecap="round" />
+      <path d="M149.48 681.05 A400 400 0 0 1 681.05 149.48" fill="none" stroke="#00D9E0" strokeWidth="40" strokeLinecap="round" />
+      <path d="M874.52 342.95 A400 400 0 0 1 342.95 874.52" fill="none" stroke="#00D9E0" strokeWidth="40" strokeLinecap="round" />
+      <circle cx="512" cy="512" r="48" fill="#6AF1B4" />
+    </svg>
+  )
+}

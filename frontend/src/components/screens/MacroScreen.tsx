@@ -6,7 +6,9 @@ import type { MacroCard, EconSeries, EconObservation } from '../../types'
 import LoadingBar from '../shared/LoadingBar'
 import Sparkline from '../shared/Sparkline'
 import TickerBadge from '../shared/TickerBadge'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
+
+const { color, font } = theme
 
 interface Props {
   onNavigate: (cmd: string) => void
@@ -30,7 +32,7 @@ const EconLineChart: React.FC<LineChartProps> = ({
   )
   if (obs.length < 2) {
     return (
-      <div style={{ color: C.amberMute, padding: 8, fontSize: 11 }}>
+      <div style={{ color: color.textTertiary, padding: 8, fontSize: 11 }}>
         Insufficient data to render chart.
       </div>
     )
@@ -54,7 +56,6 @@ const EconLineChart: React.FC<LineChartProps> = ({
   const toY = (v: number) =>
     PAD.top + innerH - ((v - minV) / rangeV) * innerH
 
-  // Build SVG path
   const pathParts = obs.map((o, i) => {
     const x = toX(o.date).toFixed(2)
     const y = toY(o.value).toFixed(2)
@@ -62,18 +63,16 @@ const EconLineChart: React.FC<LineChartProps> = ({
   })
   const d = pathParts.join(' ')
 
-  // Y-axis ticks (5 evenly spaced)
   const yTicks = Array.from({ length: 5 }, (_, i) => {
     const v = minV + (i / 4) * rangeV
     return { y: toY(v), label: v.toFixed(2) }
   })
 
-  // X-axis ticks (up to 6 dates)
   const xTickCount = Math.min(6, obs.length)
   const xTicks = Array.from({ length: xTickCount }, (_, i) => {
     const idx = Math.round((i / (xTickCount - 1)) * (obs.length - 1))
     const o = obs[idx]
-    return { x: toX(o.date), label: o.date.slice(0, 7) } // YYYY-MM
+    return { x: toX(o.date), label: o.date.slice(0, 7) }
   })
 
   return (
@@ -83,7 +82,6 @@ const EconLineChart: React.FC<LineChartProps> = ({
       style={{ display: 'block', maxHeight: height }}
       aria-label={`Chart for ${series.title}`}
     >
-      {/* Grid lines */}
       {yTicks.map((t, i) => (
         <line
           key={i}
@@ -91,19 +89,18 @@ const EconLineChart: React.FC<LineChartProps> = ({
           y1={t.y.toFixed(2)}
           x2={PAD.left + innerW}
           y2={t.y.toFixed(2)}
-          stroke={C.border0}
+          stroke={color.borderSubtle}
           strokeWidth="1"
         />
       ))}
 
-      {/* Y-axis labels */}
       {yTicks.map((t, i) => (
         <text
           key={i}
           x={PAD.left - 4}
           y={t.y + 4}
           textAnchor="end"
-          fill={C.amberMute}
+          fill={color.textTertiary}
           fontSize="9"
           fontFamily="monospace"
         >
@@ -111,14 +108,13 @@ const EconLineChart: React.FC<LineChartProps> = ({
         </text>
       ))}
 
-      {/* X-axis labels */}
       {xTicks.map((t, i) => (
         <text
           key={i}
           x={t.x}
           y={PAD.top + innerH + 20}
           textAnchor="middle"
-          fill={C.amberMute}
+          fill={color.textTertiary}
           fontSize="9"
           fontFamily="monospace"
         >
@@ -126,13 +122,12 @@ const EconLineChart: React.FC<LineChartProps> = ({
         </text>
       ))}
 
-      {/* Axes */}
       <line
         x1={PAD.left}
         y1={PAD.top}
         x2={PAD.left}
         y2={PAD.top + innerH}
-        stroke={C.border1}
+        stroke={color.borderMedium}
         strokeWidth="1"
       />
       <line
@@ -140,15 +135,14 @@ const EconLineChart: React.FC<LineChartProps> = ({
         y1={PAD.top + innerH}
         x2={PAD.left + innerW}
         y2={PAD.top + innerH}
-        stroke={C.border1}
+        stroke={color.borderMedium}
         strokeWidth="1"
       />
 
-      {/* Line */}
       <path
         d={d}
         fill="none"
-        stroke={C.amber}
+        stroke={color.accentInfo}
         strokeWidth="1.5"
         strokeLinejoin="round"
         strokeLinecap="round"
@@ -176,7 +170,7 @@ const ExpandedCard: React.FC<ExpandedCardProps> = ({ card, onClose }) => {
       style={{
         position: 'fixed',
         inset: 0,
-        background: `${C.surface0}DA`,
+        background: `${color.bgBase}DA`,
         zIndex: 100,
         display: 'flex',
         alignItems: 'center',
@@ -186,8 +180,9 @@ const ExpandedCard: React.FC<ExpandedCardProps> = ({ card, onClose }) => {
     >
       <div
         style={{
-          background: C.surface1,
-          border: `1px solid ${C.border1}`,
+          background: 'rgba(19, 22, 25, 0.6)',
+          border: `1px solid ${color.borderMedium}`,
+          borderRadius: 8,
           minWidth: 520,
           maxWidth: 620,
           width: '90vw',
@@ -198,21 +193,31 @@ const ExpandedCard: React.FC<ExpandedCardProps> = ({ card, onClose }) => {
       >
         {/* Header */}
         <div
-          className="bb-header"
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            padding: '10px 16px',
+            borderBottom: `1px solid ${color.borderSubtle}`,
           }}
         >
-          <span>
+          <span style={{ color: color.textPrimary, fontFamily: font.sans, fontSize: 13, fontWeight: 600 }}>
             {card.label}&nbsp;
-            <span style={{ color: C.amberMute, fontSize: 10 }}>({card.series_id})</span>
+            <span style={{ color: color.textTertiary, fontSize: 10, fontFamily: font.mono }}>({card.series_id})</span>
           </span>
           <button
-            className="bb-btn"
             onClick={onClose}
-            style={{ fontSize: 13, padding: '1px 8px', border: 'none', lineHeight: 1 }}
+            style={{
+              background: 'transparent',
+              border: `1px solid ${color.borderSubtle}`,
+              color: color.textSecondary,
+              cursor: 'pointer',
+              fontSize: 13,
+              padding: '1px 8px',
+              lineHeight: 1,
+              borderRadius: 4,
+              fontFamily: font.sans,
+            }}
           >
             ×
           </button>
@@ -224,33 +229,33 @@ const ExpandedCard: React.FC<ExpandedCardProps> = ({ card, onClose }) => {
             display: 'flex',
             alignItems: 'baseline',
             gap: 12,
-            padding: '8px 12px',
-            borderBottom: '1px solid ' + C.border0,
+            padding: '8px 16px',
+            borderBottom: `1px solid ${color.borderSubtle}`,
           }}
         >
-          <span style={{ fontSize: 22, color: C.white, fontWeight: 'bold' }}>
+          <span style={{ fontSize: 22, color: color.textPrimary, fontWeight: 600, fontFamily: font.sans }}>
             {card.value !== null ? card.value.toFixed(2) : '—'}
           </span>
           <TickerBadge value={card.change} decimals={2} />
-          <span style={{ color: C.amberMute, fontSize: 11 }}>{card.units}</span>
+          <span style={{ color: color.textTertiary, fontSize: 11, fontFamily: font.sans }}>{card.units}</span>
           {data?.cached && (
-            <span style={{ marginLeft: 'auto', color: C.amberMute, fontSize: 10 }}>
-              CACHED
+            <span style={{ marginLeft: 'auto', color: color.textTertiary, fontSize: 10, fontFamily: font.mono }}>
+              cached
             </span>
           )}
         </div>
 
         {/* Chart area */}
-        <div style={{ padding: '12px 12px 16px' }}>
+        <div style={{ padding: '12px 16px 16px' }}>
           <LoadingBar loading={isLoading} />
           {isError && (
-            <div style={{ color: C.red, fontSize: 11, padding: 8 }}>
-              ERROR: Could not load series data.
+            <div style={{ color: color.accentNegative, fontSize: 11, padding: 8, fontFamily: font.sans }}>
+              Could not load series data.
             </div>
           )}
           {!isLoading && !isError && data && <EconLineChart series={data} />}
           {!isLoading && !isError && !data && (
-            <div style={{ color: C.amberMute, fontSize: 11, padding: 8 }}>
+            <div style={{ color: color.textTertiary, fontSize: 11, padding: 8, fontFamily: font.sans }}>
               No data available.
             </div>
           )}
@@ -273,31 +278,35 @@ const MacroCardView: React.FC<MacroCardViewProps> = ({ card, onExpand }) => {
 
   return (
     <div
-      className="bb-panel"
       style={{
-        padding: '8px 10px',
+        background: 'rgba(19, 22, 25, 0.6)',
+        border: `1px solid ${color.borderSubtle}`,
+        borderRadius: 8,
+        padding: '12px 14px',
         cursor: 'pointer',
         minWidth: 0,
         display: 'flex',
         flexDirection: 'column',
-        gap: 4,
-        transition: 'border-color 0.15s',
+        gap: 6,
+        transition: 'border-color 0.15s, background 0.15s',
       }}
       onClick={onExpand}
       onMouseEnter={e => {
-        ;(e.currentTarget as HTMLDivElement).style.borderColor = C.amber
+        ;(e.currentTarget as HTMLDivElement).style.borderColor = color.borderMedium
+        ;(e.currentTarget as HTMLDivElement).style.background = color.bgSurface
       }}
       onMouseLeave={e => {
-        ;(e.currentTarget as HTMLDivElement).style.borderColor = C.border1
+        ;(e.currentTarget as HTMLDivElement).style.borderColor = color.borderSubtle
+        ;(e.currentTarget as HTMLDivElement).style.background = color.bgElevated
       }}
     >
       {/* Label */}
       <div
         style={{
-          color: C.amberBright,
+          color: color.textSecondary,
           fontSize: 11,
-          letterSpacing: '0.05em',
-          textTransform: 'uppercase',
+          fontFamily: font.sans,
+          fontWeight: 500,
           whiteSpace: 'nowrap',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
@@ -310,10 +319,12 @@ const MacroCardView: React.FC<MacroCardViewProps> = ({ card, onExpand }) => {
       <div
         style={{
           fontSize: 24,
-          color: hasError ? C.amberMute : C.white,
-          fontWeight: 'bold',
+          color: hasError ? color.textTertiary : color.textPrimary,
+          fontWeight: 600,
           lineHeight: 1.1,
           letterSpacing: '-0.02em',
+          fontFamily: font.sans,
+          fontVariantNumeric: 'tabular-nums',
         }}
       >
         {hasError ? 'N/A' : card.value !== null ? card.value.toFixed(2) : '—'}
@@ -327,9 +338,9 @@ const MacroCardView: React.FC<MacroCardViewProps> = ({ card, onExpand }) => {
       {/* Units */}
       <div
         style={{
-          color: C.amberMute,
+          color: color.textTertiary,
           fontSize: 10,
-          letterSpacing: '0.04em',
+          fontFamily: font.sans,
           whiteSpace: 'nowrap',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
@@ -346,9 +357,9 @@ const MacroCardView: React.FC<MacroCardViewProps> = ({ card, onExpand }) => {
             width={120}
             height={28}
             color={
-              card.change !== null && card.change < 0 ? C.red
-              : card.change !== null && card.change > 0 ? C.green
-              : C.amber
+              card.change !== null && card.change < 0 ? color.accentNegative
+              : card.change !== null && card.change > 0 ? color.accentPositive
+              : color.accentInfo
             }
           />
         </div>
@@ -373,11 +384,11 @@ const MacroScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
 
   return (
     <Panel
-      title="MACRO DASHBOARD"
+      title="Macro dashboard"
       actions={
         data?.cached ? (
-          <span style={{ color: C.amberMute, fontSize: 10, letterSpacing: '0.05em' }}>
-            CACHED
+          <span style={{ color: color.textTertiary, fontSize: 10, fontFamily: font.mono }}>
+            cached
           </span>
         ) : undefined
       }
@@ -385,13 +396,13 @@ const MacroScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
       <LoadingBar loading={isLoading} />
 
       {isError && (
-        <div style={{ padding: 16, color: C.red }}>
-          ERROR: Failed to load macro dashboard data.
+        <div style={{ padding: 16, color: color.accentNegative, fontFamily: font.sans, fontSize: 13 }}>
+          Failed to load macro dashboard data.
         </div>
       )}
 
       {!isLoading && !isError && cards.length === 0 && (
-        <div style={{ padding: 16, color: C.amberMute }}>
+        <div style={{ padding: 16, color: color.textTertiary, fontFamily: font.sans, fontSize: 13 }}>
           No macro data available.
         </div>
       )}
@@ -416,7 +427,6 @@ const MacroScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
         </div>
       )}
 
-      {/* Expanded overlay */}
       {expandedCard && (
         <ExpandedCard
           card={expandedCard}

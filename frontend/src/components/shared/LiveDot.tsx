@@ -1,24 +1,18 @@
 import React from 'react'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
+
+const { color: themeColor, font } = theme
 
 interface LiveDotProps {
-  /** Size in pixels (default 6) */
   size?: number
-  /** Color of the dot (default C.green) */
   color?: string
-  /** Whether the pulse animation is active (default true) */
   active?: boolean
-  /** Label shown next to the dot */
   label?: string
 }
 
-/**
- * 6px pulsing green circle for live-updating data.
- * Uses the pulseGlow keyframe from index.html.
- */
 const LiveDot: React.FC<LiveDotProps> = ({
   size = 6,
-  color = C.green,
+  color = themeColor.accentPositive,
   active = true,
   label,
 }) => (
@@ -30,17 +24,15 @@ const LiveDot: React.FC<LiveDotProps> = ({
         borderRadius: '50%',
         background: color,
         display: 'inline-block',
-        animation: active ? 'pulseGlow 2s ease-in-out infinite' : 'none',
-        boxShadow: active ? `0 0 4px ${color}` : 'none',
+        opacity: active ? 1 : 0.4,
       }}
     />
     {label && (
       <span style={{
-        color: C.whiteDim,
+        color: themeColor.textTertiary,
         fontSize: '10px',
-        fontFamily: C.fontMono,
-        letterSpacing: '0.05em',
-        textTransform: 'uppercase' as const,
+        fontFamily: font.sans,
+        fontWeight: 500,
       }}>
         {label}
       </span>

@@ -6,7 +6,8 @@ import {
   CrosshairMode,
   type IChartApi,
 } from 'lightweight-charts'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
+const { color, font } = theme
 import { fetchOptions, fetchOptionsSurface, fetchOptionsTermStructure, fetchOptionsUnusual } from '../../lib/api'
 import type { OptionContract, OptionsExpiry } from '../../types'
 import TabBar from '../shared/TabBar'
@@ -103,23 +104,21 @@ function rgbToHex(r: number, g: number, b: number): string {
 }
 
 function lerpColor(t: number): string {
-  // t: 0..1 where 0=low IV, 1=high IV
-  // Scale: deep cyan (C.cyanDim) -> amber (C.amber) -> red (C.red)
-  const cyanDimRgb = hexToRgb(C.cyanDim)
-  const amberRgb = hexToRgb(C.amber)
-  const redRgb = hexToRgb(C.red)
+  const lowRgb = hexToRgb('#1a2a4a')
+  const midRgb = hexToRgb('#E8EAED')
+  const highRgb = hexToRgb('#FF5252')
 
   let r: number, g: number, b: number
   if (t <= 0.5) {
     const s = t / 0.5
-    r = cyanDimRgb[0] + (amberRgb[0] - cyanDimRgb[0]) * s
-    g = cyanDimRgb[1] + (amberRgb[1] - cyanDimRgb[1]) * s
-    b = cyanDimRgb[2] + (amberRgb[2] - cyanDimRgb[2]) * s
+    r = lowRgb[0] + (midRgb[0] - lowRgb[0]) * s
+    g = lowRgb[1] + (midRgb[1] - lowRgb[1]) * s
+    b = lowRgb[2] + (midRgb[2] - lowRgb[2]) * s
   } else {
     const s = (t - 0.5) / 0.5
-    r = amberRgb[0] + (redRgb[0] - amberRgb[0]) * s
-    g = amberRgb[1] + (redRgb[1] - amberRgb[1]) * s
-    b = amberRgb[2] + (redRgb[2] - amberRgb[2]) * s
+    r = midRgb[0] + (highRgb[0] - midRgb[0]) * s
+    g = midRgb[1] + (highRgb[1] - midRgb[1]) * s
+    b = midRgb[2] + (highRgb[2] - midRgb[2]) * s
   }
   return rgbToHex(r, g, b)
 }
@@ -155,9 +154,9 @@ const unusualColumns: DataGridColumn<UnusualRow>[] = [
   { key: 'type', header: 'TYPE', type: 'text', align: 'center', width: '50px',
     render: (row: UnusualRow) => (
       <span style={{
-        color: row.type === 'C' || row.type === 'call' ? C.green : C.red,
+        color: row.type === 'C' || row.type === 'call' ? color.accentPositive : color.accentNegative,
         fontWeight: 700,
-        fontFamily: C.fontMono,
+        fontFamily: font.mono,
       }}>
         {(row.type === 'call' ? 'C' : row.type === 'put' ? 'P' : row.type).toUpperCase()}
       </span>
@@ -169,7 +168,7 @@ const unusualColumns: DataGridColumn<UnusualRow>[] = [
     render: (row: UnusualRow) => {
       const v = row.vol_oi_ratio
       if (v === null || v === undefined) return '—'
-      return <span style={{ color: v > 5 ? C.amber : C.white, fontWeight: v > 5 ? 700 : 400 }}>{v.toFixed(2)}x</span>
+      return <span style={{ color: v > 5 ? color.textPrimary : color.textPrimary, fontWeight: v > 5 ? 700 : 400 }}>{v.toFixed(2)}x</span>
     },
   },
   { key: 'last_price', header: 'LAST', type: 'currency', width: '70px' },
@@ -177,7 +176,7 @@ const unusualColumns: DataGridColumn<UnusualRow>[] = [
     render: (row: UnusualRow) => {
       const v = row.implied_volatility
       if (v === null || v === undefined) return '—'
-      return <span style={{ color: C.cyan }}>{(v * 100).toFixed(1)}%</span>
+      return <span style={{ color: color.accentInfo }}>{(v * 100).toFixed(1)}%</span>
     },
   },
 ]
@@ -199,14 +198,12 @@ const ChainTab: React.FC<{
   const spot = data?.spot ?? null
   const rows = activeExpiry ? mergeStrikes(activeExpiry) : []
 
-  // Find ATM strike index
   let atmIdx: number | null = null
   if (spot !== null && rows.length > 0) {
     const idx = rows.findIndex(r => r.strike >= spot)
     atmIdx = idx === -1 ? rows.length : idx
   }
 
-  // Expiry tab items
   const expiryTabs = expiries.map(e => ({
     key: e.expiry,
     label: e.expiry,
@@ -216,38 +213,36 @@ const ChainTab: React.FC<{
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <LoadingBar loading={isLoading} />
 
-      {/* Spot price bar */}
       {spot !== null && (
         <div style={{
           padding: '8px 12px',
-          background: C.surface0,
-          borderBottom: `1px solid ${C.border1}`,
+          background: 'transparent',
+          borderBottom: `1px solid ${color.borderSubtle}`,
           display: 'flex',
           alignItems: 'center',
           gap: '12px',
         }}>
           <span style={{
-            color: C.amber,
+            color: color.textPrimary,
             fontSize: '11px',
-            fontFamily: C.fontDisplay,
+            fontFamily: font.sans,
             fontWeight: 700,
-            letterSpacing: '0.08em',
           }}>
             SPOT
           </span>
           <span style={{
-            color: C.white,
+            color: color.textPrimary,
             fontSize: '18px',
-            fontFamily: C.fontMono,
+            fontFamily: font.mono,
             fontVariantNumeric: 'tabular-nums',
             fontWeight: 700,
           }}>
             ${spot.toFixed(2)}
           </span>
           <span style={{
-            color: C.amberMute,
+            color: color.textTertiary,
             fontSize: '11px',
-            fontFamily: C.fontMono,
+            fontFamily: font.mono,
             marginLeft: '8px',
           }}>
             {ticker}
@@ -255,9 +250,8 @@ const ChainTab: React.FC<{
         </div>
       )}
 
-      {/* Expiry selector */}
       {expiryTabs.length > 0 && (
-        <div style={{ padding: '4px 8px', borderBottom: `1px solid ${C.border1}`, background: C.surface0 }}>
+        <div style={{ padding: '4px 8px', borderBottom: `1px solid ${color.borderSubtle}`, background: 'transparent' }}>
           <TabBar
             tabs={expiryTabs}
             activeKey={activeExpiry?.expiry ?? ''}
@@ -267,14 +261,13 @@ const ChainTab: React.FC<{
         </div>
       )}
 
-      {/* Chain table */}
       <div style={{ flex: 1, overflow: 'auto' }}>
         {activeExpiry && rows.length > 0 ? (
           <table style={{
             width: '100%',
             borderCollapse: 'collapse',
             fontSize: '11px',
-            fontFamily: C.fontMono,
+            fontFamily: font.mono,
           }}>
             <colgroup>
               <col style={{ minWidth: '48px' }} />
@@ -300,31 +293,28 @@ const ChainTab: React.FC<{
               <col style={{ minWidth: '48px' }} />
             </colgroup>
             <thead>
-              <tr style={{ borderBottom: `1px solid ${C.border1}` }}>
-                {/* CALLS headers */}
-                <th style={{ ...thStyle, color: C.cyan }}>{'\u0394'}</th>
-                <th style={{ ...thStyle, color: C.cyan }}>{'\u0393'}</th>
-                <th style={{ ...thStyle, color: C.cyan }}>{'\u0398'}</th>
-                <th style={{ ...thStyle, color: C.cyan }}>V</th>
+              <tr style={{ borderBottom: `1px solid ${color.borderSubtle}` }}>
+                <th style={{ ...thStyle, color: color.accentInfo }}>{'\u0394'}</th>
+                <th style={{ ...thStyle, color: color.accentInfo }}>{'\u0393'}</th>
+                <th style={{ ...thStyle, color: color.accentInfo }}>{'\u0398'}</th>
+                <th style={{ ...thStyle, color: color.accentInfo }}>V</th>
                 <th style={thStyle}>IV</th>
                 <th style={thStyle}>OI</th>
                 <th style={thStyle}>VOL</th>
                 <th style={thStyle}>ASK</th>
                 <th style={thStyle}>BID</th>
                 <th style={thStyle}>LAST</th>
-                {/* STRIKE */}
-                <th style={{ ...thStyle, textAlign: 'center' as const, color: C.amber, background: C.surface0 }}>STRIKE</th>
-                {/* PUTS headers */}
+                <th style={{ ...thStyle, textAlign: 'center' as const, color: color.textPrimary, background: 'transparent' }}>STRIKE</th>
                 <th style={thStyle}>LAST</th>
                 <th style={thStyle}>BID</th>
                 <th style={thStyle}>ASK</th>
                 <th style={thStyle}>VOL</th>
                 <th style={thStyle}>OI</th>
                 <th style={thStyle}>IV</th>
-                <th style={{ ...thStyle, color: C.cyan }}>V</th>
-                <th style={{ ...thStyle, color: C.cyan }}>{'\u0398'}</th>
-                <th style={{ ...thStyle, color: C.cyan }}>{'\u0393'}</th>
-                <th style={{ ...thStyle, color: C.cyan }}>{'\u0394'}</th>
+                <th style={{ ...thStyle, color: color.accentInfo }}>V</th>
+                <th style={{ ...thStyle, color: color.accentInfo }}>{'\u0398'}</th>
+                <th style={{ ...thStyle, color: color.accentInfo }}>{'\u0393'}</th>
+                <th style={{ ...thStyle, color: color.accentInfo }}>{'\u0394'}</th>
               </tr>
             </thead>
             <tbody>
@@ -333,68 +323,64 @@ const ChainTab: React.FC<{
                 const callItm = row.call?.in_the_money ?? false
                 const putItm = row.put?.in_the_money ?? false
 
-                // Background: ITM calls = green tint, ITM puts = red tint, ATM = subtle glow
-                let rowBg: string = idx % 2 === 0 ? C.surface1 : C.surface2
-                if (callItm && !putItm) rowBg = C.greenDim
-                else if (putItm && !callItm) rowBg = C.redDim
-                if (isAtm) rowBg = C.amberGlow
+                let rowBg: string = idx % 2 === 0 ? color.bgElevated : color.bgSurface
+                if (callItm && !putItm) rowBg = color.accentPositiveDim
+                else if (putItm && !callItm) rowBg = color.accentNegativeDim
+                if (isAtm) rowBg = color.bgActive
 
                 const atmBorder = isAtm
-                  ? { borderLeft: `3px solid ${C.amber}`, borderRight: `3px solid ${C.amber}`, boxShadow: `-4px 0 12px ${C.amberGlow}` }
+                  ? { borderLeft: `3px solid ${color.textPrimary}`, borderRight: `3px solid ${color.textPrimary}` }
                   : {}
 
                 return (
                   <tr key={row.strike} style={{ background: rowBg, ...atmBorder }}>
-                    {/* CALLS */}
-                    <td style={{ ...tdStyle, color: C.cyan }}>{fmtDelta(row.call?.delta)}</td>
-                    <td style={{ ...tdStyle, color: C.cyan }}>{fmtGamma(row.call?.gamma)}</td>
-                    <td style={{ ...tdStyle, color: C.cyan }}>{fmtTheta(row.call?.theta)}</td>
-                    <td style={{ ...tdStyle, color: C.cyan }}>{fmtVega(row.call?.vega)}</td>
-                    <td style={{ ...tdStyle, color: C.cyan }}>{fmtIV(row.call?.implied_volatility)}</td>
+                    <td style={{ ...tdStyle, color: color.accentInfo }}>{fmtDelta(row.call?.delta)}</td>
+                    <td style={{ ...tdStyle, color: color.accentInfo }}>{fmtGamma(row.call?.gamma)}</td>
+                    <td style={{ ...tdStyle, color: color.accentInfo }}>{fmtTheta(row.call?.theta)}</td>
+                    <td style={{ ...tdStyle, color: color.accentInfo }}>{fmtVega(row.call?.vega)}</td>
+                    <td style={{ ...tdStyle, color: color.accentInfo }}>{fmtIV(row.call?.implied_volatility)}</td>
                     <td style={tdStyle}>{fmtInt(row.call?.open_interest)}</td>
                     <td style={tdStyle}>{fmtInt(row.call?.volume)}</td>
-                    <td style={{ ...tdStyle, color: C.amberDim }}>{fmtPrice(row.call?.ask)}</td>
-                    <td style={{ ...tdStyle, color: C.amberDim }}>{fmtPrice(row.call?.bid)}</td>
+                    <td style={{ ...tdStyle, color: color.textSecondary }}>{fmtPrice(row.call?.ask)}</td>
+                    <td style={{ ...tdStyle, color: color.textSecondary }}>{fmtPrice(row.call?.bid)}</td>
                     <td style={tdStyle}>{fmtPrice(row.call?.last_price)}</td>
 
-                    {/* STRIKE */}
                     <td style={{
                       textAlign: 'center' as const,
-                      color: C.amber,
+                      color: color.textPrimary,
                       fontSize: '12px',
                       fontWeight: 700,
-                      background: C.surface0,
-                      borderLeft: `1px solid ${C.border1}`,
-                      borderRight: `1px solid ${C.border1}`,
+                      background: 'transparent',
+                      borderLeft: `1px solid ${color.borderSubtle}`,
+                      borderRight: `1px solid ${color.borderSubtle}`,
                       padding: '2px 4px',
                       whiteSpace: 'nowrap' as const,
                     }}>
                       {isAtm && (
-                        <span style={{ color: C.amber, fontSize: '8px', marginRight: '3px', verticalAlign: 'super' }}>
+                        <span style={{ color: color.textPrimary, fontSize: '8px', marginRight: '3px', verticalAlign: 'super' }}>
                           {'\u25B6'}
                         </span>
                       )}
                       {row.strike.toFixed(0)}
                     </td>
 
-                    {/* PUTS */}
                     <td style={tdStyle}>{fmtPrice(row.put?.last_price)}</td>
-                    <td style={{ ...tdStyle, color: C.amberDim }}>{fmtPrice(row.put?.bid)}</td>
-                    <td style={{ ...tdStyle, color: C.amberDim }}>{fmtPrice(row.put?.ask)}</td>
+                    <td style={{ ...tdStyle, color: color.textSecondary }}>{fmtPrice(row.put?.bid)}</td>
+                    <td style={{ ...tdStyle, color: color.textSecondary }}>{fmtPrice(row.put?.ask)}</td>
                     <td style={tdStyle}>{fmtInt(row.put?.volume)}</td>
                     <td style={tdStyle}>{fmtInt(row.put?.open_interest)}</td>
-                    <td style={{ ...tdStyle, color: C.cyan }}>{fmtIV(row.put?.implied_volatility)}</td>
-                    <td style={{ ...tdStyle, color: C.cyan }}>{fmtVega(row.put?.vega)}</td>
-                    <td style={{ ...tdStyle, color: C.cyan }}>{fmtTheta(row.put?.theta)}</td>
-                    <td style={{ ...tdStyle, color: C.cyan }}>{fmtGamma(row.put?.gamma)}</td>
-                    <td style={{ ...tdStyle, color: C.cyan }}>{fmtDelta(row.put?.delta)}</td>
+                    <td style={{ ...tdStyle, color: color.accentInfo }}>{fmtIV(row.put?.implied_volatility)}</td>
+                    <td style={{ ...tdStyle, color: color.accentInfo }}>{fmtVega(row.put?.vega)}</td>
+                    <td style={{ ...tdStyle, color: color.accentInfo }}>{fmtTheta(row.put?.theta)}</td>
+                    <td style={{ ...tdStyle, color: color.accentInfo }}>{fmtGamma(row.put?.gamma)}</td>
+                    <td style={{ ...tdStyle, color: color.accentInfo }}>{fmtDelta(row.put?.delta)}</td>
                   </tr>
                 )
               })}
             </tbody>
           </table>
         ) : (
-          <div style={{ padding: '24px', textAlign: 'center', color: C.amberMute, fontSize: '12px', fontFamily: C.fontMono }}>
+          <div style={{ padding: '24px', textAlign: 'center', color: color.textTertiary, fontSize: '12px', fontFamily: font.mono }}>
             {isLoading ? 'Loading chain data...' : `No options data available for ${ticker}`}
           </div>
         )}
@@ -406,30 +392,30 @@ const ChainTab: React.FC<{
 // ─── Shared table cell/header styles ──────────────────────────────────────────
 
 const thStyle: React.CSSProperties = {
-  background: C.surface0,
-  color: C.whiteDim,
+  background: 'transparent',
+  color: color.textSecondary,
   padding: '4px 4px',
   textAlign: 'right',
   fontWeight: 500,
   fontSize: '10px',
-  fontFamily: C.fontMono,
+  fontFamily: font.mono,
   letterSpacing: '0.05em',
   whiteSpace: 'nowrap',
   position: 'sticky',
   top: 0,
   zIndex: 1,
-  borderBottom: `1px solid ${C.border1}`,
+  borderBottom: `1px solid ${color.borderSubtle}`,
 }
 
 const tdStyle: React.CSSProperties = {
   padding: '2px 4px',
   textAlign: 'right',
-  color: C.white,
+  color: color.textPrimary,
   fontSize: '11px',
-  fontFamily: C.fontMono,
+  fontFamily: font.mono,
   fontVariantNumeric: 'tabular-nums',
   whiteSpace: 'nowrap',
-  borderBottom: `1px solid ${C.border0}`,
+  borderBottom: `1px solid ${color.borderSubtle}`,
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -466,7 +452,6 @@ const SurfaceTab: React.FC<{
   const strikes: number[] = surface?.strikes ?? []
   const ivGrid: (number | null)[][] = surface?.iv ?? []
 
-  // Compute IV range for color scale
   const { ivMin, ivMax } = useMemo(() => {
     let min = Infinity, max = -Infinity
     for (const row of ivGrid) {
@@ -489,7 +474,7 @@ const SurfaceTab: React.FC<{
     return (
       <div style={{ padding: '24px', textAlign: 'center' }}>
         <LoadingBar loading />
-        <span style={{ color: C.whiteDim, fontSize: '12px', fontFamily: C.fontMono, marginTop: '12px', display: 'inline-block' }}>
+        <span style={{ color: color.textSecondary, fontSize: '12px', fontFamily: font.mono, marginTop: '12px', display: 'inline-block' }}>
           Loading IV surface...
         </span>
       </div>
@@ -498,7 +483,7 @@ const SurfaceTab: React.FC<{
 
   if (isError || !surface || expiries.length === 0) {
     return (
-      <div style={{ padding: '24px', textAlign: 'center', color: C.amberMute, fontSize: '12px', fontFamily: C.fontMono }}>
+      <div style={{ padding: '24px', textAlign: 'center', color: color.textTertiary, fontSize: '12px', fontFamily: font.mono }}>
         {isError ? 'Error loading IV surface data' : `No IV surface available for ${ticker}`}
       </div>
     )
@@ -509,26 +494,24 @@ const SurfaceTab: React.FC<{
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '8px' }}>
-      {/* Header */}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: '4px 0 8px 0',
-        borderBottom: `1px solid ${C.border1}`,
+        borderBottom: `1px solid ${color.borderSubtle}`,
         marginBottom: '8px',
       }}>
-        <span style={{ color: C.amber, fontSize: '11px', fontFamily: C.fontDisplay, fontWeight: 700, letterSpacing: '0.05em' }}>
+        <span style={{ color: color.textSecondary, fontSize: '11px', fontFamily: font.sans, fontWeight: 600 }}>
           IMPLIED VOLATILITY SURFACE
         </span>
-        <span style={{ color: C.whiteDim, fontSize: '10px', fontFamily: C.fontMono }}>
+        <span style={{ color: color.textSecondary, fontSize: '10px', fontFamily: font.mono }}>
           {ticker} | {expiries.length} expiries x {strikes.length} strikes
         </span>
       </div>
 
-      {/* Color scale legend */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-        <span style={{ color: C.whiteDim, fontSize: '10px', fontFamily: C.fontMono }}>
+        <span style={{ color: color.textSecondary, fontSize: '10px', fontFamily: font.mono }}>
           Low {(ivMin * 100).toFixed(0)}%
         </span>
         <div style={{ display: 'flex', height: '10px', borderRadius: '2px', overflow: 'hidden' }}>
@@ -537,52 +520,47 @@ const SurfaceTab: React.FC<{
             return <div key={i} style={{ width: '12px', height: '10px', background: lerpColor(t) }} />
           })}
         </div>
-        <span style={{ color: C.whiteDim, fontSize: '10px', fontFamily: C.fontMono }}>
+        <span style={{ color: color.textSecondary, fontSize: '10px', fontFamily: font.mono }}>
           High {(ivMax * 100).toFixed(0)}%
         </span>
       </div>
 
-      {/* Heatmap grid with tooltip */}
       <div ref={containerRef} style={{ flex: 1, overflow: 'auto', position: 'relative' }}>
         <svg width={totalWidth} height={totalHeight} style={{ display: 'block' }}>
-          {/* Strike labels row */}
           {strikes.map((strike, i) => (
             <text
               key={`strike-${i}`}
               x={labelWidth + i * cellWidth + cellWidth / 2}
               y={18}
               textAnchor="middle"
-              fill={C.whiteDim}
+              fill={color.textSecondary}
               fontSize="9"
-              fontFamily={C.fontMono}
+              fontFamily={font.mono}
             >
               {strike.toFixed(0)}
             </text>
           ))}
 
-          {/* IV cells */}
           {expiries.map((expiry, rowIdx) => {
             const ivRow = ivGrid[rowIdx] ?? []
             return (
               <g key={expiry}>
-                {/* Expiry label */}
                 <text
                   x={labelWidth - 6}
                   y={30 + rowIdx * cellHeight + cellHeight / 2 + 4}
                   textAnchor="end"
-                  fill={C.amberDim}
+                  fill={color.textSecondary}
                   fontSize="9"
-                  fontFamily={C.fontMono}
+                  fontFamily={font.mono}
                 >
                   {expiry}
                 </text>
-                {/* Cells */}
                 {strikes.map((strike, colIdx) => {
                   const iv = ivRow[colIdx]
                   const t = iv !== null && iv !== undefined && ivMax > ivMin
                     ? (iv - ivMin) / (ivMax - ivMin)
                     : 0
-                  const fill = iv !== null && iv !== undefined ? lerpColor(t) : C.surface2
+                  const fill = iv !== null && iv !== undefined ? lerpColor(t) : color.bgSurface
                   const isHovered = hoveredCell?.expiry === expiry && hoveredCell?.strike === strike
 
                   return (
@@ -593,9 +571,9 @@ const SurfaceTab: React.FC<{
                       width={cellWidth}
                       height={cellHeight}
                       fill={fill}
-                      stroke={isHovered ? C.white : C.surface0}
+                      stroke={isHovered ? color.textPrimary : color.bgBase}
                       strokeWidth={isHovered ? 1.5 : 0.5}
-                      style={{ cursor: 'pointer', filter: isHovered ? `drop-shadow(0 0 2px ${C.amberGlow})` : 'none' }}
+                      style={{ cursor: 'pointer' }}
                       onMouseEnter={() => setHoveredCell({ expiry, strike, iv })}
                       onMouseLeave={() => setHoveredCell(null)}
                     />
@@ -606,26 +584,25 @@ const SurfaceTab: React.FC<{
           })}
         </svg>
 
-        {/* Tooltip */}
         {hoveredCell && hoveredCell.iv !== null && (
           <div style={{
             position: 'absolute',
             left: Math.min(labelWidth + strikes.indexOf(hoveredCell.strike) * cellWidth + cellWidth, totalWidth - 140),
             top: Math.min(30 + expiries.indexOf(hoveredCell.expiry) * cellHeight - 28, totalHeight - 28),
-            background: C.surface0,
-            border: `1px solid ${C.border2}`,
+            background: 'transparent',
+            border: `1px solid ${color.borderMedium}`,
             padding: '4px 8px',
             borderRadius: '2px',
             pointerEvents: 'none',
             zIndex: 10,
             fontSize: '10px',
-            fontFamily: C.fontMono,
+            fontFamily: font.mono,
           }}>
-            <span style={{ color: C.amber }}>K={hoveredCell.strike.toFixed(0)}</span>
-            <span style={{ color: C.whiteDim }}> | </span>
-            <span style={{ color: C.amberDim }}>{hoveredCell.expiry}</span>
-            <span style={{ color: C.whiteDim }}> | </span>
-            <span style={{ color: C.cyan }}>IV={(hoveredCell.iv * 100).toFixed(1)}%</span>
+            <span style={{ color: color.textPrimary }}>K={hoveredCell.strike.toFixed(0)}</span>
+            <span style={{ color: color.textSecondary }}> | </span>
+            <span style={{ color: color.textSecondary }}>{hoveredCell.expiry}</span>
+            <span style={{ color: color.textSecondary }}> | </span>
+            <span style={{ color: color.accentInfo }}>IV={(hoveredCell.iv * 100).toFixed(1)}%</span>
           </div>
         )}
       </div>
@@ -658,26 +635,26 @@ const TermTab: React.FC<{
 
     const chart = createChart(chartContainerRef.current, {
       layout: {
-        background: { color: C.surface0 },
-        textColor: C.whiteDim,
-        fontFamily: C.fontMono,
+        background: { color: color.bgBase },
+        textColor: color.textSecondary,
+        fontFamily: font.mono,
         fontSize: 11,
       },
       grid: {
-        vertLines: { color: C.border0 },
-        horzLines: { color: C.border0 },
+        vertLines: { color: 'rgba(255,255,255,0.04)' },
+        horzLines: { color: 'rgba(255,255,255,0.04)' },
       },
       crosshair: {
         mode: CrosshairMode.Normal,
-        vertLine: { color: C.amber, width: 1, style: 2, labelBackgroundColor: C.surfaceGlow },
-        horzLine: { color: C.amber, width: 1, style: 2, labelBackgroundColor: C.surfaceGlow },
+        vertLine: { color: color.accentInfo, width: 1, style: 2, labelBackgroundColor: color.bgElevated },
+        horzLine: { color: color.accentInfo, width: 1, style: 2, labelBackgroundColor: color.bgElevated },
       },
       rightPriceScale: {
-        borderColor: C.border1,
-        textColor: C.amberDim,
+        borderColor: color.borderSubtle,
+        textColor: color.textSecondary,
       },
       timeScale: {
-        borderColor: C.border1,
+        borderColor: color.borderSubtle,
         timeVisible: false,
         secondsVisible: false,
       },
@@ -688,16 +665,13 @@ const TermTab: React.FC<{
     chartRef.current = chart
 
     const series = chart.addSeries(LineSeries, {
-      color: C.amber,
+      color: color.accentInfo,
       lineWidth: 2,
     })
 
-    // Convert term structure to chart data
-    // Use days-to-expiry as sequential index mapped to dates
     const chartData = termStructure
       .filter(p => p.atm_iv !== null && p.atm_iv !== undefined)
       .map((p) => {
-        // Use expiry string as time (lightweight-charts accepts YYYY-MM-DD)
         return {
           time: p.expiry as unknown as import('lightweight-charts').Time,
           value: (p.atm_iv as number) * 100,
@@ -727,7 +701,7 @@ const TermTab: React.FC<{
     return (
       <div style={{ padding: '24px', textAlign: 'center' }}>
         <LoadingBar loading />
-        <span style={{ color: C.whiteDim, fontSize: '12px', fontFamily: C.fontMono, marginTop: '12px', display: 'inline-block' }}>
+        <span style={{ color: color.textSecondary, fontSize: '12px', fontFamily: font.mono, marginTop: '12px', display: 'inline-block' }}>
           Loading term structure...
         </span>
       </div>
@@ -736,7 +710,7 @@ const TermTab: React.FC<{
 
   if (isError || termStructure.length === 0) {
     return (
-      <div style={{ padding: '24px', textAlign: 'center', color: C.amberMute, fontSize: '12px', fontFamily: C.fontMono }}>
+      <div style={{ padding: '24px', textAlign: 'center', color: color.textTertiary, fontSize: '12px', fontFamily: font.mono }}>
         {isError ? 'Error loading term structure data' : `No term structure available for ${ticker}`}
       </div>
     )
@@ -744,36 +718,34 @@ const TermTab: React.FC<{
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '8px' }}>
-      {/* Header */}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: '4px 0 8px 0',
-        borderBottom: `1px solid ${C.border1}`,
+        borderBottom: `1px solid ${color.borderSubtle}`,
         marginBottom: '4px',
       }}>
-        <span style={{ color: C.amber, fontSize: '11px', fontFamily: C.fontDisplay, fontWeight: 700, letterSpacing: '0.05em' }}>
+        <span style={{ color: color.textSecondary, fontSize: '11px', fontFamily: font.sans, fontWeight: 600 }}>
           ATM IV TERM STRUCTURE
         </span>
-        <span style={{ color: C.whiteDim, fontSize: '10px', fontFamily: C.fontMono }}>
+        <span style={{ color: color.textSecondary, fontSize: '10px', fontFamily: font.mono }}>
           {ticker} | {termStructure.length} expiries
         </span>
       </div>
 
-      {/* Quick stats */}
       <div style={{ display: 'flex', gap: '16px', padding: '6px 0' }}>
         {termStructure.length > 0 && (
           <>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ color: C.whiteDim, fontSize: '9px', fontFamily: C.fontDisplay, letterSpacing: '0.05em' }}>NEAREST</span>
-              <span style={{ color: C.cyan, fontSize: '13px', fontFamily: C.fontMono, fontVariantNumeric: 'tabular-nums' }}>
+              <span style={{ color: color.textSecondary, fontSize: '9px', fontFamily: font.sans, letterSpacing: '0.05em' }}>NEAREST</span>
+              <span style={{ color: color.accentInfo, fontSize: '13px', fontFamily: font.mono, fontVariantNumeric: 'tabular-nums' }}>
                 {termStructure[0].atm_iv !== null ? `${(termStructure[0].atm_iv * 100).toFixed(1)}%` : '—'}
               </span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ color: C.whiteDim, fontSize: '9px', fontFamily: C.fontDisplay, letterSpacing: '0.05em' }}>FURTHEST</span>
-              <span style={{ color: C.cyan, fontSize: '13px', fontFamily: C.fontMono, fontVariantNumeric: 'tabular-nums' }}>
+              <span style={{ color: color.textSecondary, fontSize: '9px', fontFamily: font.sans, letterSpacing: '0.05em' }}>FURTHEST</span>
+              <span style={{ color: color.accentInfo, fontSize: '13px', fontFamily: font.mono, fontVariantNumeric: 'tabular-nums' }}>
                 {termStructure[termStructure.length - 1]!.atm_iv !== null ? `${(termStructure[termStructure.length - 1]!.atm_iv! * 100).toFixed(1)}%` : '—'}
               </span>
             </div>
@@ -784,14 +756,14 @@ const TermTab: React.FC<{
               return (
                 <>
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ color: C.whiteDim, fontSize: '9px', fontFamily: C.fontDisplay, letterSpacing: '0.05em' }}>HIGH</span>
-                    <span style={{ color: C.amber, fontSize: '13px', fontFamily: C.fontMono, fontVariantNumeric: 'tabular-nums' }}>
+                    <span style={{ color: color.textSecondary, fontSize: '9px', fontFamily: font.sans, letterSpacing: '0.05em' }}>HIGH</span>
+                    <span style={{ color: color.textPrimary, fontSize: '13px', fontFamily: font.mono, fontVariantNumeric: 'tabular-nums' }}>
                       {maxIV !== null ? `${(maxIV * 100).toFixed(1)}%` : '—'}
                     </span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ color: C.whiteDim, fontSize: '9px', fontFamily: C.fontDisplay, letterSpacing: '0.05em' }}>LOW</span>
-                    <span style={{ color: C.cyan, fontSize: '13px', fontFamily: C.fontMono, fontVariantNumeric: 'tabular-nums' }}>
+                    <span style={{ color: color.textSecondary, fontSize: '9px', fontFamily: font.sans, letterSpacing: '0.05em' }}>LOW</span>
+                    <span style={{ color: color.accentInfo, fontSize: '13px', fontFamily: font.mono, fontVariantNumeric: 'tabular-nums' }}>
                       {minIV !== null ? `${(minIV * 100).toFixed(1)}%` : '—'}
                     </span>
                   </div>
@@ -802,7 +774,6 @@ const TermTab: React.FC<{
         )}
       </div>
 
-      {/* Chart container */}
       <div ref={chartContainerRef} style={{ flex: 1, minHeight: '200px' }} />
     </div>
   )
@@ -824,7 +795,6 @@ const UnusualTab: React.FC<{
 
   const unusual: Array<Record<string, unknown>> = data?.unusual ?? []
 
-  // Map to UnusualRow with id
   const rows: UnusualRow[] = unusual.map((item: Record<string, unknown>, idx: number) => ({
     id: `${(item.strike as number) ?? 'x'}-${item.expiration as string}-${item.type as string}-${idx}`,
     strike: (item.strike as number) ?? null,
@@ -841,7 +811,7 @@ const UnusualTab: React.FC<{
     return (
       <div style={{ padding: '24px', textAlign: 'center' }}>
         <LoadingBar loading />
-        <span style={{ color: C.whiteDim, fontSize: '12px', fontFamily: C.fontMono, marginTop: '12px', display: 'inline-block' }}>
+        <span style={{ color: color.textSecondary, fontSize: '12px', fontFamily: font.mono, marginTop: '12px', display: 'inline-block' }}>
           Loading unusual activity...
         </span>
       </div>
@@ -850,31 +820,29 @@ const UnusualTab: React.FC<{
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '8px' }}>
-      {/* Header */}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: '4px 0 8px 0',
-        borderBottom: `1px solid ${C.border1}`,
+        borderBottom: `1px solid ${color.borderSubtle}`,
         marginBottom: '8px',
       }}>
-        <span style={{ color: C.amber, fontSize: '11px', fontFamily: C.fontDisplay, fontWeight: 700, letterSpacing: '0.05em' }}>
+        <span style={{ color: color.textSecondary, fontSize: '11px', fontFamily: font.sans, fontWeight: 600 }}>
           UNUSUAL OPTIONS ACTIVITY
         </span>
-        <span style={{ color: C.whiteDim, fontSize: '10px', fontFamily: C.fontMono }}>
+        <span style={{ color: color.textSecondary, fontSize: '10px', fontFamily: font.mono }}>
           {ticker} | {rows.length} alerts | VOL/OI {'>'} 3x
         </span>
       </div>
 
-      {/* DataGrid */}
       <div style={{ flex: 1, overflow: 'auto' }}>
         {isError ? (
-          <div style={{ padding: '24px', textAlign: 'center', color: C.amberMute, fontSize: '12px', fontFamily: C.fontMono }}>
+          <div style={{ padding: '24px', textAlign: 'center', color: color.textTertiary, fontSize: '12px', fontFamily: font.mono }}>
             Error loading unusual activity data
           </div>
         ) : rows.length === 0 ? (
-          <div style={{ padding: '24px', textAlign: 'center', color: C.amberMute, fontSize: '12px', fontFamily: C.fontMono }}>
+          <div style={{ padding: '24px', textAlign: 'center', color: color.textTertiary, fontSize: '12px', fontFamily: font.mono }}>
             No unusual activity detected for {ticker}
           </div>
         ) : (
@@ -886,7 +854,7 @@ const UnusualTab: React.FC<{
             stickyHeader
             rowAccent={(row: UnusualRow) => {
               const ratio = row.vol_oi_ratio
-              if (ratio !== null && ratio > 5) return 'highlight' // handled by DataGrid accent
+              if (ratio !== null && ratio > 5) return 'highlight'
               if (row.type === 'C' || row.type === 'call') return 'success'
               return 'danger'
             }}
@@ -913,18 +881,17 @@ const FlowTab: React.FC = () => (
     padding: '48px',
   }}>
     <span style={{
-      color: C.amberMute,
+      color: color.textTertiary,
       fontSize: '20px',
-      fontFamily: C.fontDisplay,
+      fontFamily: font.sans,
       fontWeight: 700,
-      letterSpacing: '0.1em',
     }}>
       COMING SOON
     </span>
     <span style={{
-      color: C.whiteGhost,
+      color: color.textTertiary,
       fontSize: '12px',
-      fontFamily: C.fontMono,
+      fontFamily: font.mono,
       textAlign: 'center',
       maxWidth: '360px',
       lineHeight: '1.6',
@@ -941,7 +908,6 @@ const FlowTab: React.FC = () => (
 const OptionsScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
   const [activeTab, setActiveTab] = useState('CHAIN')
 
-  // Chain data (always loaded — primary view)
   const { data: chainData, isLoading: chainLoading } = useQuery({
     queryKey: ['options', ticker],
     queryFn: () => fetchOptions(ticker),
@@ -951,40 +917,36 @@ const OptionsScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => 
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* Title bar */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '6px 12px',
-        background: C.surface0,
-        borderBottom: `1px solid ${C.border1}`,
+        background: 'transparent',
+        borderBottom: `1px solid ${color.borderSubtle}`,
         flexShrink: 0,
       }}>
         <span style={{
-          color: C.amber,
+          color: color.textPrimary,
           fontSize: '13px',
-          fontFamily: C.fontDisplay,
+          fontFamily: font.sans,
           fontWeight: 700,
-          letterSpacing: '0.08em',
         }}>
           OPTIONS — {ticker}
         </span>
         {chainData?.spot !== null && chainData?.spot !== undefined && (
           <span style={{
-            color: C.amber,
+            color: color.textPrimary,
             fontSize: '12px',
-            fontFamily: C.fontMono,
+            fontFamily: font.mono,
             fontVariantNumeric: 'tabular-nums',
-            letterSpacing: '0.05em',
           }}>
-            SPOT: <span style={{ color: C.white, fontWeight: 700 }}>${chainData!.spot!.toFixed(2)}</span>
+            SPOT: <span style={{ color: color.textPrimary, fontWeight: 700 }}>${chainData!.spot!.toFixed(2)}</span>
           </span>
         )}
       </div>
 
-      {/* Tab bar */}
-      <div style={{ flexShrink: 0, background: C.surface0 }}>
+      <div style={{ flexShrink: 0, background: 'transparent' }}>
         <TabBar
           tabs={TABS}
           activeKey={activeTab}
@@ -993,7 +955,6 @@ const OptionsScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => 
         />
       </div>
 
-      {/* Tab content */}
       <div style={{ flex: 1, overflow: 'hidden' }}>
         {activeTab === 'CHAIN' && (
           <ChainTab

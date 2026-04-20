@@ -1,7 +1,9 @@
 import React from 'react'
 import type { FAResponse, FAValuation, FAGrowth } from '../../types'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
 import { fmtCurrency, fmtPct, fmtMultiple } from './_format'
+
+const { color, font } = theme
 
 interface Props {
   data: FAResponse
@@ -15,36 +17,36 @@ interface ValuationMetric {
 }
 
 function interpretPE(n: number | null): { text: string; color: string } {
-  if (n === null) return { text: '\u2014', color: C.whiteDim }
-  if (n < 15) return { text: 'attractive', color: C.green }
-  if (n <= 25) return { text: 'fair', color: C.amber }
-  return { text: 'premium', color: C.red }
+  if (n === null) return { text: '\u2014', color: color.textTertiary }
+  if (n < 15) return { text: 'attractive', color: color.accentPositive }
+  if (n <= 25) return { text: 'fair', color: color.accentWarning }
+  return { text: 'premium', color: color.accentNegative }
 }
 
 function interpretEVEBITDA(n: number | null): { text: string; color: string } {
-  if (n === null) return { text: '\u2014', color: C.whiteDim }
-  if (n < 10) return { text: 'cheap', color: C.green }
-  if (n <= 18) return { text: 'fair', color: C.amber }
-  return { text: 'rich', color: C.red }
+  if (n === null) return { text: '\u2014', color: color.textTertiary }
+  if (n < 10) return { text: 'cheap', color: color.accentPositive }
+  if (n <= 18) return { text: 'fair', color: color.accentWarning }
+  return { text: 'rich', color: color.accentNegative }
 }
 
 function interpretFCFYield(n: number | null): { text: string; color: string } {
-  if (n === null) return { text: '\u2014', color: C.whiteDim }
-  if (n > 5) return { text: 'strong', color: C.green }
-  if (n >= 2) return { text: 'moderate', color: C.amber }
-  return { text: 'weak', color: C.red }
+  if (n === null) return { text: '\u2014', color: color.textTertiary }
+  if (n > 5) return { text: 'strong', color: color.accentPositive }
+  if (n >= 2) return { text: 'moderate', color: color.accentWarning }
+  return { text: 'weak', color: color.accentNegative }
 }
 
 function interpretDivYield(n: number | null): { text: string; color: string } {
-  if (n === null) return { text: 'minimal', color: C.whiteDim }
-  if (n > 3) return { text: 'income', color: C.green }
-  if (n >= 1) return { text: 'modest', color: C.amber }
-  return { text: 'minimal', color: C.whiteDim }
+  if (n === null) return { text: 'minimal', color: color.textTertiary }
+  if (n > 3) return { text: 'income', color: color.accentPositive }
+  if (n >= 1) return { text: 'modest', color: color.accentWarning }
+  return { text: 'minimal', color: color.textTertiary }
 }
 
 function genericInterpret(_label: string, n: number | null): { text: string; color: string } {
-  if (n === null) return { text: '\u2014', color: C.whiteDim }
-  return { text: `${n.toFixed(2)}`, color: C.white }
+  if (n === null) return { text: '\u2014', color: color.textTertiary }
+  return { text: `${n.toFixed(2)}`, color: color.textPrimary }
 }
 
 const metrics: ValuationMetric[] = [
@@ -91,33 +93,33 @@ export default function ValuationPanel({ data }: Props) {
   const cellBase: React.CSSProperties = {
     padding: '5px 8px',
     fontSize: '12px',
-    fontFamily: C.fontMono,
+    fontFamily: font.mono,
     whiteSpace: 'nowrap' as const,
-    borderRight: `1px solid ${C.border0}`,
+    borderRight: `1px solid ${color.borderSubtle}`,
   }
 
   return (
     <div style={{ display: 'flex', gap: 16, padding: 8, flexWrap: 'wrap' }}>
-      <div style={{ flex: '1 1 400px', background: C.surface1, border: `1px solid ${C.border0}`, borderRadius: 4, padding: 12 }}>
-        <div style={{ fontSize: '10px', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: C.amberMute, fontWeight: 700, paddingBottom: 4, borderBottom: `1px solid ${C.amber}30`, marginBottom: 8 }}>Valuation Metrics</div>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: C.fontMono, fontSize: '12px' }}>
+      <div style={{ flex: '1 1 400px', background: 'rgba(19, 22, 25, 0.8)', border: `1px solid ${color.borderSubtle}`, borderRadius: 4, padding: 12 }}>
+        <div style={{ fontSize: '11px', fontWeight: 600, color: color.textSecondary, fontFamily: font.sans, paddingBottom: 4, borderBottom: `1px solid ${color.borderSubtle}`, marginBottom: 8 }}>Valuation Metrics</div>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: font.mono, fontSize: '12px' }}>
           <thead>
-            <tr style={{ borderBottom: `1px solid ${C.border1}` }}>
-              <th style={{ ...cellBase, textAlign: 'left', fontSize: '9px', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: C.amberMute, fontWeight: 600 }}>Metric</th>
-              <th style={{ ...cellBase, textAlign: 'right', fontSize: '9px', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: C.amberMute, fontWeight: 600 }}>Value</th>
-              <th style={{ ...cellBase, textAlign: 'left', fontSize: '9px', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: C.amberMute, fontWeight: 600 }}>Signal</th>
+            <tr style={{ borderBottom: `1px solid ${color.borderSubtle}` }}>
+              <th style={{ ...cellBase, textAlign: 'left', fontSize: '11px', fontWeight: 600, color: color.textSecondary, fontFamily: font.sans }}>Metric</th>
+              <th style={{ ...cellBase, textAlign: 'right', fontSize: '11px', fontWeight: 600, color: color.textSecondary, fontFamily: font.sans }}>Value</th>
+              <th style={{ ...cellBase, textAlign: 'left', fontSize: '11px', fontWeight: 600, color: color.textSecondary, fontFamily: font.sans }}>Signal</th>
             </tr>
           </thead>
           <tbody>
             {metrics.map((m, mi) => {
               const raw = v[m.key] as number | null
               const interp = m.interpret(raw)
-              const rowBg = mi % 2 === 0 ? C.surface0 : 'transparent'
+              const rowBg = mi % 2 === 0 ? color.bgBase : 'transparent'
               return (
                 <tr key={m.key} style={{ background: rowBg }}>
-                  <td style={{ ...cellBase, textAlign: 'left', fontSize: '11px', color: C.whiteDim }}>{m.label}</td>
-                  <td style={{ ...cellBase, textAlign: 'right', color: C.white, fontWeight: 600 }}>{m.fmt(raw)}</td>
-                  <td style={{ ...cellBase, textAlign: 'left', fontSize: '10px', color: interp.color, fontWeight: 600, letterSpacing: '0.02em' }}>
+                  <td style={{ ...cellBase, textAlign: 'left', fontSize: '11px', color: color.textSecondary }}>{m.label}</td>
+                  <td style={{ ...cellBase, textAlign: 'right', color: color.textPrimary, fontWeight: 600 }}>{m.fmt(raw)}</td>
+                  <td style={{ ...cellBase, textAlign: 'left', fontSize: '10px', color: interp.color, fontWeight: 600 }}>
                     {m.key === 'pe_ratio' || m.key === 'ev_ebitda' || m.key === 'fcf_yield' || m.key === 'dividend_yield'
                       ? `${m.label} ${raw === null ? '' : raw.toFixed(1)} \u2014 ${interp.text}`
                       : interp.text}
@@ -129,13 +131,13 @@ export default function ValuationPanel({ data }: Props) {
         </table>
       </div>
 
-      <div style={{ flex: '0 0 280px', background: C.surface1, border: `1px solid ${C.border0}`, borderRadius: 4, padding: 12 }}>
-        <div style={{ fontSize: '10px', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: C.amberMute, fontWeight: 700, paddingBottom: 4, borderBottom: `1px solid ${C.amber}30`, marginBottom: 8 }}>Quick Take</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontFamily: C.fontMono, fontSize: '11px' }}>
+      <div style={{ flex: '0 0 280px', background: 'rgba(19, 22, 25, 0.8)', border: `1px solid ${color.borderSubtle}`, borderRadius: 4, padding: 12 }}>
+        <div style={{ fontSize: '11px', fontWeight: 600, color: color.textSecondary, fontFamily: font.sans, paddingBottom: 4, borderBottom: `1px solid ${color.borderSubtle}`, marginBottom: 8 }}>Quick Take</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontFamily: font.mono, fontSize: '11px' }}>
           {quickTake.map((bullet, i) => (
             <div key={i} style={{ display: 'flex', gap: 6, lineHeight: 1.5 }}>
-              <span style={{ color: C.amber, flexShrink: 0 }}>{'\u2022'}</span>
-              <span style={{ color: C.white }}>{bullet}</span>
+              <span style={{ color: color.accentPositive, flexShrink: 0 }}>{'\u2022'}</span>
+              <span style={{ color: color.textPrimary }}>{bullet}</span>
             </div>
           ))}
         </div>

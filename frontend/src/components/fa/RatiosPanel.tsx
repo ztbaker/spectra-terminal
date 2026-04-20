@@ -1,8 +1,10 @@
 import React from 'react'
 import type { FAResponse, FARatios } from '../../types'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
 import Sparkline from '../shared/Sparkline'
 import { fmtPct, fmtMultiple } from './_format'
+
+const { color, font } = theme
 
 interface Props {
   data: FAResponse
@@ -55,18 +57,18 @@ const sections: { title: string; metrics: MetricDef[] }[] = [
 
 function DeltaChip({ cur, prev, isPct }: { cur: number | null; prev: number | null; isPct?: boolean }) {
   if (cur === null || prev === null) {
-    return <span style={{ fontSize: '10px', color: C.whiteDim }}>{'\u2014'} flat</span>
+    return <span style={{ fontSize: '10px', color: color.textTertiary }}>{'\u2014'} flat</span>
   }
   const delta = cur - prev
   if (Math.abs(delta) < 0.005) {
-    return <span style={{ fontSize: '10px', color: C.whiteDim }}>{'\u2014'} flat</span>
+    return <span style={{ fontSize: '10px', color: color.textTertiary }}>{'\u2014'} flat</span>
   }
   const sign = delta > 0 ? '+' : ''
   const unit = isPct ? 'pp' : 'x'
-  const color = delta > 0 ? C.green : C.red
+  const clr = delta > 0 ? color.accentPositive : color.accentNegative
   const arrow = delta > 0 ? '\u25B2' : '\u25BC'
   return (
-    <span style={{ fontSize: '10px', color, fontWeight: 600 }}>
+    <span style={{ fontSize: '10px', color: clr, fontWeight: 600 }}>
       {arrow} {sign}{isPct ? delta.toFixed(1) : delta.toFixed(2)}{unit}
     </span>
   )
@@ -75,20 +77,19 @@ function DeltaChip({ cur, prev, isPct }: { cur: number | null; prev: number | nu
 export default function RatiosPanel({ data }: Props) {
   const ratios = data.ratios
   if (ratios.length === 0) {
-    return <div style={{ padding: 24, color: C.whiteGhost, textAlign: 'center' }}>No data</div>
+    return <div style={{ padding: 24, color: color.textTertiary, textAlign: 'center' }}>No data</div>
   }
 
   const latest = ratios[0]
   const prev = ratios.length > 1 ? ratios[1] : null
 
   const headerStyle: React.CSSProperties = {
-    fontSize: '10px',
-    letterSpacing: '0.08em',
-    textTransform: 'uppercase' as const,
-    color: C.amberMute,
-    fontWeight: 700,
+    fontSize: '11px',
+    fontWeight: 600,
+    color: color.textSecondary,
+    fontFamily: font.sans,
     paddingBottom: 4,
-    borderBottom: `1px solid ${C.amber}30`,
+    borderBottom: `1px solid ${color.borderSubtle}`,
     marginBottom: 8,
   }
 
@@ -100,24 +101,24 @@ export default function RatiosPanel({ data }: Props) {
       padding: 8,
     }}>
       {sections.map((sec) => (
-        <div key={sec.title} style={{ background: C.surface1, border: `1px solid ${C.border0}`, borderRadius: 4, padding: 12 }}>
+        <div key={sec.title} style={{ background: 'rgba(19, 22, 25, 0.8)', border: `1px solid ${color.borderSubtle}`, borderRadius: 4, padding: 12 }}>
           <div style={headerStyle}>{sec.title}</div>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: C.fontMono, fontSize: '12px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: font.mono, fontSize: '12px' }}>
             <tbody>
               {sec.metrics.map((m, mi) => {
                 const val = latest[m.key] as number | null
                 const histValues: (number | null)[] = [...ratios].reverse().map((r) => r[m.key] as number | null)
                 const prevVal = prev ? (prev[m.key] as number | null) : null
                 const isImproving = val !== null && prevVal !== null && val > prevVal
-                const rowBg = mi % 2 === 0 ? C.surface0 : 'transparent'
+                const rowBg = mi % 2 === 0 ? color.bgBase : 'transparent'
                 return (
                   <tr key={m.key} style={{ background: rowBg }}>
-                    <td style={{ padding: '4px 6px', fontSize: '11px', color: C.whiteDim, whiteSpace: 'nowrap' as const, width: 140 }}>{m.label}</td>
-                    <td style={{ padding: '4px 6px', textAlign: 'right', color: isImproving ? C.green : (val !== null && prevVal !== null && val < prevVal) ? C.red : C.white, fontWeight: 600, minWidth: 60 }}>
+                    <td style={{ padding: '4px 6px', fontSize: '11px', color: color.textSecondary, whiteSpace: 'nowrap' as const, width: 140 }}>{m.label}</td>
+                    <td style={{ padding: '4px 6px', textAlign: 'right', color: isImproving ? color.accentPositive : (val !== null && prevVal !== null && val < prevVal) ? color.accentNegative : color.textPrimary, fontWeight: 600, minWidth: 60 }}>
                       {m.isPct ? fmtPct(val) : fmtMultiple(val)}
                     </td>
                     <td style={{ padding: '4px 6px', textAlign: 'center', width: 80 }}>
-                      <Sparkline data={histValues} width={70} height={20} color={C.amber} />
+                      <Sparkline data={histValues} width={70} height={20} color={color.accentPositive} />
                     </td>
                     <td style={{ padding: '4px 6px', textAlign: 'right', width: 90 }}>
                       <DeltaChip cur={val} prev={prevVal} isPct={m.isPct} />

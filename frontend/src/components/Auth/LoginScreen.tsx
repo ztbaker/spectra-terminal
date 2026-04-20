@@ -1,7 +1,10 @@
 import { useState, type FormEvent } from 'react'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
 import { useAuth, errorMessage } from '../../lib/auth'
 import { authForgotPassword } from '../../lib/api'
+import SpectraLogo from '../shared/SpectraLogo'
+
+const { color, font, radius } = theme
 
 type Mode = 'login' | 'signup'
 
@@ -57,7 +60,7 @@ export default function LoginScreen() {
   }
 
   const submitLabel = submitting
-    ? mode === 'login' ? 'SIGNING IN…' : 'CREATING…'
+    ? mode === 'login' ? 'SIGNING IN\u2026' : 'CREATING\u2026'
     : mode === 'login' ? '[ SIGN IN ]' : '[ CREATE ACCOUNT ]'
 
   return (
@@ -68,44 +71,71 @@ export default function LoginScreen() {
         alignItems: 'center',
         justifyContent: 'center',
         height: '100vh',
-        background: C.surface0,
-        fontFamily: C.fontBody,
+        background: color.bgBase,
+        fontFamily: font.sans,
         position: 'relative',
         overflow: 'hidden',
       }}
     >
+      {/* Ambient glows */}
+      <div style={{
+        position: 'absolute',
+        top: '-100px',
+        left: '20%',
+        width: '500px',
+        height: '400px',
+        background: 'radial-gradient(ellipse at center, rgba(30, 79, 255, 0.10) 0%, transparent 60%)',
+        pointerEvents: 'none',
+      }} />
+      <div style={{
+        position: 'absolute',
+        bottom: '-80px',
+        right: '15%',
+        width: '500px',
+        height: '400px',
+        background: 'radial-gradient(ellipse at center, rgba(0, 217, 224, 0.08) 0%, transparent 60%)',
+        pointerEvents: 'none',
+      }} />
+      <div style={{ marginBottom: '16px' }}>
+        <SpectraLogo size={72} />
+      </div>
       <div
         style={{
-          color: C.amber,
-          fontFamily: C.fontDisplay,
+          fontFamily: font.sans,
           fontSize: '28px',
           fontWeight: 700,
-          letterSpacing: '0.25em',
-          textShadow: `0 0 12px ${C.amberGlow}`,
+          letterSpacing: '0.12em',
           marginBottom: '6px',
+          background: 'linear-gradient(135deg, #1E4FFF 0%, #22B7FF 40%, #6AF1B4 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
         }}
       >
         SPECTRA TERMINAL
       </div>
       <div
         style={{
-          color: C.amberDim,
+          color: color.textSecondary,
           fontSize: '11px',
           letterSpacing: '0.3em',
           marginBottom: '36px',
         }}
       >
-        MARKET DATA · ALL SOURCES · FREE TIER
+        MARKET DATA &middot; ALL SOURCES &middot; FREE TIER
       </div>
 
       <form
         onSubmit={onSubmit}
         style={{
-          background: C.surface1,
-          border: `1px solid ${C.amberMute}`,
+          background: 'rgba(19, 22, 25, 0.85)',
+          backdropFilter: 'blur(40px) saturate(1.3)',
+          WebkitBackdropFilter: 'blur(40px) saturate(1.3)',
+          border: '1px solid rgba(255, 255, 255, 0.10)',
+          borderRadius: radius.md,
           padding: '24px 28px',
           width: '360px',
-          boxShadow: `0 0 28px ${C.amberGlow}`,
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 40px rgba(0, 217, 100, 0.03)',
         }}
       >
         {/* Tab row */}
@@ -113,7 +143,7 @@ export default function LoginScreen() {
           style={{
             display: 'flex',
             marginBottom: '22px',
-            borderBottom: `1px solid ${C.amberMute}`,
+            borderBottom: `1px solid ${color.borderSubtle}`,
           }}
         >
           {(['login', 'signup'] as const).map(m => {
@@ -128,9 +158,9 @@ export default function LoginScreen() {
                   padding: '8px 0',
                   background: 'transparent',
                   border: 'none',
-                  borderBottom: active ? `2px solid ${C.amber}` : '2px solid transparent',
-                  color: active ? C.amber : C.amberMute,
-                  fontFamily: C.fontDisplay,
+                  borderBottom: active ? `2px solid ${color.accentPositive}` : '2px solid transparent',
+                  color: active ? color.textPrimary : color.textTertiary,
+                  fontFamily: font.sans,
                   fontSize: '11px',
                   letterSpacing: '0.2em',
                   fontWeight: 700,
@@ -203,7 +233,7 @@ export default function LoginScreen() {
           <span
             style={{
               fontSize: '10px',
-              color: C.amberMute,
+              color: color.textTertiary,
               letterSpacing: '0.05em',
             }}
           >
@@ -216,8 +246,8 @@ export default function LoginScreen() {
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: C.amberDim,
-                fontFamily: C.fontBody,
+                color: color.textSecondary,
+                fontFamily: font.sans,
                 fontSize: '10px',
                 letterSpacing: '0.05em',
                 cursor: 'pointer',
@@ -233,13 +263,14 @@ export default function LoginScreen() {
         {error && (
           <div
             style={{
-              color: C.red,
+              color: color.accentNegative,
               fontSize: '11px',
               marginBottom: '14px',
               letterSpacing: '0.05em',
-              border: `1px solid ${C.redDim}`,
+              border: `1px solid ${color.accentNegativeDim}`,
               padding: '6px 8px',
-              background: '#1a0000',
+              borderRadius: radius.sm,
+              background: color.accentNegativeDim,
             }}
           >
             ERROR: {error.toUpperCase()}
@@ -249,13 +280,14 @@ export default function LoginScreen() {
         {info && (
           <div
             style={{
-              color: C.amber,
+              color: color.textPrimary,
               fontSize: '11px',
               marginBottom: '14px',
               letterSpacing: '0.05em',
-              border: `1px solid ${C.amberMute}`,
+              border: `1px solid ${color.borderSubtle}`,
               padding: '6px 8px',
-              background: C.surface0,
+              borderRadius: radius.sm,
+              background: color.bgSurface,
             }}
           >
             {info}
@@ -264,13 +296,20 @@ export default function LoginScreen() {
 
         <button
           type="submit"
-          className="bb-btn bb-btn-active"
           style={{
             width: '100%',
             padding: '9px 0',
             fontSize: '12px',
             letterSpacing: '0.2em',
+            fontWeight: 700,
+            fontFamily: font.sans,
+            background: color.accentPositive,
+            color: color.textInverse,
+            border: 'none',
+            borderRadius: radius.sm,
+            cursor: 'pointer',
             opacity: submitting ? 0.7 : 1,
+            transition: 'opacity 0.15s ease',
           }}
         >
           {submitLabel}
@@ -280,16 +319,13 @@ export default function LoginScreen() {
       <div
         style={{
           marginTop: '24px',
-          color: C.amberMute,
+          color: color.textTertiary,
           fontSize: '10px',
           letterSpacing: '0.2em',
         }}
       >
         YOUR WATCHLIST &middot; YOUR PORTFOLIO &middot; PRIVATE
       </div>
-
-      <div className="bb-scanlines" />
-      <div className="bb-vignette" />
 
       {forgotOpen && (
         <ForgotPasswordDialog
@@ -336,7 +372,7 @@ function ForgotPasswordDialog({
       style={{
         position: 'fixed',
         inset: 0,
-        background: `${C.surface0}E6`,
+        background: `${color.bgBase}E6`,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -346,19 +382,22 @@ function ForgotPasswordDialog({
       <form
         onSubmit={onSubmit}
         style={{
-          background: C.surface1,
-          border: `1px solid ${C.amber}`,
+          background: 'rgba(19, 22, 25, 0.85)',
+          backdropFilter: 'blur(40px) saturate(1.3)',
+          WebkitBackdropFilter: 'blur(40px) saturate(1.3)',
+          border: '1px solid rgba(255, 255, 255, 0.10)',
+          borderRadius: radius.md,
           padding: '26px 32px',
           width: '360px',
-          boxShadow: `0 0 28px ${C.amberGlow}`,
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
         }}
       >
         <div
           style={{
-            color: C.amber,
+            color: color.textPrimary,
             fontSize: '13px',
             fontWeight: 700,
-            fontFamily: C.fontDisplay,
+            fontFamily: font.sans,
             letterSpacing: '0.2em',
             marginBottom: '4px',
           }}
@@ -367,7 +406,7 @@ function ForgotPasswordDialog({
         </div>
         <div
           style={{
-            color: C.amberDim,
+            color: color.textSecondary,
             fontSize: '11px',
             marginBottom: '20px',
           }}
@@ -393,12 +432,13 @@ function ForgotPasswordDialog({
         {err && (
           <div
             style={{
-              color: C.red,
+              color: color.accentNegative,
               fontSize: '11px',
               marginBottom: '14px',
-              border: `1px solid ${C.redDim}`,
+              border: `1px solid ${color.accentNegativeDim}`,
               padding: '6px 8px',
-              background: '#1a0000',
+              borderRadius: radius.sm,
+              background: color.accentNegativeDim,
               letterSpacing: '0.05em',
             }}
           >
@@ -413,11 +453,12 @@ function ForgotPasswordDialog({
             disabled={busy}
             style={{
               background: 'transparent',
-              color: C.amberDim,
-              border: `1px solid ${C.amberMute}`,
+              color: color.textSecondary,
+              border: `1px solid ${color.borderMedium}`,
+              borderRadius: radius.sm,
               padding: '7px 16px',
               fontSize: '11px',
-              fontFamily: C.fontDisplay,
+              fontFamily: font.sans,
               letterSpacing: '0.15em',
               cursor: 'pointer',
             }}
@@ -427,19 +468,21 @@ function ForgotPasswordDialog({
           <button
             type="submit"
             style={{
-              background: C.amber,
-              color: C.surface0,
+              background: color.accentPositive,
+              color: color.textInverse,
               border: 'none',
+              borderRadius: radius.sm,
               padding: '7px 18px',
               fontSize: '11px',
               fontWeight: 700,
-              fontFamily: C.fontDisplay,
+              fontFamily: font.sans,
               letterSpacing: '0.15em',
               cursor: 'pointer',
               opacity: busy ? 0.7 : 1,
+              transition: 'opacity 0.15s ease',
             }}
           >
-            {busy ? 'SENDING…' : 'SEND LINK'}
+            {busy ? 'SENDING\u2026' : 'SEND LINK'}
           </button>
         </div>
       </form>

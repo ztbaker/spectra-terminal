@@ -102,6 +102,8 @@ const STANDALONE_COMMANDS: Record<string, ScreenType> = {
   BACK:      'back',
   QUIT:      'quit',
   EXIT:      'quit',
+  LOGOUT:    'logout',
+  SIGNOUT:   'logout',
   BUG:       'bugreport',
 }
 

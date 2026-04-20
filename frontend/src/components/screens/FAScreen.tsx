@@ -1,12 +1,8 @@
-// FAScreen — Fundamental Analysis shell
-// Data flow: this component owns the React Query fetch and passes `data: FAResponse`
-// (or sub-slices) to every sub-component. Sub-components never fetch.
-// Agent 4 owns all components under ../fa/*.tsx.
 import React, { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchFA } from '../../lib/api'
 import LoadingBar from '../shared/LoadingBar'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
 import type { FAResponse } from '../../types'
 
 import OverviewStrip from '../fa/OverviewStrip'
@@ -15,6 +11,8 @@ import BalanceTable from '../fa/BalanceTable'
 import CashFlowTable from '../fa/CashFlowTable'
 import RatiosPanel from '../fa/RatiosPanel'
 import ValuationPanel from '../fa/ValuationPanel'
+
+const { color, font } = theme
 
 type Tab = 'INCOME' | 'BALANCE' | 'CASH' | 'RATIOS' | 'VALUE'
 type Period = 'annual' | 'quarterly'
@@ -32,8 +30,6 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'VALUE', label: 'VALUATION' },
 ]
 
-// ─── Inline helpers (not reused elsewhere) ────────────────────────────────────
-
 const PeriodToggle: React.FC<{ value: Period; onChange: (p: Period) => void }> = ({ value, onChange }) => (
   <div style={{ display: 'flex', gap: '2px' }}>
     {(['annual', 'quarterly'] as const).map(p => {
@@ -46,13 +42,12 @@ const PeriodToggle: React.FC<{ value: Period; onChange: (p: Period) => void }> =
             height: '20px',
             padding: '0 8px',
             fontSize: '10px',
-            fontFamily: C.fontMono,
-            fontWeight: 700,
-            letterSpacing: '0.06em',
+            fontFamily: font.mono,
+            fontWeight: 600,
             border: 'none',
             cursor: 'pointer',
-            background: active ? C.amber : C.surface0,
-            color: active ? C.surface0 : C.amberDim,
+            background: active ? color.accentPositive : color.bgBase,
+            color: active ? color.textInverse : color.textSecondary,
           }}
         >
           {p.toUpperCase()}
@@ -67,7 +62,7 @@ const FATabBar: React.FC<{ value: Tab; onChange: (t: Tab) => void }> = ({ value,
     role="tablist"
     style={{
       display: 'flex',
-      borderBottom: `1px solid ${C.border0}`,
+      borderBottom: `1px solid ${color.borderSubtle}`,
     }}
   >
     {TABS.map(tab => {
@@ -80,19 +75,18 @@ const FATabBar: React.FC<{ value: Tab; onChange: (t: Tab) => void }> = ({ value,
           onClick={() => onChange(tab.key)}
           style={{
             background: 'transparent',
-            color: active ? C.amber : C.whiteDim,
+            color: active ? color.textPrimary : color.textSecondary,
             border: 'none',
-            borderBottom: active ? `2px solid ${C.amber}` : '2px solid transparent',
+            borderBottom: active ? `2px solid ${color.accentPositive}` : '2px solid transparent',
             padding: '8px 16px',
             fontSize: '11px',
-            fontFamily: C.fontDisplay,
-            fontWeight: active ? 700 : 400,
-            letterSpacing: '0.08em',
+            fontFamily: font.sans,
+            fontWeight: active ? 600 : 400,
             cursor: 'pointer',
             transition: 'color 150ms ease',
           }}
-          onMouseEnter={e => { if (!active) e.currentTarget.style.color = C.amberMute }}
-          onMouseLeave={e => { if (!active) e.currentTarget.style.color = C.whiteDim }}
+          onMouseEnter={e => { if (!active) e.currentTarget.style.color = color.textPrimary }}
+          onMouseLeave={e => { if (!active) e.currentTarget.style.color = color.textSecondary }}
         >
           {tab.label}
         </button>
@@ -104,17 +98,15 @@ const FATabBar: React.FC<{ value: Tab; onChange: (t: Tab) => void }> = ({ value,
 const ErrorRow: React.FC<{ msg: string }> = ({ msg }) => (
   <div style={{
     padding: '8px 12px',
-    color: C.red,
+    color: color.accentNegative,
     fontSize: '12px',
-    fontFamily: C.fontMono,
-    background: C.redGlow,
-    borderBottom: `1px solid ${C.redDim}`,
+    fontFamily: font.mono,
+    background: color.accentNegativeDim,
+    borderBottom: `1px solid ${color.accentNegative}`,
   }}>
     {msg}
   </div>
 )
-
-// ─── Main screen ─────────────────────────────────────────────────────────────
 
 const FAScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
   const [tab, setTab] = useState<Tab>('INCOME')
@@ -127,12 +119,12 @@ const FAScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
   })
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: C.surface0, overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'transparent', overflow: 'hidden' }}>
       <LoadingBar loading={isLoading} />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 12px' }}>
-        <span style={{ fontFamily: C.fontDisplay, fontWeight: 700, fontSize: '12px', letterSpacing: '0.08em', color: C.amber }}>
-          {ticker} FA — FINANCIAL ANALYSIS
+        <span style={{ fontFamily: font.sans, fontWeight: 600, fontSize: '12px', color: color.textPrimary }}>
+          {ticker} FA {'\u2014'} FINANCIAL ANALYSIS
         </span>
         <PeriodToggle value={period} onChange={setPeriod} />
       </div>

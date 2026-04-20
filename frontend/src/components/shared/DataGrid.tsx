@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import C from '../../lib/colors'
+import { color, font } from '../../lib/theme'
 import { useBreakpoint } from '../../lib/useBreakpoint'
 
 export type ColType = 'text' | 'number' | 'pct' | 'currency' | 'change' | 'sparkline'
@@ -55,9 +55,9 @@ function formatValue(value: unknown, type: ColType): string {
 
 function changeColor(value: unknown): string | undefined {
   if (typeof value !== 'number') return undefined
-  if (value > 0) return C.green
-  if (value < 0) return C.red
-  return C.whiteDim
+  if (value > 0) return color.accentPositive
+  if (value < 0) return color.accentNegative
+  return color.textSecondary
 }
 
 function DataGrid<T extends Record<string, unknown>>({
@@ -135,9 +135,9 @@ function DataGrid<T extends Record<string, unknown>>({
     if (!rowAccent) return {}
     const accent = rowAccent(row)
     switch (accent) {
-      case 'success': return { borderLeft: `3px solid ${C.green}` }
-      case 'danger': return { borderLeft: `3px solid ${C.red}` }
-      case 'highlight': return { borderLeft: `3px solid ${C.amber}`, background: C.surfaceGlow }
+      case 'success':   return { borderLeft: `3px solid ${color.accentPositive}` }
+      case 'danger':    return { borderLeft: `3px solid ${color.accentNegative}` }
+      case 'highlight': return { borderLeft: `3px solid ${color.accentInfo}`, background: color.bgSurface }
       default: return {}
     }
   }
@@ -148,6 +148,24 @@ function DataGrid<T extends Record<string, unknown>>({
     const perRow = Math.max(15, Math.min(15, 600 / sorted.length))
     return rowIdx * perRow
   }, [staggerEntry, hasLoaded, sorted.length])
+
+  const thStyle = (col: DataGridColumn<T>, colIdx: number): React.CSSProperties => ({
+    textAlign: col.align ?? (col.type === 'text' ? 'left' : 'right'),
+    cursor: col.sortable ? 'pointer' : 'default',
+    userSelect: 'none',
+    color: sortKey === col.key ? color.textPrimary : color.textSecondary,
+    fontWeight: 500,
+    fontSize: '11px',
+    letterSpacing: '0.02em',
+    fontFamily: font.sans,
+    padding: '6px 8px',
+    position: stickyHeader ? 'sticky' : undefined,
+    top: stickyHeader ? 0 : undefined,
+    background: stickyHeader ? color.bgElevated : undefined,
+    zIndex: stickyHeader ? 1 : undefined,
+    borderRight: colIdx === visibleColumns.length - 1 ? undefined : `1px solid ${color.borderSubtle}`,
+    width: col.width,
+  })
 
   // ── Virtualized rendering ──
   const parentRef = useRef<HTMLDivElement>(null)
@@ -168,34 +186,16 @@ function DataGrid<T extends Record<string, unknown>>({
           overflowY: 'auto',
         }}
       >
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', fontFamily: C.fontMono }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', fontFamily: font.mono }}>
           <thead>
-            <tr style={{ borderBottom: `2px solid ${C.amber}20` }}>
+            <tr style={{ borderBottom: `1px solid ${color.borderMedium}` }}>
               {visibleColumns.map((col, colIdx) => {
-                const isActive = sortKey === col.key
-                const arrow = isActive ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''
-                const isLast = colIdx === visibleColumns.length - 1
+                const arrow = sortKey === col.key ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''
                 return (
                   <th
                     key={col.key}
                     onClick={() => handleHeaderClick(col)}
-                    style={{
-                      textAlign: col.align ?? (col.type === 'text' ? 'left' : 'right'),
-                      cursor: col.sortable ? 'pointer' : 'default',
-                      userSelect: 'none',
-                      color: isActive ? C.amber : C.whiteDim,
-                      fontWeight: 600,
-                      fontSize: '9px',
-                      letterSpacing: '0.08em',
-                      textTransform: 'uppercase' as const,
-                      padding: '6px 8px',
-                      position: stickyHeader ? 'sticky' : undefined,
-                      top: stickyHeader ? 0 : undefined,
-                      background: stickyHeader ? C.surface1 : undefined,
-                      zIndex: stickyHeader ? 1 : undefined,
-                      borderRight: isLast ? undefined : `1px solid ${C.border0}`,
-                      width: col.width,
-                    }}
+                    style={thStyle(col, colIdx)}
                   >
                     {col.header}{arrow}
                   </th>
@@ -205,7 +205,7 @@ function DataGrid<T extends Record<string, unknown>>({
           </thead>
           <tbody style={{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }}>
             {sorted.length === 0 && (
-              <tr><td colSpan={visibleColumns.length} style={{ textAlign: 'center', color: C.whiteGhost, padding: '24px' }}>{emptyMessage}</td></tr>
+              <tr><td colSpan={visibleColumns.length} style={{ textAlign: 'center', color: color.textTertiary, padding: '24px' }}>{emptyMessage}</td></tr>
             )}
             {virtualizer.getVirtualItems().map((virtualRow) => {
               const row = sorted[virtualRow.index]
@@ -221,7 +221,7 @@ function DataGrid<T extends Record<string, unknown>>({
                   onMouseEnter={() => { setHoveredIdx(virtualRow.index); onRowHover?.(row) }}
                   onMouseLeave={() => { setHoveredIdx(null); onRowHover?.(null) }}
                   style={{
-                    background: isHovered ? C.surfaceGlow : virtualRow.index % 2 === 0 ? C.surface0 : `${C.surface0}80`,
+                    background: isHovered ? color.bgHover : virtualRow.index % 2 === 0 ? color.bgBase : color.bgElevated,
                     cursor: onRowClick ? 'pointer' : 'default',
                     transition: 'background 100ms ease',
                     position: 'absolute',
@@ -230,7 +230,7 @@ function DataGrid<T extends Record<string, unknown>>({
                     width: '100%',
                     height: `${virtualRow.size}px`,
                     transform: `translateY(${virtualRow.start}px)`,
-                    borderLeft: isHovered && onRowClick ? `3px solid ${C.amber}` : undefined,
+                    borderLeft: isHovered && onRowClick ? `3px solid ${color.accentPositive}` : undefined,
                     ...accent,
                     ...(staggerDelay > 0 ? {
                       animation: 'fadeSlideUp 250ms cubic-bezier(0.16, 1, 0.3, 1) both',
@@ -243,7 +243,7 @@ function DataGrid<T extends Record<string, unknown>>({
                     const content = col.render
                       ? col.render(row)
                       : formatValue(raw, col.type ?? 'text')
-                    const color = (col.type === 'change' || col.type === 'pct') && !col.render
+                    const cellColor = (col.type === 'change' || col.type === 'pct') && !col.render
                       ? changeColor(raw)
                       : undefined
                     const isLast = colIdx === visibleColumns.length - 1
@@ -253,11 +253,11 @@ function DataGrid<T extends Record<string, unknown>>({
                         style={{
                           textAlign: col.align ?? (col.type === 'text' ? 'left' : 'right'),
                           padding: '5px 8px',
-                          color: color ?? C.white,
+                          color: cellColor ?? color.textPrimary,
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
-                          borderRight: isLast ? undefined : `1px solid ${C.border0}`,
+                          borderRight: isLast ? undefined : `1px solid ${color.borderSubtle}`,
                         }}
                       >
                         {content}
@@ -276,34 +276,16 @@ function DataGrid<T extends Record<string, unknown>>({
   // ── Standard (non-virtualized) rendering ──
   return (
     <div style={{ maxHeight: maxHeight ?? undefined, overflowY: maxHeight ? 'auto' : undefined }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', fontFamily: C.fontMono }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', fontFamily: font.mono }}>
         <thead>
-          <tr style={{ borderBottom: `2px solid ${C.amber}20` }}>
+          <tr style={{ borderBottom: `1px solid ${color.borderMedium}` }}>
             {visibleColumns.map((col, colIdx) => {
-              const isActive = sortKey === col.key
-              const arrow = isActive ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''
-              const isLast = colIdx === visibleColumns.length - 1
+              const arrow = sortKey === col.key ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''
               return (
                 <th
                   key={col.key}
                   onClick={() => handleHeaderClick(col)}
-                  style={{
-                    textAlign: col.align ?? (col.type === 'text' ? 'left' : 'right'),
-                    cursor: col.sortable ? 'pointer' : 'default',
-                    userSelect: 'none',
-                    color: isActive ? C.amber : C.whiteDim,
-                    fontWeight: 600,
-                    fontSize: '9px',
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase' as const,
-                    padding: '6px 8px',
-                    position: stickyHeader ? 'sticky' : undefined,
-                    top: stickyHeader ? 0 : undefined,
-                    background: stickyHeader ? C.surface1 : undefined,
-                    zIndex: stickyHeader ? 1 : undefined,
-                    borderRight: isLast ? undefined : `1px solid ${C.border0}`,
-                    width: col.width,
-                  }}
+                  style={thStyle(col, colIdx)}
                 >
                   {col.header}{arrow}
                 </th>
@@ -313,7 +295,7 @@ function DataGrid<T extends Record<string, unknown>>({
         </thead>
         <tbody>
           {sorted.length === 0 && (
-            <tr><td colSpan={visibleColumns.length} style={{ textAlign: 'center', color: C.whiteGhost, padding: '24px' }}>{emptyMessage}</td></tr>
+            <tr><td colSpan={visibleColumns.length} style={{ textAlign: 'center', color: color.textTertiary, padding: '24px' }}>{emptyMessage}</td></tr>
           )}
           {sorted.map((row, rowIdx) => {
             const key = String(getField(row, keyField) ?? rowIdx)
@@ -327,10 +309,10 @@ function DataGrid<T extends Record<string, unknown>>({
                 onMouseEnter={() => { setHoveredIdx(rowIdx); onRowHover?.(row) }}
                 onMouseLeave={() => { setHoveredIdx(null); onRowHover?.(null) }}
                 style={{
-                  background: isHovered ? C.surfaceGlow : rowIdx % 2 === 0 ? C.surface0 : `${C.surface0}80`,
+                  background: isHovered ? color.bgHover : rowIdx % 2 === 0 ? color.bgBase : color.bgElevated,
                   cursor: onRowClick ? 'pointer' : 'default',
                   transition: 'background 100ms ease',
-                  borderLeft: isHovered && onRowClick ? `3px solid ${C.amber}` : undefined,
+                  borderLeft: isHovered && onRowClick ? `3px solid ${color.accentPositive}` : undefined,
                   ...accent,
                   ...(staggerDelay > 0 ? {
                     animation: 'fadeSlideUp 250ms cubic-bezier(0.16, 1, 0.3, 1) both',
@@ -343,7 +325,7 @@ function DataGrid<T extends Record<string, unknown>>({
                   const content = col.render
                     ? col.render(row)
                     : formatValue(raw, col.type ?? 'text')
-                  const color = (col.type === 'change' || col.type === 'pct') && !col.render
+                  const cellColor = (col.type === 'change' || col.type === 'pct') && !col.render
                     ? changeColor(raw)
                     : undefined
                   const isLast = colIdx === visibleColumns.length - 1
@@ -353,11 +335,11 @@ function DataGrid<T extends Record<string, unknown>>({
                       style={{
                         textAlign: col.align ?? (col.type === 'text' ? 'left' : 'right'),
                         padding: '5px 8px',
-                        color: color ?? C.white,
+                        color: cellColor ?? color.textPrimary,
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
-                        borderRight: isLast ? undefined : `1px solid ${C.border0}`,
+                        borderRight: isLast ? undefined : `1px solid ${color.borderSubtle}`,
                       }}
                     >
                       {content}

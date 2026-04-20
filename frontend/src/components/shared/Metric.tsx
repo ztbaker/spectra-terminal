@@ -1,5 +1,5 @@
 import React from 'react'
-import C from '../../lib/colors'
+import { color, font } from '../../lib/theme'
 import { usePriceFlash } from '../../lib/usePriceFlash'
 
 type MetricFormat = 'number' | 'large' | 'pct' | 'currency' | 'text'
@@ -36,8 +36,8 @@ function formatMetric(value: number | string | null, format: MetricFormat, suffi
 }
 
 function changeIndicator(change: number): React.ReactNode {
-  if (change > 0) return <span style={{ color: C.green, fontSize: '10px', marginLeft: '4px' }}>▲{change.toFixed(2)}%</span>
-  if (change < 0) return <span style={{ color: C.red, fontSize: '10px', marginLeft: '4px' }}>▼{Math.abs(change).toFixed(2)}%</span>
+  if (change > 0) return <span style={{ color: color.accentPositive, fontSize: '10px', marginLeft: '4px' }}>▲{change.toFixed(2)}%</span>
+  if (change < 0) return <span style={{ color: color.accentNegative, fontSize: '10px', marginLeft: '4px' }}>▼{Math.abs(change).toFixed(2)}%</span>
   return null
 }
 
@@ -48,7 +48,7 @@ const SIZES = {
 } as const
 
 /**
- * Bloomberg-style metric display: label above, value below.
+ * Metric display: label above, value below.
  * Supports number formatting, color, and change indicators.
  * When flash=true, numeric value changes trigger a green/red background flash.
  */
@@ -56,7 +56,7 @@ const Metric: React.FC<MetricProps> = ({
   label,
   value,
   format = 'text',
-  color,
+  color: colorProp,
   size = 'md',
   change,
   suffix,
@@ -64,9 +64,9 @@ const Metric: React.FC<MetricProps> = ({
 }) => {
   const sizes = SIZES[size]
   const displayValue = formatMetric(value, format, suffix)
-  const valueColor = color ?? (typeof value === 'number'
-    ? (value > 0 ? C.green : value < 0 ? C.red : C.white)
-    : C.white)
+  const valueColor = colorProp ?? (typeof value === 'number'
+    ? (value > 0 ? color.accentPositive : value < 0 ? color.accentNegative : color.textPrimary)
+    : color.textPrimary)
 
   const { flashStyle, triggerFlash } = usePriceFlash()
   const prevRef = React.useRef<number | null>(null)
@@ -80,13 +80,13 @@ const Metric: React.FC<MetricProps> = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-      <span style={{ color: C.whiteDim, fontSize: sizes.label, letterSpacing: '0.05em', fontFamily: C.fontBody }}>
+      <span style={{ color: color.textSecondary, fontSize: sizes.label, letterSpacing: '0.02em', fontFamily: font.sans }}>
         {label}
       </span>
       <span style={{
         color: valueColor,
         fontSize: sizes.value,
-        fontFamily: C.fontMono,
+        fontFamily: font.mono,
         fontVariantNumeric: 'tabular-nums',
         ...(flash && typeof value === 'number' ? flashStyle : {}),
       }}>

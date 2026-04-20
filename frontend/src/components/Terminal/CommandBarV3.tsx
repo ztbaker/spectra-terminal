@@ -7,11 +7,14 @@ import React, {
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { parseCommand } from '../../lib/commandParser'
 import { useBreakpoint } from '../../lib/useBreakpoint'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
 import { fetchChart } from '../../lib/api'
 import Sparkline from '../shared/Sparkline'
 import DecodeText from '../shared/DecodeText'
+import SpectraLogo from '../shared/SpectraLogo'
 import type { ParsedCommand, ChartData } from '../../types'
+
+const { color, font, type: t, radius, motion } = theme
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -106,8 +109,8 @@ const TickerSparkline: React.FC<{ ticker: string; up: boolean | null }> = ({ tic
   })
   const closes = (data?.ohlcv ?? []).map(b => b.close)
   if (closes.length < 2) return null
-  const color = up === true ? C.green : up === false ? C.red : C.amberDim
-  return <Sparkline data={closes} width={44} height={12} color={color} />
+  const sparkColor = up === true ? color.accentPositive : up === false ? color.accentNegative : color.textTertiary
+  return <Sparkline data={closes} width={44} height={12} color={sparkColor} />
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -127,10 +130,8 @@ const CommandBarV3: React.FC<Props> = ({ onCommand, onCommandNewPanel, activeCom
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [suggestionIdx, setSuggestionIdx] = useState(-1)
   const [, setFocused] = useState(false)
-  const [borderPulse, setBorderPulse] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
-  const prevSuggestionIdxRef = useRef(-1)
   const queryClient = useQueryClient()
 
   const bp = useBreakpoint()
@@ -143,24 +144,19 @@ const CommandBarV3: React.FC<Props> = ({ onCommand, onCommandNewPanel, activeCom
     inputRef.current?.focus()
   }, [])
 
-  // Re-focus after any command is committed (input will have been cleared)
   const focusInput = useCallback(() => {
     setTimeout(() => inputRef.current?.focus(), 0)
   }, [])
 
-  // Global keydown: if user starts typing (printable key) while input is not
-  // focused, focus the input and let the key through.
+  // Global keydown: focus input on printable key
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (!inputRef.current) return
       if (document.activeElement === inputRef.current) return
-      // Don't hijack if focus is in another input/textarea
       const tag = (e.target as HTMLElement)?.tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
-      // Only intercept printable keys (and Backspace to clear)
       if (e.key.length === 1 || e.key === 'Backspace') {
         inputRef.current.focus()
-        // The key will naturally flow into the now-focused input
       }
     }
     window.addEventListener('keydown', handler)
@@ -173,17 +169,7 @@ const CommandBarV3: React.FC<Props> = ({ onCommand, onCommandNewPanel, activeCom
     }
   }, [input, historyIdx])
 
-  useEffect(() => {
-    if (suggestionIdx !== prevSuggestionIdxRef.current && suggestionIdx >= 0) {
-      setBorderPulse(true)
-      const t = setTimeout(() => setBorderPulse(false), 200)
-      return () => clearTimeout(t)
-    }
-    prevSuggestionIdxRef.current = suggestionIdx
-  }, [suggestionIdx])
-
-  // Prefetch 5d/15m chart for any ticker suggestion so the inline sparkline
-  // is ready by the time the row renders.
+  // Prefetch charts for ticker suggestions
   useEffect(() => {
     for (const s of suggestions) {
       if (KNOWN_TICKERS.includes(s)) {
@@ -205,7 +191,7 @@ const CommandBarV3: React.FC<Props> = ({ onCommand, onCommandNewPanel, activeCom
     const ctx = canvasRef.current.getContext('2d')
     if (!ctx) return text.length * 8
     const fontSize = isCompact ? '12px' : isExpanded ? '14px' : '13px'
-    ctx.font = `${fontSize} ${C.fontMono}`
+    ctx.font = `500 ${fontSize} ${font.mono}`
     return ctx.measureText(text).width
   }, [isCompact, isExpanded])
 
@@ -386,8 +372,8 @@ const CommandBarV3: React.FC<Props> = ({ onCommand, onCommandNewPanel, activeCom
 
   const activeLabel = activeCommand
     ? activeCommand.ticker
-      ? `${activeCommand.ticker} ${activeCommand.screen.toUpperCase()}`
-      : activeCommand.screen.toUpperCase()
+      ? `[ ${activeCommand.ticker} ${activeCommand.screen.toUpperCase()} ]`
+      : `[ ${activeCommand.screen.toUpperCase()} ]`
     : ''
 
   return (
@@ -398,97 +384,53 @@ const CommandBarV3: React.FC<Props> = ({ onCommand, onCommandNewPanel, activeCom
         left: 0,
         right: 0,
         height: '48px',
-        fontFamily: C.fontMono,
+        fontFamily: font.sans,
         fontSize: '13px',
         display: 'flex',
         alignItems: 'center',
-        paddingLeft: '0',
-        paddingRight: '14px',
+        paddingRight: '16px',
         zIndex: 1000,
         userSelect: 'none',
-        borderBottom: '1px solid transparent',
-        backgroundImage: `linear-gradient(${C.surface0}, ${C.surface0}), linear-gradient(90deg, ${C.amber}60, ${C.violet}20, transparent 40%, transparent 60%, ${C.cyan}20, ${C.amber}60)`,
-        backgroundOrigin: 'border-box',
-        backgroundClip: 'padding-box, border-box',
-        boxShadow: C.shadow2,
+        background: 'rgba(19, 22, 25, 0.75)',
+        backdropFilter: 'blur(40px) saturate(1.3)',
+        WebkitBackdropFilter: 'blur(40px) saturate(1.3)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.3), inset 0 -1px 0 rgba(255, 255, 255, 0.04)',
       }}
       onClick={() => inputRef.current?.focus()}
     >
-      {/* Left: SPECTRA wordmark */}
+      {/* Left: Logo mark */}
       <div
         style={{
-          fontFamily: C.fontDisplay,
-          fontWeight: 700,
-          fontSize: '15px',
-          background: C.gradientHero,
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text',
-          letterSpacing: '0.15em',
-          paddingLeft: isCompact ? '10px' : '18px',
-          paddingRight: isCompact ? '10px' : '18px',
+          paddingLeft: isCompact ? '10px' : '14px',
+          paddingRight: isCompact ? '10px' : '14px',
           height: '100%',
           display: 'flex',
           alignItems: 'center',
-          borderRight: `1px solid ${C.glassBorder}`,
+          borderRight: `1px solid ${color.borderSubtle}`,
           flexShrink: 0,
-          position: 'relative',
         }}
       >
-        {isCompact ? 'S>' : 'SPECTRA'}
-        {isExpanded && (
-          <span style={{
-            fontFamily: C.fontBody,
-            fontSize: '9px',
-            fontWeight: 400,
-            letterSpacing: '0.06em',
-            marginLeft: '6px',
-            WebkitTextFillColor: C.whiteGhost,
-            textTransform: 'uppercase',
-          }}>
-            Terminal
-          </span>
-        )}
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          background: C.amberGlow,
-          filter: 'blur(16px)',
-          opacity: 0.3,
-          pointerEvents: 'none',
-        }} />
+        <SpectraLogo size={isCompact ? 26 : 30} />
       </div>
 
       {/* Context ticker ghost prefix */}
       {contextTicker && !input && (
         <span style={{
-          color: C.whiteGhost,
+          color: color.textTertiary,
           fontSize: isCompact ? '12px' : '13px',
-          fontFamily: C.fontMono,
-          letterSpacing: '0.02em',
+          fontFamily: font.mono,
           marginRight: '2px',
           pointerEvents: 'none',
           userSelect: 'none',
           paddingLeft: '12px',
         }}>
-          {contextTicker}&ensp;·
+          {contextTicker}
         </span>
       )}
 
       {/* Input area */}
-      <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center' }}>
-        {/* Prompt symbol */}
-        <span style={{
-          color: C.amber,
-          fontFamily: C.fontMono,
-          fontSize: '14px',
-          fontWeight: 700,
-          marginRight: '6px',
-          textShadow: `0 0 8px ${C.amberGlow}`,
-        }}>
-          ›
-        </span>
-
+      <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center', paddingLeft: '12px' }}>
         <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', flex: 1 }}>
           <input
             ref={inputRef}
@@ -506,19 +448,19 @@ const CommandBarV3: React.FC<Props> = ({ onCommand, onCommandNewPanel, activeCom
               background: 'transparent',
               border: 'none',
               outline: 'none',
-              color: C.white,
-              fontFamily: C.fontMono,
+              color: color.textPrimary,
+              fontFamily: font.mono,
               fontSize: isCompact ? '12px' : isExpanded ? '14px' : '13px',
+              fontWeight: 500,
               width: '100%',
               caretColor: 'transparent',
-              textTransform: 'uppercase' as const,
-              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+              letterSpacing: '0.02em',
               padding: 0,
-              transition: 'all 0.2s ease',
             }}
             aria-label="Command input"
           />
-          {/* Blinking block cursor — positioned right after the text */}
+          {/* Blinking cursor */}
           <span
             className="bb-cursor"
             style={{
@@ -527,13 +469,11 @@ const CommandBarV3: React.FC<Props> = ({ onCommand, onCommandNewPanel, activeCom
               top: '50%',
               transform: 'translateY(-50%)',
               display: 'inline-block',
-              width: input.length === 0 ? '8px' : '8px',
-              height: isCompact ? '12px' : '14px',
-              background: C.amber,
+              width: '2px',
+              height: isCompact ? '14px' : '16px',
+              background: color.accentPositive,
               borderRadius: '1px',
-              boxShadow: `0 0 8px ${C.amberGlow}`,
               pointerEvents: 'none',
-              transition: 'left 0.05s steps(1)',
             }}
           />
         </div>
@@ -546,27 +486,23 @@ const CommandBarV3: React.FC<Props> = ({ onCommand, onCommandNewPanel, activeCom
               top: '100%',
               left: 0,
               marginTop: '8px',
-              background: 'rgba(8, 8, 26, 0.92)',
-              backdropFilter: 'blur(20px) saturate(1.4)',
-              WebkitBackdropFilter: 'blur(20px) saturate(1.4)',
-              border: `1px solid ${C.glassBorder}`,
-              borderRadius: '8px',
+              background: 'rgba(26, 30, 35, 0.85)',
+              backdropFilter: 'blur(40px) saturate(1.3)',
+              WebkitBackdropFilter: 'blur(40px) saturate(1.3)',
+              border: '1px solid rgba(255, 255, 255, 0.10)',
+              borderRadius: radius.md,
               zIndex: 2000,
-              minWidth: isCompact ? 'unset' : '320px',
+              minWidth: isCompact ? 'unset' : '300px',
               width: isCompact ? 'calc(100vw - 20px)' : 'auto',
-              boxShadow: `${C.shadow3}, 0 0 30px ${C.amberGlow}`,
+              boxShadow: '0 12px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 217, 100, 0.03)',
               overflow: 'hidden',
             }}
           >
             <div style={{
-              fontSize: '9px',
-              letterSpacing: '0.1em',
-              color: C.whiteGhost,
-              padding: '8px 12px 4px',
-              textTransform: 'uppercase' as const,
-              fontFamily: C.fontBody,
-              fontWeight: 600,
-              borderBottom: `1px solid ${C.glassBorder}`,
+              ...t.caption,
+              color: color.textTertiary,
+              padding: '8px 12px 6px',
+              borderBottom: `1px solid ${color.borderSubtle}`,
             }}>
               Suggestions
             </div>
@@ -589,18 +525,17 @@ const CommandBarV3: React.FC<Props> = ({ onCommand, onCommandNewPanel, activeCom
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     gap: '16px',
-                    background: isSelected ? `linear-gradient(90deg, ${C.amberGlow}, transparent 70%)` : 'transparent',
-                    borderLeft: isSelected ? `2px solid ${C.amber}` : '2px solid transparent',
-                    boxShadow: isSelected && borderPulse ? `0 0 8px ${C.amberGlow}` : 'none',
-                    transition: 'all 150ms ease',
+                    background: isSelected ? color.bgHover : 'transparent',
+                    borderLeft: isSelected ? `2px solid ${color.accentPositive}` : '2px solid transparent',
+                    transition: `background ${motion.fast} ${motion.ease}`,
                   }}
                 >
                   <span style={{
-                    color: isSelected ? C.amberBright : C.amber,
+                    color: isSelected ? color.textPrimary : color.textSecondary,
                     fontSize: '12px',
-                    letterSpacing: '0.04em',
-                    fontFamily: C.fontMono,
-                    fontWeight: isSelected ? 700 : 400,
+                    letterSpacing: '0.02em',
+                    fontFamily: font.mono,
+                    fontWeight: isSelected ? 600 : 400,
                   }}>
                     {s}
                   </span>
@@ -608,38 +543,32 @@ const CommandBarV3: React.FC<Props> = ({ onCommand, onCommandNewPanel, activeCom
                     <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <TickerSparkline ticker={s} up={null} />
                       <span style={{
-                        background: C.surface2,
+                        background: color.bgActive,
                         borderRadius: '3px',
                         padding: '1px 5px',
-                        color: C.whiteGhost,
+                        color: color.textTertiary,
                         fontSize: '9px',
-                        fontFamily: C.fontMono,
-                        letterSpacing: '0.02em',
+                        fontFamily: font.mono,
                       }}>
                         ↵
                       </span>
                     </span>
                   ) : desc ? (
-                    <span style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                    }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{
-                        color: C.whiteDim,
-                        fontSize: '10px',
-                        fontFamily: C.fontBody,
+                        color: color.textTertiary,
+                        fontSize: '11px',
+                        fontFamily: font.sans,
                       }}>
                         {desc}
                       </span>
                       <span style={{
-                        background: C.surface2,
+                        background: color.bgActive,
                         borderRadius: '3px',
                         padding: '1px 5px',
-                        color: C.whiteGhost,
+                        color: color.textTertiary,
                         fontSize: '9px',
-                        fontFamily: C.fontMono,
-                        letterSpacing: '0.02em',
+                        fontFamily: font.mono,
                       }}>
                         ↵
                       </span>
@@ -658,7 +587,7 @@ const CommandBarV3: React.FC<Props> = ({ onCommand, onCommandNewPanel, activeCom
           display: 'flex',
           alignItems: 'center',
           gap: '10px',
-          marginLeft: '14px',
+          marginLeft: '16px',
           flexShrink: 0,
         }}>
           {breadcrumbParts.length > 0 && (
@@ -666,31 +595,21 @@ const CommandBarV3: React.FC<Props> = ({ onCommand, onCommandNewPanel, activeCom
               display: 'flex',
               alignItems: 'center',
               gap: '0',
-              fontSize: '10px',
-              letterSpacing: '0.05em',
-              fontFamily: C.fontMono,
+              fontSize: '11px',
+              fontFamily: font.mono,
               maxWidth: isCompact ? '120px' : isExpanded ? 'none' : '200px',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap' as const,
+              whiteSpace: 'nowrap',
             }}>
               {breadcrumbParts.map((part, i) => (
                 <span key={i} style={{ display: 'inline-flex', alignItems: 'center' }}>
                   {i > 0 && (
-                    <span style={{
-                      color: C.whiteGhost,
-                      margin: '0 5px',
-                      fontSize: '9px',
-                    }}>
-                      /
-                    </span>
+                    <span style={{ color: color.textTertiary, margin: '0 4px', fontSize: '10px' }}>/</span>
                   )}
                   <span style={{
-                    color: i === breadcrumbParts.length - 1 ? C.cyan : C.whiteGhost,
+                    color: i === breadcrumbParts.length - 1 ? color.textPrimary : color.textTertiary,
                     fontWeight: i === breadcrumbParts.length - 1 ? 600 : 400,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap' as const,
                   }}>
                     {part}
                   </span>
@@ -700,19 +619,16 @@ const CommandBarV3: React.FC<Props> = ({ onCommand, onCommandNewPanel, activeCom
           )}
 
           <div style={{
-            background: C.glass,
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-            color: C.amber,
+            background: color.bgSurface,
+            color: color.textSecondary,
             fontSize: '10px',
             fontWeight: 600,
-            letterSpacing: '0.08em',
+            letterSpacing: '0.04em',
             padding: '4px 10px',
-            borderRadius: '100px',
-            fontFamily: C.fontMono,
-            whiteSpace: 'nowrap' as const,
-            border: `1px solid ${C.amberDim}40`,
-            boxShadow: `0 0 12px ${C.amberGlow}`,
+            borderRadius: radius.full,
+            fontFamily: font.mono,
+            whiteSpace: 'nowrap',
+            border: `1px solid ${color.borderSubtle}`,
           }}>
             <DecodeText text={activeLabel} />
           </div>

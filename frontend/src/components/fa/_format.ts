@@ -1,4 +1,4 @@
-import C from '../../lib/colors'
+import { color } from '../../lib/theme'
 
 export function fmtCurrency(n: number | null): string {
   if (n === null) return '\u2014'
@@ -24,6 +24,6 @@ export function fmtMultiple(n: number | null): string {
 }
 
 export function colorForDelta(n: number | null): string {
-  if (n === null || n === 0) return C.whiteDim
-  return n > 0 ? C.green : C.red
+  if (n === null || n === 0) return color.textSecondary
+  return n > 0 ? color.accentPositive : color.accentNegative
 }

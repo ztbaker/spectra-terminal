@@ -24,7 +24,9 @@ import { useLiveBarUpdater } from '../../hooks/useLiveBarUpdater'
 import type { OhlcvBar } from '../../types'
 import LoadingBar from '../shared/LoadingBar'
 import ExtendedHoursBadge from '../shared/ExtendedHoursBadge'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
+
+const { color } = theme
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -110,22 +112,22 @@ const BarOverlay: React.FC<BarInfo> = ({ time, price, vwap, volume, open, high, 
       top:           '8px',
       left:          '8px',
       zIndex:        10,
-      background:    `${C.surface0}CC`,
-      border: `1px solid ${C.border1}`,
+      background:    `${color.bgBase}CC`,
+      border: `1px solid ${color.borderSubtle}`,
       padding:       '4px 10px',
       fontSize:      '11px',
-      color:         C.amberDim,
+      color:         color.textSecondary,
       pointerEvents: 'none',
       display:       'flex',
       gap:           '12px',
     }}>
-      {time && <span style={{ color: C.amberMute }}>{time}</span>}
-      <span>O: <span style={{ color: C.amber }}>{fmt(open)}</span></span>
-      <span>H: <span style={{ color: C.amber }}>{fmt(high)}</span></span>
-      <span>L: <span style={{ color: C.amber }}>{fmt(low)}</span></span>
-      <span>C: <span style={{ color: C.amber }}>{fmt(price)}</span></span>
-      {vwap != null && <span>VWAP: <span style={{ color: C.cyanBright }}>{fmt(vwap)}</span></span>}
-      {volume != null && <span>V: <span style={{ color: C.amberMute }}>{fmtVol(volume)}</span></span>}
+      {time && <span style={{ color: color.textTertiary }}>{time}</span>}
+      <span>O: <span style={{ color: color.textPrimary }}>{fmt(open)}</span></span>
+      <span>H: <span style={{ color: color.textPrimary }}>{fmt(high)}</span></span>
+      <span>L: <span style={{ color: color.textPrimary }}>{fmt(low)}</span></span>
+      <span>C: <span style={{ color: color.textPrimary }}>{fmt(price)}</span></span>
+      {vwap != null && <span>VWAP: <span style={{ color: color.accentInfo }}>{fmt(vwap)}</span></span>}
+      {volume != null && <span>V: <span style={{ color: color.textTertiary }}>{fmtVol(volume)}</span></span>}
     </div>
   )
 }
@@ -213,26 +215,26 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
 
     const chart = createChart(containerRef.current, {
       layout: {
-        background:  { color: C.surface0 },
-        textColor:   C.amberDim,
+        background:  { color: color.bgBase },
+        textColor:   color.textSecondary,
         fontFamily:  "'JetBrains Mono', 'IBM Plex Mono', 'Courier New', monospace",
         fontSize:    11,
       },
       grid: {
-        vertLines: { color: C.surfaceGlow },
-        horzLines: { color: C.surfaceGlow },
+        vertLines: { color: 'rgba(255,255,255,0.04)' },
+        horzLines: { color: 'rgba(255,255,255,0.04)' },
       },
       crosshair: {
         mode:     CrosshairMode.Normal,
-        vertLine: { color: C.amber, width: 1, style: 1, labelBackgroundColor: C.surfaceGlow },
-        horzLine: { color: C.amber, width: 1, style: 1, labelBackgroundColor: C.surfaceGlow },
+        vertLine: { color: 'rgba(255,255,255,0.20)', width: 1, style: 1, labelBackgroundColor: color.bgElevated },
+        horzLine: { color: 'rgba(255,255,255,0.20)', width: 1, style: 1, labelBackgroundColor: color.bgElevated },
       },
       rightPriceScale: {
-        borderColor: C.border1,
-        textColor:   C.amberDim,
+        borderColor: color.borderSubtle,
+        textColor:   color.textSecondary,
       },
       timeScale: {
-        borderColor:    C.border1,
+        borderColor:    color.borderSubtle,
         timeVisible:    true,
         secondsVisible: false,
       },
@@ -311,9 +313,9 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
 
     // ── Price area ────────────────────────────────────────────────────────
     const priceSeries = addS(AreaSeries, {
-      topColor:     'rgba(255, 153, 0, 0.20)',
-      bottomColor:  'rgba(255, 153, 0, 0.0)',
-      lineColor:    C.amber,
+      topColor:     'rgba(0,217,100,0.15)',
+      bottomColor:  'rgba(0,217,100,0.0)',
+      lineColor:    color.accentPositive,
       lineWidth:    2,
       priceScaleId: 'right',
     }, 0)
@@ -338,7 +340,7 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
 
     // ── VWAP ──────────────────────────────────────────────────────────────
     const vwapSer = addS(LineSeries, {
-      color:        C.cyanBright,
+      color:        color.accentInfo,
       lineWidth:    1,
       lineStyle:    LineStyle.Solid,
       priceScaleId: 'right',
@@ -353,13 +355,13 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
     const volSer = addS(HistogramSeries, {
       priceScaleId: 'vol',
       priceFormat:  { type: 'volume' },
-      color:        C.border1,
+      color:        color.borderSubtle,
     }, 0)
     volSer.priceScale().applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } })
     const volData: HistogramData[] = bars.map(b => ({
       time:  toTime(b.time),
       value: b.volume,
-      color: b.close >= b.open ? 'rgba(0,255,65,0.25)' : 'rgba(255,51,51,0.25)',
+      color: b.close >= b.open ? 'rgba(0,217,100,0.25)' : 'rgba(255,82,82,0.25)',
     }))
     volSer.setData(volData)
     volSeriesRef.current = volSer
@@ -440,7 +442,7 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
     if (volSeriesRef.current) {
       const volData: HistogramData[] = bars.map(b => ({
         time: toTime(b.time), value: b.volume,
-        color: b.close >= b.open ? 'rgba(0,255,65,0.25)' : 'rgba(255,51,51,0.25)',
+        color: b.close >= b.open ? 'rgba(0,217,100,0.25)' : 'rgba(255,82,82,0.25)',
       }))
       volSeriesRef.current.setData(volData as any)
     }
@@ -458,7 +460,7 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
     }
     prevCloseLineRef.current = series.createPriceLine({
       price:               prevClose,
-      color:               C.whiteGhost,
+      color:               color.textTertiary,
       lineWidth:           1,
       lineStyle:           LineStyle.Dashed,
       axisLabelVisible:    true,
@@ -471,7 +473,7 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
     if (!series || firstBar?.open == null) return
     series.createPriceLine({
       price:               firstBar.open,
-      color:               C.amberDim,
+      color:               color.textSecondary,
       lineWidth:           1,
       lineStyle:           LineStyle.Dashed,
       axisLabelVisible:    true,
@@ -485,7 +487,7 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
       display:       'flex',
       flexDirection: 'column',
       height:        '100%',
-      background:    C.surface0,
+      background:    color.bgBase,
       overflow:      'hidden',
     }}>
       <LoadingBar loading={isLoading} />
@@ -493,8 +495,8 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
       {/* ── Header ────────────────────────────────────────────────────────── */}
       <div style={{
         flexShrink:   0,
-        background:   C.surface1,
-        borderBottom: `1px solid ${C.border1}`,
+        background:   color.bgElevated,
+        borderBottom: `1px solid ${color.borderSubtle}`,
         padding:      '5px 10px',
         display:      'flex',
         flexDirection: 'column',
@@ -503,24 +505,24 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
         {/* Row 1: Ticker + stats */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
           <span style={{
-            color:         C.amber,
+            color:         color.textPrimary,
             fontSize:      '14px',
             fontWeight:    700,
             letterSpacing: '0.05em',
           }}>
             {ticker}{' '}
-            <span style={{ color: C.amberMute, fontSize: '10px', fontWeight: 400 }}>INTRADAY</span>
+            <span style={{ color: color.textTertiary, fontSize: '10px', fontWeight: 400 }}>INTRADAY</span>
           </span>
 
           {lastPrice != null && (
-            <span style={{ color: C.white, fontSize: '14px', fontWeight: 700 }}>
+            <span style={{ color: color.textPrimary, fontSize: '14px', fontWeight: 700 }}>
               {lastPrice.toFixed(2)}
             </span>
           )}
 
           {changeAbs != null && changePct != null && (
             <span style={{
-              color:    isUp ? C.green : C.red,
+              color:    isUp ? color.accentPositive : color.accentNegative,
               fontSize: '12px',
               fontWeight: 600,
             }}>
@@ -528,21 +530,21 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
             </span>
           )}
 
-          <span style={{ color: C.amberDim, fontSize: '11px' }}>
-            OPEN <span style={{ color: C.amber }}>{fmt(firstBar?.open)}</span>
+          <span style={{ color: color.textSecondary, fontSize: '11px' }}>
+            OPEN <span style={{ color: color.textPrimary }}>{fmt(firstBar?.open)}</span>
           </span>
 
           {prevClose != null && (
-            <span style={{ color: C.amberDim, fontSize: '11px' }}>
-              PREV <span style={{ color: C.amberDim }}>{prevClose.toFixed(2)}</span>
+            <span style={{ color: color.textSecondary, fontSize: '11px' }}>
+              PREV <span style={{ color: color.textSecondary }}>{prevClose.toFixed(2)}</span>
             </span>
           )}
 
           {livePriceData?.market_state === 'PRE' && livePriceData.pre_market_price != null && (
-            <span style={{ color: C.amber, fontSize: '11px' }}>
+            <span style={{ color: color.textPrimary, fontSize: '11px' }}>
               PRE <span style={{ fontWeight: 600 }}>{livePriceData.pre_market_price.toFixed(2)}</span>
               {livePriceData.pre_market_change_pct != null && (
-                <span style={{ color: livePriceData.pre_market_change_pct >= 0 ? C.green : C.red, marginLeft: 4 }}>
+                <span style={{ color: livePriceData.pre_market_change_pct >= 0 ? color.accentPositive : color.accentNegative, marginLeft: 4 }}>
                   ({livePriceData.pre_market_change_pct >= 0 ? '+' : ''}{livePriceData.pre_market_change_pct.toFixed(2)}%)
                 </span>
               )}
@@ -550,10 +552,10 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
           )}
 
           {livePriceData?.market_state === 'POST' && livePriceData.post_market_price != null && (
-            <span style={{ color: C.cyanBright, fontSize: '11px' }}>
+            <span style={{ color: color.accentInfo, fontSize: '11px' }}>
               POST <span style={{ fontWeight: 600 }}>{livePriceData.post_market_price.toFixed(2)}</span>
               {livePriceData.post_market_change_pct != null && (
-                <span style={{ color: livePriceData.post_market_change_pct >= 0 ? C.green : C.red, marginLeft: 4 }}>
+                <span style={{ color: livePriceData.post_market_change_pct >= 0 ? color.accentPositive : color.accentNegative, marginLeft: 4 }}>
                   ({livePriceData.post_market_change_pct >= 0 ? '+' : ''}{livePriceData.post_market_change_pct.toFixed(2)}%)
                 </span>
               )}
@@ -561,20 +563,20 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
           )}
 
           {livePriceData?.regular_close != null && (livePriceData?.market_state === 'PRE' || livePriceData?.market_state === 'POST' || livePriceData?.market_state === 'CLOSED') && (
-            <span style={{ color: C.amberDim, fontSize: '11px' }}>
-              RTH <span style={{ color: C.amberDim }}>{livePriceData.regular_close.toFixed(2)}</span>
+            <span style={{ color: color.textSecondary, fontSize: '11px' }}>
+              RTH <span style={{ color: color.textSecondary }}>{livePriceData.regular_close.toFixed(2)}</span>
             </span>
           )}
 
           {lastVwap != null && (
-            <span style={{ color: C.cyanBright, fontSize: '11px' }}>
+            <span style={{ color: color.accentInfo, fontSize: '11px' }}>
               VWAP <span style={{ fontWeight: 600 }}>{fmt(lastVwap)}</span>
             </span>
           )}
 
           {totalVol > 0 && (
-            <span style={{ color: C.amberMute, fontSize: '11px' }}>
-              VOL <span style={{ color: C.amberDim }}>{fmtVol(totalVol)}</span>
+            <span style={{ color: color.textTertiary, fontSize: '11px' }}>
+              VOL <span style={{ color: color.textSecondary }}>{fmtVol(totalVol)}</span>
             </span>
           )}
 
@@ -594,14 +596,14 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
         </div>
 
         {/* Row 2: interval info */}
-        <div style={{ color: C.amberMute, fontSize: '10px', display: 'flex', gap: '16px' }}>
+        <div style={{ color: color.textTertiary, fontSize: '10px', display: 'flex', gap: '16px' }}>
           <span>{interval} BARS</span>
           {chartData?.ohlcv?.length && (
             <span>{chartData.ohlcv.length} BARS · {period.toUpperCase()}</span>
           )}
-          <span style={{ color: C.cyanBright, opacity: 0.7 }}>━ VWAP (daily anchored)</span>
-          <span style={{ color: C.amberDim, opacity: 0.7 }}>╌ OPEN</span>
-          <span style={{ color: C.whiteGhost, opacity: 0.7 }}>╌ PREV CLOSE</span>
+          <span style={{ color: color.accentInfo, opacity: 0.7 }}>━ VWAP (daily anchored)</span>
+          <span style={{ color: color.textSecondary, opacity: 0.7 }}>╌ OPEN</span>
+          <span style={{ color: color.textTertiary, opacity: 0.7 }}>╌ PREV CLOSE</span>
         </div>
       </div>
 
@@ -611,11 +613,11 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
           <div style={{
             position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center',
-            background: C.surface0, color: C.red, fontSize: '12px', padding: '24px',
+            background: 'transparent', color: color.accentNegative, fontSize: '12px', padding: '24px',
             fontFamily: 'monospace', textAlign: 'center', gap: '8px',
           }}>
             <div>CHART ERROR</div>
-            <div style={{ color: C.red, fontSize: '11px', maxWidth: '600px', wordBreak: 'break-all' }}>{chartError}</div>
+            <div style={{ color: color.accentNegative, fontSize: '11px', maxWidth: '600px', wordBreak: 'break-all' }}>{chartError}</div>
           </div>
         ) : (
           <>
@@ -624,9 +626,9 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
             {isLoadingOlder && (
               <div style={{
                 position: 'absolute', bottom: 32, left: '50%', transform: 'translateX(-50%)',
-                zIndex: 12, background: `${C.surface0}CC`, border: `1px solid ${C.border1}`,
+                zIndex: 12, background: `${color.bgBase}CC`, border: `1px solid ${color.borderSubtle}`,
                 borderRadius: '4px', padding: '4px 12px',
-                fontSize: '10px', color: C.amber, letterSpacing: '0.05em', pointerEvents: 'none',
+                fontSize: '10px', color: color.textPrimary, letterSpacing: '0.05em', pointerEvents: 'none',
               }}>
                 LOADING OLDER BARS...
               </div>
@@ -634,7 +636,7 @@ const GIPScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
             {!hasMore && !isLoadingOlder && (
               <div style={{
                 position: 'absolute', bottom: 32, left: 8,
-                zIndex: 12, fontSize: '9px', color: C.amberMute, letterSpacing: '0.05em',
+                zIndex: 12, fontSize: '9px', color: color.textTertiary, letterSpacing: '0.05em',
               }}>
                 EARLIEST INTRADAY DATA AVAILABLE (60-DAY LIMIT)
               </div>

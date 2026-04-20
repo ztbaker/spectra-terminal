@@ -2,14 +2,14 @@ import Panel from '../Terminal/Panel'
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchScreener, fetchScreenerDSL } from '../../lib/api'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
 import LoadingBar from '../shared/LoadingBar'
 import DataGrid from '../shared/DataGrid'
 import type { DataGridColumn } from '../shared/DataGrid'
 import TabBar from '../shared/TabBar'
 import type { ScreenerResult } from '../../types'
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+const { color, font } = theme
 
 const SECTORS = [
   'Technology',
@@ -39,8 +39,6 @@ const QUICK_FILTERS: { label: string; query: string }[] = [
   { label: 'Momentum', query: 'rsi14<30 AND mktcap>1b' },
 ]
 
-// ─── Number parsing helper ────────────────────────────────────────────────────
-
 function parseFilterNum(s: string): number | undefined {
   if (!s) return undefined
   const n = parseFloat(s)
@@ -52,10 +50,8 @@ function parseFilterNum(s: string): number | undefined {
   return n
 }
 
-// ─── Formatting helpers ───────────────────────────────────────────────────────
-
 function formatMarketCap(n: number | null | undefined): string {
-  if (n == null) return '—'
+  if (n == null) return '\u2014'
   const abs = Math.abs(n)
   if (abs >= 1e12) return (n / 1e12).toFixed(2) + 'T'
   if (abs >= 1e9) return (n / 1e9).toFixed(2) + 'B'
@@ -64,14 +60,12 @@ function formatMarketCap(n: number | null | undefined): string {
 }
 
 function formatVolume(n: number | null | undefined): string {
-  if (n == null) return '—'
+  if (n == null) return '\u2014'
   const abs = Math.abs(n)
   if (abs >= 1e6) return (n / 1e6).toFixed(1) + 'M'
   if (abs >= 1e3) return (n / 1e3).toFixed(1) + 'K'
   return n.toFixed(0)
 }
-
-// ─── LocalStorage helpers ────────────────────────────────────────────────────
 
 function loadSavedQueries(): SavedQuery[] {
   try {
@@ -87,11 +81,8 @@ function persistSavedQueries(queries: SavedQuery[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(queries))
   } catch {
-    // silent fail
   }
 }
-
-// ─── Visual filter state ─────────────────────────────────────────────────────
 
 interface FilterState {
   sector: string
@@ -119,8 +110,6 @@ function buildParams(filters: FilterState): Record<string, string | number | und
   }
 }
 
-// ─── DataGrid columns ────────────────────────────────────────────────────────
-
 type ScreenerRow = ScreenerResult & Record<string, unknown>
 
 function buildColumns(): DataGridColumn<ScreenerRow>[] {
@@ -133,7 +122,7 @@ function buildColumns(): DataGridColumn<ScreenerRow>[] {
       sortable: true,
       width: '80px',
       render: (row: ScreenerRow) => (
-        <span style={{ color: C.amber, fontWeight: 700 }}>{String(row.ticker)}</span>
+        <span style={{ color: color.ticker, fontWeight: 600, fontFamily: font.mono }}>{String(row.ticker)}</span>
       ),
     },
     {
@@ -144,8 +133,8 @@ function buildColumns(): DataGridColumn<ScreenerRow>[] {
       sortable: true,
       width: '180px',
       render: (row: ScreenerRow) => (
-        <span style={{ color: C.amberDim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block', maxWidth: '180px' }}>
-          {row.company_name ?? '—'}
+        <span style={{ color: color.textSecondary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block', maxWidth: '180px' }}>
+          {row.company_name ?? '\u2014'}
         </span>
       ),
     },
@@ -157,7 +146,7 @@ function buildColumns(): DataGridColumn<ScreenerRow>[] {
       sortable: true,
       width: '140px',
       render: (row: ScreenerRow) => (
-        <span style={{ color: C.whiteDim }}>{row.sector ?? '—'}</span>
+        <span style={{ color: color.textSecondary }}>{row.sector ?? '\u2014'}</span>
       ),
     },
     {
@@ -168,7 +157,7 @@ function buildColumns(): DataGridColumn<ScreenerRow>[] {
       sortable: true,
       width: '90px',
       render: (row: ScreenerRow) => (
-        <span style={{ color: C.white }}>{formatMarketCap(row.market_cap as number | null | undefined)}</span>
+        <span style={{ color: color.textPrimary }}>{formatMarketCap(row.market_cap as number | null | undefined)}</span>
       ),
     },
     {
@@ -180,7 +169,7 @@ function buildColumns(): DataGridColumn<ScreenerRow>[] {
       width: '70px',
       render: (row: ScreenerRow) => {
         const v = row.pe_ratio as number | null | undefined
-        return <span style={{ color: C.white }}>{v == null ? '—' : v.toFixed(1)}</span>
+        return <span style={{ color: color.textPrimary }}>{v == null ? '\u2014' : v.toFixed(1)}</span>
       },
     },
     {
@@ -192,7 +181,7 @@ function buildColumns(): DataGridColumn<ScreenerRow>[] {
       width: '80px',
       render: (row: ScreenerRow) => {
         const v = row.price as number | null | undefined
-        return <span style={{ color: C.white }}>{v == null ? '—' : v.toFixed(2)}</span>
+        return <span style={{ color: color.textPrimary }}>{v == null ? '\u2014' : v.toFixed(2)}</span>
       },
     },
     {
@@ -204,9 +193,9 @@ function buildColumns(): DataGridColumn<ScreenerRow>[] {
       width: '80px',
       render: (row: ScreenerRow) => {
         const v = row.change_pct as number | null | undefined
-        if (v == null) return <span style={{ color: C.amber }}>—</span>
-        const color = v > 0 ? C.green : v < 0 ? C.red : C.amber
-        return <span style={{ color }}>{v > 0 ? '+' : ''}{v.toFixed(2)}%</span>
+        if (v == null) return <span style={{ color: color.textPrimary }}>{'\u2014'}</span>
+        const clr = v > 0 ? color.accentPositive : v < 0 ? color.accentNegative : color.textSecondary
+        return <span style={{ color: clr, fontVariantNumeric: 'tabular-nums' }}>{v > 0 ? '+' : ''}{v.toFixed(2)}%</span>
       },
     },
     {
@@ -217,7 +206,7 @@ function buildColumns(): DataGridColumn<ScreenerRow>[] {
       sortable: true,
       width: '80px',
       render: (row: ScreenerRow) => (
-        <span style={{ color: C.whiteDim }}>{formatVolume(row.volume as number | null | undefined)}</span>
+        <span style={{ color: color.textSecondary }}>{formatVolume(row.volume as number | null | undefined)}</span>
       ),
     },
     {
@@ -229,55 +218,46 @@ function buildColumns(): DataGridColumn<ScreenerRow>[] {
       width: '70px',
       render: (row: ScreenerRow) => {
         const v = row.beta as number | null | undefined
-        return <span style={{ color: C.whiteDim }}>{v == null ? '—' : v.toFixed(2)}</span>
+        return <span style={{ color: color.textSecondary }}>{v == null ? '\u2014' : v.toFixed(2)}</span>
       },
     },
   ]
 }
 
-// ─── Spinner ──────────────────────────────────────────────────────────────────
-
-const AmberSpinner: React.FC = () => (
+const Spinner: React.FC = () => (
   <div style={{
     width: '14px',
     height: '14px',
-    border: `2px solid ${C.border1}`,
-    borderTopColor: C.amber,
+    border: `2px solid ${color.borderSubtle}`,
+    borderTopColor: color.accentPositive,
     borderRadius: '50%',
     animation: 'spin 600ms linear infinite',
     flexShrink: 0,
   }} />
 )
 
-// ─── Main component ───────────────────────────────────────────────────────────
-
 interface Props {
   onNavigate: (cmd: string) => void
 }
 
 const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
-  // ── Mode ──
   const [mode, setMode] = useState<'dsl' | 'visual'>('dsl')
 
-  // ── DSL state ──
   const [dslQuery, setDslQuery] = useState('')
   const [activeDslQuery, setActiveDslQuery] = useState('')
   const [dslHasRun, setDslHasRun] = useState(false)
   const dslInputRef = useRef<HTMLInputElement>(null)
 
-  // ── Visual filter state ──
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS)
   const [activeParams, setActiveParams] = useState<Record<string, string | number | undefined>>(
     buildParams(DEFAULT_FILTERS)
   )
   const [visualHasRun, setVisualHasRun] = useState(false)
 
-  // ── Saved queries ──
   const [savedQueries, setSavedQueries] = useState<SavedQuery[]>(loadSavedQueries)
   const [saveName, setSaveName] = useState('')
   const [showSaveInput, setShowSaveInput] = useState(false)
 
-  // ── DSL query ──
   const dslQueryHook = useQuery({
     queryKey: ['screener-dsl', activeDslQuery],
     queryFn: () => fetchScreenerDSL(activeDslQuery),
@@ -285,7 +265,6 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
     enabled: mode === 'dsl' && dslHasRun && activeDslQuery.length > 0,
   })
 
-  // ── Visual query ──
   const visualQueryHook = useQuery({
     queryKey: ['screener', activeParams],
     queryFn: () => fetchScreener(activeParams),
@@ -293,7 +272,6 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
     enabled: mode === 'visual' && visualHasRun,
   })
 
-  // ── Active data ──
   const isLoading = mode === 'dsl' ? dslQueryHook.isLoading : visualQueryHook.isLoading
   const isFetching = mode === 'dsl' ? dslQueryHook.isFetching : visualQueryHook.isFetching
   const error = mode === 'dsl' ? dslQueryHook.error : visualQueryHook.error
@@ -301,8 +279,6 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
   const hasRun = mode === 'dsl' ? dslHasRun : visualHasRun
 
   const results = (data?.results ?? []) as ScreenerRow[]
-
-  // ── DSL handlers ──
 
   const handleDslExecute = useCallback(() => {
     if (dslQuery.trim()) {
@@ -321,8 +297,6 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
     setDslHasRun(true)
   }, [])
 
-  // ── Visual handlers ──
-
   const handleVisualScreen = useCallback(() => {
     setActiveParams(buildParams(filters))
     setVisualHasRun(true)
@@ -337,8 +311,6 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
   const handleVisualKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter') handleVisualScreen()
   }, [handleVisualScreen])
-
-  // ── Saved queries handlers ──
 
   const handleSaveQuery = useCallback(() => {
     if (!dslQuery.trim() || !saveName.trim()) return
@@ -361,23 +333,19 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
     setDslHasRun(true)
   }, [])
 
-  // ── Focus DSL input when switching to DSL mode ──
   useEffect(() => {
     if (mode === 'dsl' && dslInputRef.current) {
       dslInputRef.current.focus()
     }
   }, [mode])
 
-  // ── Memoized columns ──
   const columnsMemo = useMemo(() => buildColumns(), [])
-
-  // ── Shared styles ──
 
   const inputStyle: React.CSSProperties = {
     background: 'transparent',
-    border: `1px solid ${C.border1}`,
-    color: C.amber,
-    fontFamily: C.fontMono,
+    border: `1px solid ${color.borderSubtle}`,
+    color: color.textPrimary,
+    fontFamily: font.mono,
     fontSize: '11px',
     padding: '3px 6px',
     outline: 'none',
@@ -390,12 +358,11 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: C.surface0 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'transparent' }}>
       <LoadingBar loading={isLoading || isFetching} />
 
       <Panel title="EQUITY SCREENER">
-        {/* ── Mode toggle ── */}
-        <div style={{ padding: '8px 10px 0', background: C.surface1 }}>
+        <div style={{ padding: '8px 10px 0', background: 'rgba(19, 22, 25, 0.6)' }}>
           <TabBar
             tabs={[
               { key: 'dsl', label: 'DSL' },
@@ -407,10 +374,8 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
           />
         </div>
 
-        {/* ── DSL mode ── */}
         {mode === 'dsl' && (
-          <div style={{ padding: '8px 10px', background: C.surface1, borderBottom: `1px solid ${C.border1}` }}>
-            {/* Query bar row */}
+          <div style={{ padding: '8px 10px', background: 'rgba(19, 22, 25, 0.6)', borderBottom: `1px solid ${color.borderSubtle}` }}>
             <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
               <input
                 ref={dslInputRef}
@@ -422,19 +387,19 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
                 style={{
                   flex: 1,
                   height: '40px',
-                  background: C.surface1,
-                  border: `1px solid ${C.border1}`,
-                  color: C.amber,
-                  fontFamily: C.fontMono,
+                  background: 'rgba(19, 22, 25, 0.6)',
+                  border: `1px solid ${color.borderSubtle}`,
+                  color: color.textPrimary,
+                  fontFamily: font.mono,
                   fontSize: '13px',
                   padding: '0 12px',
                   outline: 'none',
                   borderRadius: '2px',
                   transition: 'border-color 150ms ease',
-                  caretColor: C.amber,
+                  caretColor: color.accentPositive,
                 }}
-                onFocus={e => { e.currentTarget.style.borderColor = C.amber }}
-                onBlur={e => { e.currentTarget.style.borderColor = C.border1 }}
+                onFocus={e => { e.currentTarget.style.borderColor = color.borderStrong }}
+                onBlur={e => { e.currentTarget.style.borderColor = color.borderSubtle }}
               />
               <button
                 onClick={handleDslExecute}
@@ -444,21 +409,21 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  background: C.amber,
+                  background: color.accentPositive,
                   border: 'none',
                   borderRadius: '2px',
                   cursor: 'pointer',
-                  color: C.surface0,
+                  color: color.textInverse,
                   fontWeight: 700,
                   fontSize: '16px',
-                  fontFamily: C.fontMono,
+                  fontFamily: font.mono,
                   flexShrink: 0,
                   transition: 'background 150ms ease',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = C.amberBright }}
-                onMouseLeave={e => { e.currentTarget.style.background = C.amber }}
+                onMouseEnter={e => { e.currentTarget.style.background = color.accentPositiveHover }}
+                onMouseLeave={e => { e.currentTarget.style.background = color.accentPositive }}
               >
-                {isFetching ? <AmberSpinner /> : '\u25B6'}
+                {isFetching ? <Spinner /> : '\u25B6'}
               </button>
               <button
                 onClick={() => {
@@ -475,33 +440,31 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
                   alignItems: 'center',
                   justifyContent: 'center',
                   background: 'transparent',
-                  border: `1px solid ${C.border1}`,
+                  border: `1px solid ${color.borderSubtle}`,
                   borderRadius: '2px',
                   cursor: dslQuery.trim() ? 'pointer' : 'default',
-                  color: dslQuery.trim() ? C.amberDim : C.whiteGhost,
+                  color: dslQuery.trim() ? color.textSecondary : color.textTertiary,
                   fontSize: '11px',
-                  fontFamily: C.fontDisplay,
+                  fontFamily: font.sans,
                   fontWeight: 600,
-                  letterSpacing: '0.05em',
                   flexShrink: 0,
                   transition: 'all 150ms ease',
                 }}
                 onMouseEnter={e => {
                   if (dslQuery.trim()) {
-                    e.currentTarget.style.borderColor = C.amberMute
-                    e.currentTarget.style.color = C.amber
+                    e.currentTarget.style.borderColor = color.borderMedium
+                    e.currentTarget.style.color = color.textPrimary
                   }
                 }}
                 onMouseLeave={e => {
-                  e.currentTarget.style.borderColor = C.border1
-                  e.currentTarget.style.color = dslQuery.trim() ? C.amberDim : C.whiteGhost
+                  e.currentTarget.style.borderColor = color.borderSubtle
+                  e.currentTarget.style.color = dslQuery.trim() ? color.textSecondary : color.textTertiary
                 }}
               >
                 SAVE
               </button>
             </div>
 
-            {/* Save input row */}
             {showSaveInput && (
               <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '6px' }}>
                 <input
@@ -513,18 +476,18 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
                   style={{
                     flex: 1,
                     height: '28px',
-                    background: C.surface0,
-                    border: `1px solid ${C.border1}`,
-                    color: C.white,
-                    fontFamily: C.fontDisplay,
+                    background: 'transparent',
+                    border: `1px solid ${color.borderSubtle}`,
+                    color: color.textPrimary,
+                    fontFamily: font.sans,
                     fontSize: '11px',
                     padding: '0 8px',
                     outline: 'none',
                     borderRadius: '2px',
-                    caretColor: C.amber,
+                    caretColor: color.accentPositive,
                   }}
-                  onFocus={e => { e.currentTarget.style.borderColor = C.amber }}
-                  onBlur={e => { e.currentTarget.style.borderColor = C.border1 }}
+                  onFocus={e => { e.currentTarget.style.borderColor = color.borderStrong }}
+                  onBlur={e => { e.currentTarget.style.borderColor = color.borderSubtle }}
                   autoFocus
                 />
                 <button
@@ -533,15 +496,14 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
                   style={{
                     height: '28px',
                     padding: '0 10px',
-                    background: saveName.trim() ? C.amberMute : C.surface2,
-                    border: `1px solid ${saveName.trim() ? C.amberMute : C.border1}`,
-                    color: saveName.trim() ? C.amber : C.whiteGhost,
+                    background: saveName.trim() ? color.bgSurface : color.bgSurface,
+                    border: `1px solid ${saveName.trim() ? color.borderMedium : color.borderSubtle}`,
+                    color: saveName.trim() ? color.textPrimary : color.textTertiary,
                     borderRadius: '2px',
                     cursor: saveName.trim() ? 'pointer' : 'default',
                     fontSize: '11px',
-                    fontFamily: C.fontDisplay,
+                    fontFamily: font.sans,
                     fontWeight: 600,
-                    letterSpacing: '0.03em',
                   }}
                 >
                   SAVE
@@ -552,12 +514,12 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
                     height: '28px',
                     padding: '0 8px',
                     background: 'transparent',
-                    border: `1px solid ${C.border1}`,
-                    color: C.whiteDim,
+                    border: `1px solid ${color.borderSubtle}`,
+                    color: color.textSecondary,
                     borderRadius: '2px',
                     cursor: 'pointer',
                     fontSize: '11px',
-                    fontFamily: C.fontDisplay,
+                    fontFamily: font.sans,
                   }}
                 >
                   CANCEL
@@ -565,7 +527,6 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
               </div>
             )}
 
-            {/* Quick filter chips */}
             <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
               {QUICK_FILTERS.map(f => {
                 const isActive = dslQuery === f.query
@@ -575,27 +536,26 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
                     onClick={() => handleQuickFilter(f.query)}
                     style={{
                       padding: '4px 12px',
-                      background: isActive ? C.amberMute : 'transparent',
-                      border: `1px solid ${isActive ? C.amberMute : C.border1}`,
-                      color: isActive ? C.amber : C.whiteDim,
+                      background: isActive ? color.accentPositiveDim : 'transparent',
+                      border: `1px solid ${isActive ? color.accentPositive : color.borderSubtle}`,
+                      color: isActive ? color.accentPositive : color.textSecondary,
                       borderRadius: '3px',
                       cursor: 'pointer',
                       fontSize: '11px',
-                      fontFamily: C.fontDisplay,
-                      fontWeight: isActive ? 700 : 400,
-                      letterSpacing: '0.03em',
+                      fontFamily: font.sans,
+                      fontWeight: isActive ? 600 : 400,
                       transition: 'all 150ms ease',
                     }}
                     onMouseEnter={e => {
                       if (!isActive) {
-                        e.currentTarget.style.borderColor = C.amberMute
-                        e.currentTarget.style.color = C.amberDim
+                        e.currentTarget.style.borderColor = color.borderMedium
+                        e.currentTarget.style.color = color.textSecondary
                       }
                     }}
                     onMouseLeave={e => {
                       if (!isActive) {
-                        e.currentTarget.style.borderColor = C.border1
-                        e.currentTarget.style.color = C.whiteDim
+                        e.currentTarget.style.borderColor = color.borderSubtle
+                        e.currentTarget.style.color = color.textSecondary
                       }
                     }}
                   >
@@ -607,20 +567,18 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
           </div>
         )}
 
-        {/* ── Visual mode ── */}
         {mode === 'visual' && (
           <div style={{
             padding: '8px 10px',
-            background: C.surface1,
-            borderBottom: `1px solid ${C.border1}`,
+            background: 'rgba(19, 22, 25, 0.6)',
+            borderBottom: `1px solid ${color.borderSubtle}`,
             display: 'flex',
             flexWrap: 'wrap',
             gap: '10px',
             alignItems: 'flex-end',
           }}>
-            {/* Sector */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: '180px' }}>
-              <label style={{ color: C.amberDim, fontSize: '10px', letterSpacing: '0.05em' }}>SECTOR</label>
+              <label style={{ color: color.textSecondary, fontSize: '11px', fontWeight: 600, fontFamily: font.sans }}>SECTOR</label>
               <select
                 style={selectStyle}
                 value={filters.sector}
@@ -634,9 +592,8 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
               </select>
             </div>
 
-            {/* Min Market Cap */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: '100px' }}>
-              <label style={{ color: C.amberDim, fontSize: '10px', letterSpacing: '0.05em' }}>MIN MKT CAP</label>
+              <label style={{ color: color.textSecondary, fontSize: '11px', fontWeight: 600, fontFamily: font.sans }}>MIN MKT CAP</label>
               <input
                 style={inputStyle}
                 placeholder="e.g. 1B"
@@ -646,9 +603,8 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
               />
             </div>
 
-            {/* Max P/E */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: '80px' }}>
-              <label style={{ color: C.amberDim, fontSize: '10px', letterSpacing: '0.05em' }}>MAX P/E</label>
+              <label style={{ color: color.textSecondary, fontSize: '11px', fontWeight: 600, fontFamily: font.sans }}>MAX P/E</label>
               <input
                 style={inputStyle}
                 placeholder="e.g. 25"
@@ -661,9 +617,8 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
               />
             </div>
 
-            {/* Min Volume */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: '100px' }}>
-              <label style={{ color: C.amberDim, fontSize: '10px', letterSpacing: '0.05em' }}>MIN VOLUME</label>
+              <label style={{ color: color.textSecondary, fontSize: '11px', fontWeight: 600, fontFamily: font.sans }}>MIN VOLUME</label>
               <input
                 style={inputStyle}
                 placeholder="e.g. 500K"
@@ -673,25 +628,23 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
               />
             </div>
 
-            {/* Buttons */}
             <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-end', paddingBottom: '1px' }}>
               <button
                 onClick={handleVisualScreen}
                 style={{
                   padding: '4px 14px',
                   fontSize: '11px',
-                  color: C.surface0,
-                  background: C.amber,
-                  border: `1px solid ${C.amber}`,
-                  fontWeight: 700,
-                  fontFamily: C.fontDisplay,
+                  color: color.textInverse,
+                  background: color.accentPositive,
+                  border: `1px solid ${color.accentPositive}`,
+                  fontWeight: 600,
+                  fontFamily: font.sans,
                   cursor: 'pointer',
-                  letterSpacing: '0.03em',
                   borderRadius: '2px',
                   transition: 'background 150ms ease',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = C.amberBright }}
-                onMouseLeave={e => { e.currentTarget.style.background = C.amber }}
+                onMouseEnter={e => { e.currentTarget.style.background = color.accentPositiveHover }}
+                onMouseLeave={e => { e.currentTarget.style.background = color.accentPositive }}
               >
                 SCREEN
               </button>
@@ -700,17 +653,16 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
                 style={{
                   padding: '4px 10px',
                   fontSize: '11px',
-                  color: C.whiteDim,
+                  color: color.textSecondary,
                   background: 'transparent',
-                  border: `1px solid ${C.border1}`,
-                  fontFamily: C.fontDisplay,
+                  border: `1px solid ${color.borderSubtle}`,
+                  fontFamily: font.sans,
                   cursor: 'pointer',
-                  letterSpacing: '0.03em',
                   borderRadius: '2px',
                   transition: 'all 150ms ease',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = C.amberMute; e.currentTarget.style.color = C.amberDim }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = C.border1; e.currentTarget.style.color = C.whiteDim }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = color.borderMedium; e.currentTarget.style.color = color.textPrimary }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = color.borderSubtle; e.currentTarget.style.color = color.textSecondary }}
               >
                 CLEAR
               </button>
@@ -718,33 +670,29 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
           </div>
         )}
 
-        {/* ── Error ── */}
         {error && !isLoading && (
-          <div style={{ padding: '10px 12px', color: C.red, fontSize: '12px', borderBottom: `1px solid ${C.border1}`, fontFamily: C.fontMono }}>
+          <div style={{ padding: '10px 12px', color: color.accentNegative, fontSize: '12px', borderBottom: `1px solid ${color.borderSubtle}`, fontFamily: font.mono }}>
             ERR: {(error as Error).message ?? 'Screener request failed'}
           </div>
         )}
 
-        {/* ── Body: sidebar + results ── */}
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-          {/* ── Saved queries sidebar ── */}
           {mode === 'dsl' && (
             <div style={{
               width: '200px',
               minWidth: '200px',
-              borderRight: `1px solid ${C.border1}`,
-              background: C.surface1,
+              borderRight: `1px solid ${color.borderSubtle}`,
+              background: 'rgba(19, 22, 25, 0.6)',
               display: 'flex',
               flexDirection: 'column',
             }}>
               <div style={{
                 padding: '8px 10px',
-                borderBottom: `1px solid ${C.border1}`,
-                color: C.amberDim,
-                fontSize: '10px',
-                letterSpacing: '0.08em',
-                fontFamily: C.fontDisplay,
-                fontWeight: 700,
+                borderBottom: `1px solid ${color.borderSubtle}`,
+                color: color.textSecondary,
+                fontSize: '11px',
+                fontWeight: 600,
+                fontFamily: font.sans,
                 flexShrink: 0,
               }}>
                 SAVED QUERIES
@@ -753,10 +701,10 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
                 {savedQueries.length === 0 && (
                   <div style={{
                     padding: '16px 10px',
-                    color: C.whiteGhost,
+                    color: color.textTertiary,
                     fontSize: '11px',
                     textAlign: 'center',
-                    fontFamily: C.fontMono,
+                    fontFamily: font.mono,
                   }}>
                     No saved queries
                   </div>
@@ -768,19 +716,19 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
                       display: 'flex',
                       alignItems: 'center',
                       padding: '6px 8px',
-                      borderBottom: `1px solid ${C.border0}`,
+                      borderBottom: `1px solid ${color.borderSubtle}`,
                       cursor: 'pointer',
                       transition: 'background 150ms ease',
                     }}
                     onClick={() => handleLoadSaved(sq)}
-                    onMouseEnter={e => { e.currentTarget.style.background = C.surface3 }}
+                    onMouseEnter={e => { e.currentTarget.style.background = color.bgHover }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
                   >
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{
-                        color: C.white,
+                        color: color.textPrimary,
                         fontSize: '11px',
-                        fontFamily: C.fontDisplay,
+                        fontFamily: font.sans,
                         fontWeight: 600,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -789,9 +737,9 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
                         {sq.name}
                       </div>
                       <div style={{
-                        color: C.whiteGhost,
+                        color: color.textTertiary,
                         fontSize: '10px',
-                        fontFamily: C.fontMono,
+                        fontFamily: font.mono,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
@@ -806,7 +754,7 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
                       style={{
                         background: 'transparent',
                         border: 'none',
-                        color: C.whiteGhost,
+                        color: color.textTertiary,
                         cursor: 'pointer',
                         fontSize: '14px',
                         lineHeight: '1',
@@ -814,10 +762,10 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
                         flexShrink: 0,
                         transition: 'color 150ms ease',
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.color = C.red }}
-                      onMouseLeave={e => { e.currentTarget.style.color = C.whiteGhost }}
+                      onMouseEnter={e => { e.currentTarget.style.color = color.accentNegative }}
+                      onMouseLeave={e => { e.currentTarget.style.color = color.textTertiary }}
                     >
-                      &times;
+                      {'\u00D7'}
                     </button>
                   </div>
                 ))}
@@ -825,21 +773,18 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
             </div>
           )}
 
-          {/* ── Results area ── */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            {/* Initial state */}
             {!hasRun && !isLoading && (
               <div style={{
                 flex: 1,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: C.whiteGhost,
+                color: color.textTertiary,
                 fontSize: '12px',
                 padding: '48px',
                 textAlign: 'center',
-                letterSpacing: '0.05em',
-                fontFamily: C.fontMono,
+                fontFamily: font.mono,
               }}>
                 {mode === 'dsl'
                   ? 'ENTER A DSL QUERY AND PRESS [ \u25B6 ] TO SCAN'
@@ -847,21 +792,18 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
               </div>
             )}
 
-            {/* Loading skeleton */}
             {isLoading && !data && (
               <div style={{
                 padding: '16px',
-                color: C.whiteGhost,
+                color: color.textTertiary,
                 fontSize: '12px',
                 textAlign: 'center',
-                fontFamily: C.fontMono,
-                letterSpacing: '0.05em',
+                fontFamily: font.mono,
               }}>
                 SCANNING EQUITIES...
               </div>
             )}
 
-            {/* Results DataGrid */}
             {hasRun && !isLoading && results.length > 0 && (
               <div style={{ flex: 1, overflow: 'hidden' }}>
                 <DataGrid<ScreenerRow>
@@ -876,31 +818,27 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
               </div>
             )}
 
-            {/* Empty results */}
             {hasRun && !isLoading && !error && results.length === 0 && (
               <div style={{
                 padding: '32px',
-                color: C.whiteGhost,
+                color: color.textTertiary,
                 fontSize: '12px',
                 textAlign: 'center',
-                letterSpacing: '0.05em',
-                fontFamily: C.fontMono,
+                fontFamily: font.mono,
               }}>
-                NO RESULTS — TRY WIDENING YOUR FILTERS
+                NO RESULTS {'\u2014'} TRY WIDENING YOUR FILTERS
               </div>
             )}
 
-            {/* Footer */}
             {hasRun && results.length > 0 && (
               <div style={{
-                borderTop: `1px solid ${C.border1}`,
+                borderTop: `1px solid ${color.borderSubtle}`,
                 padding: '4px 12px',
                 display: 'flex',
                 justifyContent: 'space-between',
-                color: C.whiteGhost,
+                color: color.textTertiary,
                 fontSize: '10px',
-                fontFamily: C.fontMono,
-                letterSpacing: '0.03em',
+                fontFamily: font.mono,
                 flexShrink: 0,
               }}>
                 <span>
@@ -916,7 +854,6 @@ const ScreenerScreen: React.FC<Props> = ({ onNavigate }) => {
         </div>
       </Panel>
 
-      {/* Spinner keyframe */}
       <style>{`
         @keyframes spin {
           to { transform: rotate(360deg); }

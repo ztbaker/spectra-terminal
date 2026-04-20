@@ -32,7 +32,9 @@ import { useLivePrice } from '../../hooks/useLivePrice'
 import { useLiveBarUpdater } from '../../hooks/useLiveBarUpdater'
 import LoadingBar from '../shared/LoadingBar'
 import ExtendedHoursBadge from '../shared/ExtendedHoursBadge'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
+
+const { color, font } = theme
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -84,15 +86,15 @@ const OhlcvOverlay: React.FC<OhlcvState> = ({ open, high, low, close, volume }) 
   return (
     <div style={{
       position: 'absolute', top: 8, left: 8, zIndex: 10,
-      background: `${C.surface0}BF`, border: `1px solid ${C.border1}`,
-      padding: '4px 8px', fontSize: 11, color: C.amberDim,
+      background: `${color.bgBase}BF`, border: `1px solid ${color.borderSubtle}`,
+      padding: '4px 8px', fontSize: 11, color: color.textSecondary,
       pointerEvents: 'none', display: 'flex', gap: 10,
     }}>
       <span>O: {fmt(open)}</span>
       <span>H: {fmt(high)}</span>
       <span>L: {fmt(low)}</span>
-      <span style={{ color: isUp ? C.green : C.red }}>C: {fmt(close)}</span>
-      <span style={{ color: C.amberMute }}>V: {fmtVol(volume)}</span>
+      <span style={{ color: isUp ? color.accentPositive : color.accentNegative }}>C: {fmt(close)}</span>
+      <span style={{ color: color.textTertiary }}>V: {fmtVol(volume)}</span>
     </div>
   )
 }
@@ -153,22 +155,22 @@ const GPOScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
     if (!containerRef.current) return
     const chart = createChart(containerRef.current, {
       layout: {
-        background: { color: C.surface0 },
-        textColor:  C.amberDim,
-        fontFamily: "'JetBrains Mono', 'IBM Plex Mono', 'Courier New', monospace",
+        background: { color: color.bgBase },
+        textColor:  color.textSecondary,
+        fontFamily: font.mono,
         fontSize:   11,
       },
       grid: {
-        vertLines: { color: C.surfaceGlow },
-        horzLines: { color: C.surfaceGlow },
+        vertLines: { color: 'rgba(255,255,255,0.04)' },
+        horzLines: { color: 'rgba(255,255,255,0.04)' },
       },
       crosshair: {
         mode:     CrosshairMode.Normal,
-        vertLine: { color: C.amber, width: 1, style: 1, labelBackgroundColor: C.surfaceGlow },
-        horzLine: { color: C.amber, width: 1, style: 1, labelBackgroundColor: C.surfaceGlow },
+        vertLine: { color: 'rgba(255,255,255,0.20)', width: 1, style: 1, labelBackgroundColor: color.bgElevated },
+        horzLine: { color: 'rgba(255,255,255,0.20)', width: 1, style: 1, labelBackgroundColor: color.bgElevated },
       },
-      rightPriceScale: { borderColor: C.border1, textColor: C.amberDim },
-      timeScale:        { borderColor: C.border1, timeVisible: true, secondsVisible: false },
+      rightPriceScale: { borderColor: color.borderSubtle, textColor: color.textSecondary },
+      timeScale:        { borderColor: color.borderSubtle, timeVisible: true, secondsVisible: false },
       width:  containerRef.current.clientWidth,
       height: containerRef.current.clientHeight,
     })
@@ -226,10 +228,9 @@ const GPOScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
     const addS = (type: any, opts: any, pane = 0) => chart.addSeries(type, opts, pane)
 
     if (chartType === 'BAR') {
-      // Classic OHLC bar chart — up bars in amber, down bars in red
       const s = addS(BarSeries, {
-        upColor:      C.amber,
-        downColor:    C.red,
+        upColor:      color.accentPositive,
+        downColor:    color.accentNegative,
         priceScaleId: 'right',
       })
       const d: BarData[] = ohlcv.map(b => ({
@@ -239,9 +240,9 @@ const GPOScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
 
     } else if (chartType === 'CANDLE') {
       const s = addS(CandlestickSeries, {
-        upColor: C.green, downColor: C.red,
-        borderUpColor: C.green, borderDownColor: C.red,
-        wickUpColor: C.green, wickDownColor: C.red,
+        upColor: color.accentPositive, downColor: color.accentNegative,
+        borderUpColor: color.accentPositive, borderDownColor: color.accentNegative,
+        wickUpColor: color.accentPositive, wickDownColor: color.accentNegative,
         priceScaleId: 'right',
       })
       const d: CandlestickData[] = ohlcv.map(b => ({
@@ -250,7 +251,7 @@ const GPOScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
       s.setData(d); mainRef.current = s
 
     } else {
-      const s = addS(LineSeries, { color: C.amber, lineWidth: 2, priceScaleId: 'right' })
+      const s = addS(LineSeries, { color: color.accentPositive, lineWidth: 2, priceScaleId: 'right' })
       const d: LineData[] = ohlcv.map(b => ({ time: toTime(b.time), value: b.close }))
       s.setData(d); mainRef.current = s
     }
@@ -263,13 +264,13 @@ const GPOScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
 
     // Volume
     const volS = addS(HistogramSeries, {
-      priceScaleId: 'vol', color: C.border1, priceFormat: { type: 'volume' },
+      priceScaleId: 'vol', color: color.borderSubtle, priceFormat: { type: 'volume' },
     })
     volS.priceScale().applyOptions({ scaleMargins: { top: 0.80, bottom: 0 } })
     const volData: HistogramData[] = ohlcv.map(b => ({
       time:  toTime(b.time),
       value: b.volume,
-      color: b.close >= b.open ? 'rgba(255,153,0,0.35)' : 'rgba(255,51,51,0.30)',
+      color: b.close >= b.open ? 'rgba(0,217,100,0.25)' : 'rgba(255,82,82,0.25)',
     }))
     volS.setData(volData); volRef.current = volS
 
@@ -332,7 +333,7 @@ const GPOScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
     if (volRef.current) {
       const volData: HistogramData[] = bars.map(b => ({
         time: toTime(b.time), value: b.volume,
-        color: b.close >= b.open ? 'rgba(255,153,0,0.35)' : 'rgba(255,51,51,0.30)',
+        color: b.close >= b.open ? 'rgba(0,217,100,0.25)' : 'rgba(255,82,82,0.25)',
       }))
       volRef.current.setData(volData as any)
     }
@@ -344,17 +345,17 @@ const GPOScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: C.surface0, overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'transparent', overflow: 'hidden' }}>
       <LoadingBar loading={isLoading} />
 
       {/* ── Toolbar ─────────────────────────────────────────────────────── */}
       <div style={{
         flexShrink: 0, height: 44,
-        background: C.surface1, borderBottom: `1px solid ${C.border1}`,
+        background: 'rgba(19, 22, 25, 0.6)', borderBottom: `1px solid ${color.borderSubtle}`,
         display: 'flex', alignItems: 'center', gap: 4, padding: '0 8px',
       }}>
         {/* Ticker */}
-        <span style={{ color: C.amber, fontSize: 13, fontWeight: 700, letterSpacing: '0.05em', marginRight: 8 }}>
+        <span style={{ color: color.textPrimary, fontSize: 13, fontWeight: 700, marginRight: 8 }}>
           {ticker}
         </span>
 
@@ -370,7 +371,7 @@ const GPOScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
           </button>
         ))}
 
-        <span style={{ color: C.border1, margin: '0 4px' }}>|</span>
+        <span style={{ color: color.textTertiary, margin: '0 4px' }}>|</span>
 
         {/* Chart type toggle */}
         {CHART_TYPES.map(t => (
@@ -384,7 +385,7 @@ const GPOScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
           </button>
         ))}
 
-        <span style={{ marginLeft: 'auto', color: C.amberMute, fontSize: 10 }}>
+        <span style={{ marginLeft: 'auto', color: color.textTertiary, fontSize: 10 }}>
           {period.toUpperCase()} · {interval}
           {chartData?.ohlcv?.length ? ` · ${chartData.ohlcv.length} bars` : ''}
         </span>
@@ -397,7 +398,7 @@ const GPOScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
           <div style={{
             position: 'absolute', inset: 0, display: 'flex',
             alignItems: 'center', justifyContent: 'center',
-            background: `${C.surface0}CC`, color: C.red, fontSize: 13, zIndex: 20,
+            background: `${color.bgBase}CC`, color: color.accentNegative, fontSize: 13, zIndex: 20,
           }}>
             ERR: {(error as Error).message ?? 'Failed to load chart data'}
           </div>
@@ -408,9 +409,9 @@ const GPOScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
         {isLoadingOlder && (
           <div style={{
             position: 'absolute', bottom: 32, left: '50%', transform: 'translateX(-50%)',
-            zIndex: 12, background: `${C.surface0}CC`, border: `1px solid ${C.border1}`,
+            zIndex: 12, background: `${color.bgBase}CC`, border: `1px solid ${color.borderSubtle}`,
             borderRadius: '4px', padding: '4px 12px',
-            fontSize: '10px', color: C.amber, letterSpacing: '0.05em', pointerEvents: 'none',
+            fontSize: '10px', color: color.textSecondary, pointerEvents: 'none',
           }}>
             LOADING OLDER BARS...
           </div>
@@ -418,7 +419,7 @@ const GPOScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
         {!hasMore && !isLoadingOlder && (
           <div style={{
             position: 'absolute', bottom: 32, left: 8,
-            zIndex: 12, fontSize: '9px', color: C.amberMute, letterSpacing: '0.05em',
+            zIndex: 12, fontSize: '9px', color: color.textTertiary,
           }}>
             EARLIEST DATA AVAILABLE
           </div>

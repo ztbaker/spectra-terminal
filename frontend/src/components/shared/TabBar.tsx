@@ -1,5 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react'
-import C from '../../lib/colors'
+import theme from '../../lib/theme'
+
+const { color, font, radius, motion } = theme
 
 interface Tab {
   key: string
@@ -14,10 +16,6 @@ interface TabBarProps {
   variant?: 'underline' | 'pill'
 }
 
-/**
- * Consistent tab navigation with amber underline or pill style.
- * Keyboard navigable (left/right arrows).
- */
 const TabBar: React.FC<TabBarProps> = ({
   tabs,
   activeKey,
@@ -62,17 +60,16 @@ const TabBar: React.FC<TabBarProps> = ({
               aria-selected={isActive}
               onClick={() => onChange(tab.key)}
               style={{
-                background: isActive ? C.amberGlow : 'transparent',
-                color: isActive ? C.amber : C.whiteDim,
-                border: `1px solid ${isActive ? C.amberDim : C.border1}`,
-                padding: '4px 12px',
-                fontSize: '11px',
-                fontFamily: C.fontDisplay,
-                fontWeight: isActive ? 700 : 400,
+                background: isActive ? color.bgSurface : 'transparent',
+                color: isActive ? color.textPrimary : color.textTertiary,
+                border: `1px solid ${isActive ? color.borderMedium : color.borderSubtle}`,
+                padding: '5px 12px',
+                fontSize: '12px',
+                fontFamily: font.sans,
+                fontWeight: isActive ? 600 : 400,
                 cursor: 'pointer',
-                borderRadius: '3px',
-                transition: 'all 150ms ease',
-                letterSpacing: '0.03em',
+                borderRadius: radius.sm,
+                transition: `all ${motion.normal} ${motion.ease}`,
               }}
             >
               {tab.label}{tab.count !== undefined ? ` (${tab.count})` : ''}
@@ -90,7 +87,7 @@ const TabBar: React.FC<TabBarProps> = ({
       onKeyDown={handleKeyDown}
       style={{
         display: 'flex',
-        borderBottom: `1px solid ${C.border1}`,
+        borderBottom: `1px solid ${color.borderSubtle}`,
         gap: '0',
       }}
     >
@@ -104,16 +101,15 @@ const TabBar: React.FC<TabBarProps> = ({
             onClick={() => onChange(tab.key)}
             style={{
               background: 'transparent',
-              color: isActive ? C.amber : C.whiteDim,
+              color: isActive ? color.textPrimary : color.textTertiary,
               border: 'none',
-              borderBottom: isActive ? `2px solid ${C.amber}` : '2px solid transparent',
+              borderBottom: isActive ? `2px solid ${color.accentPositive}` : '2px solid transparent',
               padding: '8px 16px',
-              fontSize: '11px',
-              fontFamily: C.fontDisplay,
-              fontWeight: isActive ? 700 : 400,
+              fontSize: '12px',
+              fontFamily: font.sans,
+              fontWeight: isActive ? 600 : 400,
               cursor: 'pointer',
-              transition: 'all 150ms ease',
-              letterSpacing: '0.05em',
+              transition: `all ${motion.normal} ${motion.ease}`,
             }}
           >
             {tab.label}{tab.count !== undefined ? ` (${tab.count})` : ''}
