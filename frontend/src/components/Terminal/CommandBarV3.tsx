@@ -214,7 +214,10 @@ const CommandBarV3: React.FC<Props> = ({ onCommand, onCommandNewPanel, activeCom
       setSuggestions([])
       setSuggestionIdx(-1)
       liveInputRef.current = ''
-      focusInput()
+      // Don't steal focus from chat composer when navigating to chat
+      if (cmd.screen !== 'chat') {
+        focusInput()
+      }
     },
     [onCommand, focusInput],
   )

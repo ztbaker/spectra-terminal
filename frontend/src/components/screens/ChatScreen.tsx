@@ -59,6 +59,7 @@ export default function ChatScreen({ sub, onNavigate }: Props) {
   const [showNewRoom, setShowNewRoom] = useState(false)
   const [showNewDM, setShowNewDM] = useState(false)
   const logRef = useRef<HTMLDivElement>(null)
+  const composerRef = useRef<HTMLInputElement>(null)
   const lastMsgCountRef = useRef(0)
 
   // ── Sidebar queries ────────────────────────────────────────────────────
@@ -99,10 +100,11 @@ export default function ChatScreen({ sub, onNavigate }: Props) {
     }
   }, [msgsQ.data])
 
-  // Reset count when switching threads
+  // Reset count when switching threads and focus composer
   useEffect(() => {
     lastMsgCountRef.current = 0
     setError(null)
+    setTimeout(() => composerRef.current?.focus(), 50)
   }, [sub])
 
   // ── Mutations ───────────────────────────────────────────────────────────
@@ -116,6 +118,8 @@ export default function ChatScreen({ sub, onNavigate }: Props) {
       setComposer('')
       qc.invalidateQueries({ queryKey: ['chat', 'thread', thread] })
       qc.invalidateQueries({ queryKey: ['chat', 'dms'] })
+      // Keep focus in chat composer after sending
+      setTimeout(() => composerRef.current?.focus(), 0)
     },
     onError: (e) => setError(errorMessage(e)),
   })
@@ -309,6 +313,7 @@ export default function ChatScreen({ sub, onNavigate }: Props) {
             }}
           >
             <input
+              ref={composerRef}
               className="bb-input"
               style={{ flex: 1, fontSize: '12px' }}
               placeholder={
