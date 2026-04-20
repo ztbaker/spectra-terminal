@@ -61,11 +61,11 @@ All free, no API keys required for core functionality:
 
 ## Installation
 
-Download for your platform:
+Download for your platform from the [latest release](https://github.com/ztbaker/spectra-terminal/releases/latest):
 
-- [**macOS (Apple Silicon)**](https://github.com/ztbaker/spectra-terminal/releases/latest/download/Spectra-Terminal-1.0.2-arm64.dmg)
-- [**macOS (Intel)**](https://github.com/ztbaker/spectra-terminal/releases/latest/download/Spectra-Terminal-1.0.2.dmg)
-- [**Windows**](https://github.com/ztbaker/spectra-terminal/releases/latest/download/Spectra-Terminal-Setup-1.0.2.exe)
+- **macOS (Apple Silicon)** — `.dmg (arm64)`
+- **macOS (Intel)** — `.dmg`
+- **Windows** — `.exe`
 
 The app auto-updates — once installed, future versions download and install automatically.
 
