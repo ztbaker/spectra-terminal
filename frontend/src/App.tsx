@@ -281,7 +281,7 @@ function TerminalApp() {
   const [showLogoutModal, setShowLogoutModal] = useState(false)
   const [bugOpen, setBugOpen] = useState(false)
   const [lastError, setLastError] = useState<string | undefined>(undefined)
-  const { state, openScreen, openScreenInNewPanel, closePanel, focusPanel, maximizePanel, swapPanels, resizePanels, goBack, clearHistory } = useWorkspace()
+  const { state, openScreen, openScreenInNewPanel, closePanel, focusPanel, swapPanels, resizePanels, goBack, clearHistory } = useWorkspace()
   const focusedPanelRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -519,7 +519,6 @@ function TerminalApp() {
         focused={panel.focused}
         panelId={panel.id}
         onClose={() => closePanel(panel.id)}
-        onMaximize={() => maximizePanel(panel.id)}
       >
         {renderScreen(panel.screen, panel.ticker, panel.sub)}
       </PanelV3>

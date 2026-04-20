@@ -12,7 +12,6 @@ interface PanelV3Props {
   panelId?: string
   onDragStart?: (panelId: string, e: React.PointerEvent<HTMLElement>) => void
   onClose?: () => void
-  onMaximize?: () => void
   children: React.ReactNode
 }
 
@@ -46,7 +45,6 @@ const PanelV3 = forwardRef<HTMLDivElement, PanelV3Props>(({
   panelId,
   onDragStart,
   onClose,
-  onMaximize,
   children,
 }, ref) => {
   const bp = useBreakpoint()
@@ -176,36 +174,6 @@ const PanelV3 = forwardRef<HTMLDivElement, PanelV3Props>(({
 
         {/* Window controls */}
         <div style={{ display: 'flex', gap: '4px' }}>
-          {onMaximize && (
-            <button
-              onClick={onMaximize}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: color.textTertiary,
-                cursor: 'pointer',
-                fontSize: '12px',
-                width: btnSize,
-                height: btnSize,
-                lineHeight: btnSize,
-                textAlign: 'center',
-                borderRadius: radius.sm,
-                fontFamily: font.mono,
-                padding: 0,
-                transition: `all ${motion.fast} ${motion.ease}`,
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.color = color.textPrimary
-                e.currentTarget.style.background = color.bgHover
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.color = color.textTertiary
-                e.currentTarget.style.background = 'none'
-              }}
-            >
-              ⬜
-            </button>
-          )}
           {onClose && (
             <button
               onClick={onClose}
@@ -243,7 +211,6 @@ const PanelV3 = forwardRef<HTMLDivElement, PanelV3Props>(({
       <div className="bb-screen-enter" style={{
         flex: 1,
         overflow: 'auto',
-        margin: '12px 28px 28px',
       }}>
         {children}
       </div>
