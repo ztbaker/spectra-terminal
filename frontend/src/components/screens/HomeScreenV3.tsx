@@ -294,7 +294,17 @@ const HomeScreenV3: React.FC<Props> = ({ onNavigate }) => {
           TERMINAL
         </div>
         <div style={{
-          marginTop: '12px',
+          marginTop: '6px',
+          fontFamily: font.mono,
+          fontSize: '10px',
+          color: color.textTertiary,
+          opacity: 0.5,
+          letterSpacing: '0.15em',
+        }}>
+          {import.meta.env.VITE_APP_VERSION || 'v0.0.0'}
+        </div>
+        <div style={{
+          marginTop: '10px',
           fontFamily: font.sans,
           fontSize: '11px',
           color: color.textTertiary,
