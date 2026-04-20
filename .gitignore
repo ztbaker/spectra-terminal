@@ -5,7 +5,6 @@ backend/.venv/
 # Environment files with real secrets
 backend/.env
 .env
-frontend/.env.production
 frontend/.env.local
 frontend/.env.*.local
 

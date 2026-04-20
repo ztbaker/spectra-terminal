@@ -218,10 +218,18 @@ async function createWindow() {
       await waitForBackend()
       mainWindow.loadURL('http://localhost:5173')
     } else {
-      startBackend()
-      const appUrl = await startStaticServer()
-      await waitForBackend()
-      mainWindow.loadURL(appUrl)
+      // Production: frontend is built with VITE_API_URL pointing to remote API
+      // Only start local backend if venv exists (dev packaging)
+      if (fs.existsSync(VENV_PYTHON)) {
+        startBackend()
+        const appUrl = await startStaticServer()
+        await waitForBackend()
+        mainWindow.loadURL(appUrl)
+      } else {
+        // No local backend — serve frontend statically, API calls go to remote
+        const appUrl = await startStaticServer()
+        mainWindow.loadURL(appUrl)
+      }
     }
   } catch (err) {
     mainWindow.loadURL(ERROR_HTML(err.message))
