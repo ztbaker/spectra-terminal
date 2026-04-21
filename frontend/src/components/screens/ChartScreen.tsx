@@ -301,7 +301,7 @@ const PriceSidebar: React.FC<SidebarProps> = ({ stats, crosshair, period, livePr
       position:      'absolute',
       top:           36,
       right:         8,
-      zIndex:        5,
+      zIndex:        25,
       fontFamily:    "'JetBrains Mono','Courier New',monospace",
     }}>
       {/* Toggle button */}
