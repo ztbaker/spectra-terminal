@@ -8,6 +8,14 @@ export interface ReleaseNote {
 // "What's New" dialog on first launch after update.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.1.13',
+    date: '2026-04-21',
+    highlights: [
+      'TRUMP feed now polls every 1 second for near-real-time updates when a new Truth is posted.',
+      'Fixed macOS updater: app no longer fails to open after auto-update (executable permission fix).',
+    ],
+  },
+  {
     version: '1.1.12',
     date: '2026-04-21',
     highlights: [

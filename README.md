@@ -19,10 +19,10 @@
 
 ---
 
-## What's New in v1.1.12
+## What's New in v1.1.13
 
-- **TRUMP command** — view Trump's latest Truth Social posts in a Bloomberg-style feed with engagement stats (likes, retruths, replies)
-- **Call/Put ratio** — OPT screen now shows C/P volume ratio in the header, colored green (call-heavy) or red (put-heavy)
+- **TRUMP feed live polling** — polls every 1 second so new Truths appear within seconds of posting
+- **macOS updater fix** — app no longer fails to open after auto-update
 
 ## What is Spectra Terminal?
 
