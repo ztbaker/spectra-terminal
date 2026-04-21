@@ -315,6 +315,7 @@ export default function ChatScreen({ sub, onNavigate }: Props) {
                 isSelf={user?.user_id === m.sender_id}
                 online={onlineSet.has(m.sender_username.toLowerCase())}
                 onOpenUrl={setReadingUrl}
+                onNavigate={onNavigate}
                 onReply={(username, body) => {
                   const quote = body.split('\n')[0].slice(0, 80)
                   setComposer(`> ${username}: ${quote}\n`)
@@ -562,14 +563,13 @@ function EmptyState({ children }: { children: React.ReactNode }) {
   )
 }
 
-const URL_RE = /https?:\/\/[^\s]+/g
-
 // Detect shared news: "📰 Headline\nhttps://..."
 const NEWS_SHARE_RE = /^📰\s+(.+)\n(https?:\/\/[^\s]+)$/
 
 function renderBodyWithLinks(
   body: string,
   onOpenUrl: (url: string) => void,
+  onNavigate?: (cmd: string) => void,
 ) {
   // Shared news article — render as a clickable card instead of raw URL
   const newsMatch = NEWS_SHARE_RE.exec(body)
@@ -607,30 +607,51 @@ function renderBodyWithLinks(
     ]
   }
 
+  // Match URLs and $TICKER cashtags
+  const COMBINED_RE = /https?:\/\/[^\s]+|\$([A-Z]{1,5})\b/g
   const parts: React.ReactNode[] = []
   let lastIndex = 0
   let match: RegExpExecArray | null
-  const re = new RegExp(URL_RE)
-  while ((match = re.exec(body)) !== null) {
+  while ((match = COMBINED_RE.exec(body)) !== null) {
     if (match.index > lastIndex) {
       parts.push(body.slice(lastIndex, match.index))
     }
-    const url = match[0]
-    parts.push(
-      <a
-        key={match.index}
-        href="#"
-        onClick={(e) => { e.preventDefault(); onOpenUrl(url) }}
-        style={{
-          color: color.accentInfo,
-          textDecoration: 'underline',
-          cursor: 'pointer',
-        }}
-      >
-        {url}
-      </a>
-    )
-    lastIndex = re.lastIndex
+    if (match[1]) {
+      // $TICKER cashtag
+      const ticker = match[1]
+      parts.push(
+        <span
+          key={`ticker-${match.index}`}
+          onClick={(e) => { e.preventDefault(); onNavigate?.(`${ticker}`) }}
+          style={{
+            color: '#ff9900',
+            fontWeight: 700,
+            cursor: 'pointer',
+            borderBottom: '1px dotted rgba(255, 153, 0, 0.4)',
+          }}
+        >
+          ${ticker}
+        </span>
+      )
+    } else {
+      // URL
+      const url = match[0]
+      parts.push(
+        <a
+          key={match.index}
+          href="#"
+          onClick={(e) => { e.preventDefault(); onOpenUrl(url) }}
+          style={{
+            color: color.accentInfo,
+            textDecoration: 'underline',
+            cursor: 'pointer',
+          }}
+        >
+          {url}
+        </a>
+      )
+    }
+    lastIndex = COMBINED_RE.lastIndex
   }
   if (lastIndex < body.length) {
     parts.push(body.slice(lastIndex))
@@ -644,12 +665,14 @@ function MessageRow({
   online,
   onOpenUrl,
   onReply,
+  onNavigate,
 }: {
   message: ChatMessage
   isSelf: boolean
   online: boolean
   onOpenUrl: (url: string) => void
   onReply: (username: string, body: string) => void
+  onNavigate: (cmd: string) => void
 }) {
   const [hovered, setHovered] = useState(false)
   const isReply = message.body.startsWith('> ')
@@ -708,6 +731,7 @@ function MessageRow({
         {renderBodyWithLinks(
           isReply ? message.body.split('\n').slice(1).join('\n') : message.body,
           onOpenUrl,
+          onNavigate,
         )}
       </span>
       {hovered && (

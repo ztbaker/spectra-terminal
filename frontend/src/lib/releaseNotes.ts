@@ -8,6 +8,13 @@ export interface ReleaseNote {
 // "What's New" dialog on first launch after update.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.1.7',
+    date: '2026-04-21',
+    highlights: [
+      'Chat cashtags: type $AAPL in a message and it renders as an amber clickable link that opens the ticker menu for that security.',
+    ],
+  },
+  {
     version: '1.1.6',
     date: '2026-04-21',
     highlights: [
