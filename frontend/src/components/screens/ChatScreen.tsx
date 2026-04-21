@@ -564,10 +564,49 @@ function EmptyState({ children }: { children: React.ReactNode }) {
 
 const URL_RE = /https?:\/\/[^\s]+/g
 
+// Detect shared news: "📰 Headline\nhttps://..."
+const NEWS_SHARE_RE = /^📰\s+(.+)\n(https?:\/\/[^\s]+)$/
+
 function renderBodyWithLinks(
   body: string,
   onOpenUrl: (url: string) => void,
 ) {
+  // Shared news article — render as a clickable card instead of raw URL
+  const newsMatch = NEWS_SHARE_RE.exec(body)
+  if (newsMatch) {
+    const headline = newsMatch[1]
+    const url = newsMatch[2]
+    return [
+      <span
+        key="news-card"
+        onClick={(e) => { e.preventDefault(); onOpenUrl(url) }}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '6px',
+          background: 'rgba(255, 153, 0, 0.08)',
+          border: `1px solid rgba(255, 153, 0, 0.25)`,
+          padding: '4px 10px',
+          borderRadius: '3px',
+          cursor: 'pointer',
+          fontSize: '11px',
+          lineHeight: '1.3',
+          maxWidth: '400px',
+        }}
+      >
+        <span style={{ fontSize: '13px', flexShrink: 0 }}>📰</span>
+        <span style={{
+          color: '#ff9900',
+          fontWeight: 600,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}>
+          {headline}
+        </span>
+      </span>,
+    ]
+  }
+
   const parts: React.ReactNode[] = []
   let lastIndex = 0
   let match: RegExpExecArray | null
