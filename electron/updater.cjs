@@ -96,10 +96,13 @@ async function macDownloadAndInstall(version, send) {
     if (!appBundle) throw new Error('No .app found in zip')
 
     const extractedApp = path.join(extractDir, appBundle)
-    const currentApp = path.dirname(path.dirname(app.getAppPath()))
 
-    // Only replace if we're running from an .app bundle
-    if (!currentApp.endsWith('.app')) {
+    // Walk up from app.getAppPath() to find the .app bundle
+    let currentApp = app.getAppPath()
+    while (currentApp && currentApp !== '/' && !currentApp.endsWith('.app')) {
+      currentApp = path.dirname(currentApp)
+    }
+    if (!currentApp || currentApp === '/' || !currentApp.endsWith('.app')) {
       throw new Error('Not running from .app bundle — cannot self-update')
     }
 
@@ -123,7 +126,10 @@ async function macDownloadAndInstall(version, send) {
   } catch (err) {
     log.error('[mac-updater]', err)
     // Restore backup if it exists
-    const currentApp = path.dirname(path.dirname(app.getAppPath()))
+    let currentApp = app.getAppPath()
+    while (currentApp && currentApp !== '/' && !currentApp.endsWith('.app')) {
+      currentApp = path.dirname(currentApp)
+    }
     const backupPath = currentApp + '.bak'
     if (fs.existsSync(backupPath) && !fs.existsSync(currentApp)) {
       try { fs.renameSync(backupPath, currentApp) } catch {}
