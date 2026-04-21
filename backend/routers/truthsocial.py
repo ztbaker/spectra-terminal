@@ -11,7 +11,7 @@ from cache import cache_get, cache_set
 
 router = APIRouter()
 
-TTL_TRUTHS = 15  # 15 seconds — near-real-time feed
+TTL_TRUTHS = 5  # 5 seconds — backend deduplicates rapid client polls
 
 # Trump's Truth Social account ID (stable, won't change)
 KNOWN_ACCOUNTS = {
