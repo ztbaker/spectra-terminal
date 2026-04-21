@@ -245,26 +245,6 @@ interface SidebarProps {
 
 const PriceSidebar: React.FC<SidebarProps> = ({ stats, crosshair, period, livePrice }) => {
   const [open, setOpen] = useState(false)
-  const [visible, setVisible] = useState(false)
-  const panelRef = useRef<HTMLDivElement>(null)
-
-  // Animate open/close
-  useEffect(() => {
-    if (open) {
-      setVisible(true)
-      requestAnimationFrame(() => {
-        if (panelRef.current) {
-          panelRef.current.style.maxHeight = panelRef.current.scrollHeight + 'px'
-          panelRef.current.style.opacity = '1'
-        }
-      })
-    } else if (panelRef.current) {
-      panelRef.current.style.maxHeight = '0px'
-      panelRef.current.style.opacity = '0'
-      const timer = setTimeout(() => setVisible(false), 200)
-      return () => clearTimeout(timer)
-    }
-  }, [open])
 
   if (!stats) return null
 
@@ -334,24 +314,20 @@ const PriceSidebar: React.FC<SidebarProps> = ({ stats, crosshair, period, livePr
       </div>
 
       {/* Dropdown panel */}
-      {visible && (
-        <div
-          ref={panelRef}
-          style={{
-            marginTop:     2,
-            width:         168,
-            background:    TH.color.bgSurface,
-            border: `1px solid ${TH.color.borderMedium}`,
-            borderRadius:  '4px',
-            padding:       '8px 10px',
-            display:       'flex',
-            flexDirection: 'column',
-            overflow:      'hidden',
-            maxHeight:     0,
-            opacity:       0,
-            transition:    'max-height 0.2s ease, opacity 0.15s ease',
-          }}
-        >
+      <div
+        style={{
+          marginTop:     2,
+          width:         168,
+          background:    open ? TH.color.bgSurface : 'transparent',
+          border:        open ? `1px solid ${TH.color.borderMedium}` : '1px solid transparent',
+          borderRadius:  '4px',
+          padding:       open ? '8px 10px' : '0 10px',
+          overflow:      'hidden',
+          maxHeight:     open ? 400 : 0,
+          opacity:       open ? 1 : 0,
+          transition:    'max-height 0.25s ease, opacity 0.2s ease, padding 0.25s ease',
+        }}
+      >
           {/* Last */}
           <div style={{ marginBottom: 12 }}>
             <div style={{ color: TH.color.textTertiary, fontSize: 9, letterSpacing: '0.08em', marginBottom: 3 }}>LAST</div>
@@ -403,7 +379,6 @@ const PriceSidebar: React.FC<SidebarProps> = ({ stats, crosshair, period, livePr
             {period.toUpperCase()} PERIOD
           </div>
         </div>
-      )}
     </div>
   )
 }
