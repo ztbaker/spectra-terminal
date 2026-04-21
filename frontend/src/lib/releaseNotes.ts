@@ -8,6 +8,22 @@ export interface ReleaseNote {
 // "What's New" dialog on first launch after update.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.1.0',
+    date: '2026-04-21',
+    highlights: [
+      'Chat: messages stay in the chat composer after sending — no more jumping back to the command bar.',
+      'Chat: reply to any message with a hover REPLY button; replies show as quoted blocks.',
+      'Chat: online/offline presence indicators next to usernames in the sidebar and messages.',
+      'Chat: clickable URLs in messages open in the built-in reader.',
+      'Chat: switching threads now stays in the same pane instead of opening a new one.',
+      'Bug reports now auto-close after successful submission.',
+      'Filings: browse 10-Q, 8-K, DEF 14A, and more — not just 10-K.',
+      'Quant: new multi-period returns table (1M, 3M, 6M, YTD, 1Y, 3Y).',
+      'New MEME command: real-time meme coin tracker with prices and 24h changes.',
+      'New user profile cards — type PROF or PROF @username.',
+    ],
+  },
+  {
     version: '0.1.13',
     date: '2026-04-17',
     highlights: [

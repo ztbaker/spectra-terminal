@@ -67,6 +67,12 @@ def _ensure_email_columns(conn: sqlite3.Connection) -> None:
     )
 
 
+def _ensure_presence_column(conn: sqlite3.Connection) -> None:
+    cols = {c[1] for c in conn.execute("PRAGMA table_info(users)").fetchall()}
+    if "last_seen_at" not in cols:
+        conn.execute("ALTER TABLE users ADD COLUMN last_seen_at TEXT")
+
+
 def init_db(db_path: str | None = None) -> None:
     path = db_path or get_db_path()
     with sqlite3.connect(path) as conn:
@@ -77,7 +83,8 @@ def init_db(db_path: str | None = None) -> None:
                 id             INTEGER PRIMARY KEY AUTOINCREMENT,
                 username       TEXT NOT NULL UNIQUE COLLATE NOCASE,
                 password_hash  TEXT NOT NULL,
-                created_at     TEXT NOT NULL DEFAULT (datetime('now'))
+                created_at     TEXT NOT NULL DEFAULT (datetime('now')),
+                last_seen_at   TEXT
             );
 
             CREATE TABLE IF NOT EXISTS sessions (
@@ -174,6 +181,7 @@ def init_db(db_path: str | None = None) -> None:
         """)
 
         _ensure_email_columns(conn)
+        _ensure_presence_column(conn)
         _ensure_user_scoped(conn)
         conn.commit()
 

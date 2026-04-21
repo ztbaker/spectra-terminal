@@ -46,6 +46,7 @@ export function BugReportDialog({ open, onClose, currentScreen, lastError }: Pro
       })
       setStatus('ok')
       setMessage(`Filed issue #${res.issue_number}`)
+      setTimeout(onClose, 1500)
     } catch (e: any) {
       setStatus('err')
       setMessage(e?.message || 'Failed to send')

@@ -63,10 +63,10 @@ class EdgarProvider(BaseProvider):
         return _ticker_to_cik.get(ticker)
 
     async def get_filings(
-        self, ticker: str, form_type: str = "10-K", limit: int = 10
+        self, ticker: str, form_type: str | None = "10-K", limit: int = 10
     ) -> list[Filing]:
         ticker = ticker.upper().strip()
-        form_type = form_type.upper().strip()
+        form_type = form_type.upper().strip() if form_type else None
         cik = await self.get_cik(ticker)
         if cik is None:
             logger.warning("EDGAR: no CIK for ticker %s", ticker)
@@ -101,7 +101,7 @@ class EdgarProvider(BaseProvider):
             if len(results) >= limit:
                 break
             raw_form = forms[i] if i < len(forms) else ""
-            if raw_form.upper() != form_type and not raw_form.upper().startswith(
+            if form_type and raw_form.upper() != form_type and not raw_form.upper().startswith(
                 form_type + "/"
             ):
                 continue

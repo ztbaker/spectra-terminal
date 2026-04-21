@@ -842,6 +842,8 @@ export type ScreenType =
   | 'bugreport'
   | 'logout'
   | 'chat'
+  | 'meme'
+  | 'profile'
 
 // ─── Chat ────────────────────────────────────────────────────────────────────
 export interface ChatRoom {
@@ -875,6 +877,7 @@ export interface ChatDMThread {
 export interface ChatUserRow {
   id: number
   username: string
+  online?: boolean
 }
 
 export interface ChatNotification {

@@ -66,12 +66,12 @@ class LitigationResponse(BaseModel):
 @router.get("/filings/{ticker}", response_model=FilingsResponse)
 async def get_ticker_filings(
     ticker: str,
-    type: str = "10-K",
+    type: str | None = None,
     limit: int = 10,
 ) -> FilingsResponse:
     ticker = ticker.upper().strip()
-    form_type = type.upper().strip()
-    cache_key = f"{ticker}_filings_{form_type}"
+    form_type = type.upper().strip() if type else None
+    cache_key = f"{ticker}_filings_{form_type or 'ALL'}"
 
     cached_data = cache_get("econ", cache_key, TTL["econ"])
     if cached_data is not None:

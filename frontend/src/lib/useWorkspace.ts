@@ -71,7 +71,11 @@ export function useWorkspace(): {
     setState(prev => {
       const newPanel: PanelConfig = { id: nextPanelId(), screen, ticker, sub, focused: true }
       const panels = prev.panels.map(p => ({ ...p, focused: false }))
-      const replaceIdx = prev.panels.findIndex(p => p.focused)
+      // Prefer replacing a panel already showing the same screen type (e.g.
+      // switching chat threads should stay in the chat panel, not open elsewhere).
+      const sameScreenIdx = panels.findIndex(p => p.screen === screen)
+      const focusedIdx = prev.panels.findIndex(p => p.focused)
+      const replaceIdx = sameScreenIdx >= 0 ? sameScreenIdx : focusedIdx
       const targetIdx = replaceIdx >= 0 ? replaceIdx : panels.length - 1
       const oldPanel = panels[targetIdx]
       const sameState =

@@ -84,6 +84,9 @@ const STANDALONE_COMMANDS: Record<string, ScreenType> = {
   FX:        'fx',
   FXC:       'fxc',
   CRYPTO:    'crypto',
+  MEME:      'meme',
+  PROF:      'profile',
+  PROFILE:   'profile',
   MACRO:     'macro',
   HOME:      'home',
   G:         'graph',
@@ -188,6 +191,17 @@ export function parseCommand(input: string): ParsedCommand {
       return { screen: 'chat', sub: `room:${target.toLowerCase()}`, raw }
     }
     return { screen: 'chat', raw }
+  }
+
+  // Profile: PROF, PROF @username
+  if (parts[0] === 'PROF' || parts[0] === 'PROFILE') {
+    const rawParts = raw.split(/\s+/).filter(Boolean)
+    if (rawParts.length >= 2) {
+      const target = rawParts[1]
+      const username = target.startsWith('@') ? target.slice(1) : target
+      return { screen: 'profile', sub: username, raw }
+    }
+    return { screen: 'profile', raw }
   }
 
   // 0. G1–G9 graph slot shortcuts (before standalone check so G1 ≠ ticker)

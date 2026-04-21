@@ -180,9 +180,12 @@ export const fetchFX = (): Promise<FXResponse> =>
 export const fetchCrypto = (): Promise<CryptoResponse> =>
   api.get('/crypto').then(r => r.data)
 
+export const fetchMemeCrypto = (): Promise<CryptoResponse> =>
+  api.get('/crypto/meme').then(r => r.data)
+
 // ─── Filings ─────────────────────────────────────────────────────────────────
-export const fetchFilings = (ticker: string, type = '10-K', limit = 10): Promise<FilingsResponse> =>
-  api.get(`/filings/${ticker}`, { params: { type, limit } }).then(r => r.data)
+export const fetchFilings = (ticker: string, type?: string, limit = 10): Promise<FilingsResponse> =>
+  api.get(`/filings/${ticker}`, { params: { ...(type ? { type } : {}), limit } }).then(r => r.data)
 
 // ─── Historical Spread ────────────────────────────────────────────────────────
 export const fetchSpread = (ticker1: string, ticker2: string, period = '2y'): Promise<SpreadData> =>
@@ -301,6 +304,21 @@ export const chatSendDM = (username: string, body: string): Promise<ChatMessage>
 
 export const chatSearchUsers = (q: string): Promise<ChatUserRow[]> =>
   api.get('/chat/users', { params: { q } }).then(r => r.data)
+
+export const chatPresence = (): Promise<{ id: number; username: string; online: boolean }[]> =>
+  api.get('/chat/presence').then(r => r.data)
+
+export interface UserProfile {
+  id: number
+  username: string
+  created_at: string
+  online: boolean
+  rooms_joined: number
+  messages_sent: number
+}
+
+export const fetchUserProfile = (username: string): Promise<UserProfile> =>
+  api.get(`/chat/profile/${encodeURIComponent(username)}`).then(r => r.data)
 
 export const chatNotifications = (sinceId: number): Promise<ChatNotification[]> =>
   api.get('/chat/notifications', { params: { since_id: sinceId } }).then(r => r.data)

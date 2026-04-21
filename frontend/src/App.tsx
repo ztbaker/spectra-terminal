@@ -22,6 +22,8 @@ import ScreenerScreen   from './components/screens/ScreenerScreen'
 import FXScreen         from './components/screens/FXScreen'
 import FXCScreen        from './components/screens/FXCScreen'
 import CryptoScreen     from './components/screens/CryptoScreen'
+import MemeScreen       from './components/screens/MemeScreen'
+import ProfileScreen    from './components/screens/ProfileScreen'
 import FilingsScreen    from './components/screens/FilingsScreen'
 import DESScreen        from './components/screens/DESScreen'
 import GScreen          from './components/screens/GScreen'
@@ -267,7 +269,7 @@ function screenTitle(screen: ScreenType, ticker?: string): string {
     home: 'HOME', des: 'DES', graph: 'GRAPH', gpo: 'GPO', gip: 'GIP',
     wei: 'WEI', hs: 'HS', ecst: 'ECST', etf: 'ETF', bond: 'BOND',
     comd: 'COMD', cong: 'CONG', quant: 'QUANT', fa: 'FA', ask: 'ASK', help: 'HELP',
-    chat: 'CHAT',
+    chat: 'CHAT', meme: 'MEME', profile: 'PROFILE',
   }
   const label = labels[screen] ?? screen.toUpperCase()
   return ticker ? `${label} · ${ticker}` : label
@@ -486,6 +488,12 @@ function TerminalApp() {
 
       case 'crypto':
         return <CryptoScreen onNavigate={handleNavigate} />
+
+      case 'meme':
+        return <MemeScreen onNavigate={handleNavigate} />
+
+      case 'profile':
+        return <ProfileScreen username={sub} onNavigate={handleNavigate} />
 
       case 'macro':
         return <MacroScreen onNavigate={handleNavigate} />

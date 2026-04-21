@@ -25,7 +25,7 @@ const KNOWN_COMMANDS = [
   'PORT', 'WLT', 'ECON', 'EARN', 'SCR', 'FX', 'CRYPTO', 'MACRO',
   'EQUITY', 'GP', 'OPT', 'OPTIONS', 'NEWS', 'FILINGS',
   'PORTFOLIO', 'WATCHLIST', 'EARNINGS', 'SCREENER',
-  'HOME', 'HELP', 'QUIT',
+  'HOME', 'HELP', 'QUIT', 'MEME', 'PROF', 'PROFILE',
 ]
 
 const KNOWN_TICKERS = [
@@ -59,6 +59,9 @@ const COMMAND_DESCRIPTIONS: Record<string, string> = {
   HOME: 'Return to landing page',
   HELP: 'List all commands',
   QUIT: 'Exit terminal',
+  MEME: 'Meme coin tracker',
+  PROF: 'User profile',
+  PROFILE: 'User profile',
 }
 
 // ─── Screen display labels for breadcrumb ─────────────────────────────────────
@@ -71,6 +74,7 @@ const SCREEN_LABELS: Record<string, string> = {
   home: 'HOME', des: 'DES', graph: 'GRAPH', gpo: 'GPO', gip: 'GIP',
   wei: 'WEI', hs: 'HS', ecst: 'ECST', etf: 'ETF', bond: 'BOND',
   comd: 'COMD', cong: 'CONG', quant: 'QUANT', ask: 'ASK', help: 'HELP',
+  meme: 'MEME', profile: 'PROFILE',
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

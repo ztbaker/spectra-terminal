@@ -143,6 +143,51 @@ export default function QuantScreen({ ticker, onNavigate: _onNavigate }: Props) 
     }
   }, [cointTicker1, cointTicker2])
 
+  // ── Multi-period returns ────────────────────────────────────────────────
+  const periodReturns = useMemo(() => {
+    if (!chartData?.ohlcv || chartData.ohlcv.length < 2) return null
+    const closes = chartData.ohlcv.map((b: any) => b.close)
+    const times = chartData.ohlcv.map((b: any) => b.time)
+    const latest = closes[closes.length - 1]
+    const now = new Date()
+    const ytdStart = `${now.getFullYear()}-01-01`
+
+    const findClosest = (targetDate: Date): number | null => {
+      const target = targetDate.toISOString().slice(0, 10)
+      for (let i = times.length - 1; i >= 0; i--) {
+        if (String(times[i]) <= target) return closes[i]
+      }
+      return null
+    }
+
+    const pctReturn = (start: number | null): number | null => {
+      if (start == null || start === 0) return null
+      return ((latest - start) / start) * 100
+    }
+
+    const ago = (months: number) => {
+      const d = new Date()
+      d.setMonth(d.getMonth() - months)
+      return d
+    }
+
+    const ytdClose = (() => {
+      for (let i = times.length - 1; i >= 0; i--) {
+        if (String(times[i]) <= ytdStart) return closes[i]
+      }
+      return null
+    })()
+
+    return [
+      { label: '1M', value: pctReturn(findClosest(ago(1))) },
+      { label: '3M', value: pctReturn(findClosest(ago(3))) },
+      { label: '6M', value: pctReturn(findClosest(ago(6))) },
+      { label: 'YTD', value: pctReturn(ytdClose) },
+      { label: '1Y', value: pctReturn(findClosest(ago(12))) },
+      { label: '2Y', value: pctReturn(closes[0]) },
+    ]
+  }, [chartData])
+
   const rollingVol = useMemo(() => {
     if (!chartData?.ohlcv || chartData.ohlcv.length < 252) return []
     const closes = chartData.ohlcv.map((b: any) => b.close)
@@ -228,6 +273,37 @@ export default function QuantScreen({ ticker, onNavigate: _onNavigate }: Props) 
               <Metric label="MAX DD" value={stats.max_drawdown} format="pct" size="sm" color={color.accentNegative} />
               <Metric label="VaR 95%" value={stats.var_95} format="pct" size="sm" color={color.accentNegative} />
               <Metric label="ALPHA" value={ff?.alpha} format="pct" size="sm" color={ff?.alpha != null && ff.alpha > 0 ? color.accentPositive : undefined} />
+            </div>
+          </div>
+        )}
+
+        {periodReturns && (
+          <div style={{ padding: '12px 16px' }}>
+            <div style={{ color: color.textSecondary, fontSize: 11, fontFamily: font.sans, fontWeight: 600, marginBottom: 8 }}>
+              PERIOD RETURNS
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${periodReturns.length}, 1fr)`, gap: 8 }}>
+              {periodReturns.map(pr => (
+                <div key={pr.label} style={{
+                  background: color.bgSurface,
+                  border: `1px solid ${color.borderSubtle}`,
+                  padding: '8px 10px',
+                  textAlign: 'center',
+                }}>
+                  <div style={{ color: color.textTertiary, fontSize: 9, fontFamily: font.sans, fontWeight: 600, letterSpacing: '0.1em', marginBottom: 4 }}>
+                    {pr.label}
+                  </div>
+                  <div style={{
+                    fontFamily: font.mono,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    fontVariantNumeric: 'tabular-nums',
+                    color: pr.value == null ? color.textTertiary : pr.value >= 0 ? color.accentPositive : color.accentNegative,
+                  }}>
+                    {pr.value != null ? `${pr.value >= 0 ? '+' : ''}${pr.value.toFixed(2)}%` : '\u2014'}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}

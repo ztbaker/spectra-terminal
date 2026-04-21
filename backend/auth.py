@@ -45,6 +45,11 @@ def current_user_id(authorization: str | None = Header(default=None)) -> int:
             "UPDATE sessions SET last_used_at = datetime('now') WHERE token = ?",
             (token,),
         )
+        # Update presence
+        conn.execute(
+            "UPDATE users SET last_seen_at = datetime('now') WHERE id = ?",
+            (row["user_id"],),
+        )
         return row["user_id"]
 
 

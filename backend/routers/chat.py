@@ -58,6 +58,7 @@ class DMThread(BaseModel):
 class UserRow(BaseModel):
     id: int
     username: str
+    online: bool = False
 
 
 # ─── Helpers ────────────────────────────────────────────────────────────────
@@ -435,6 +436,17 @@ async def chat_notifications(
 
 # ─── User search (for starting DMs) ─────────────────────────────────────────
 
+def _is_online(last_seen: str | None) -> bool:
+    if not last_seen:
+        return False
+    from datetime import datetime, timezone, timedelta
+    try:
+        seen = datetime.fromisoformat(last_seen).replace(tzinfo=timezone.utc)
+        return (datetime.now(timezone.utc) - seen) < timedelta(minutes=5)
+    except Exception:
+        return False
+
+
 @router.get("/chat/users", response_model=list[UserRow])
 async def search_users(
     q: str = Query("", max_length=32),
@@ -444,15 +456,76 @@ async def search_users(
     with get_conn() as conn:
         if q:
             rows = conn.execute(
-                "SELECT id, username FROM users "
+                "SELECT id, username, last_seen_at FROM users "
                 "WHERE id != ? AND username LIKE ? COLLATE NOCASE "
                 "ORDER BY username LIMIT 20",
                 (user_id, f"{q}%"),
             ).fetchall()
         else:
             rows = conn.execute(
-                "SELECT id, username FROM users WHERE id != ? "
+                "SELECT id, username, last_seen_at FROM users WHERE id != ? "
                 "ORDER BY username LIMIT 20",
                 (user_id,),
             ).fetchall()
-    return [UserRow(id=r["id"], username=r["username"]) for r in rows]
+    return [
+        UserRow(id=r["id"], username=r["username"], online=_is_online(r["last_seen_at"]))
+        for r in rows
+    ]
+
+
+class UserProfile(BaseModel):
+    id: int
+    username: str
+    created_at: str
+    online: bool = False
+    rooms_joined: int = 0
+    messages_sent: int = 0
+
+
+@router.get("/chat/profile/{username}", response_model=UserProfile)
+async def get_user_profile(
+    username: str,
+    user_id: int = Depends(current_user_id),
+):
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT id, username, created_at, last_seen_at FROM users "
+            "WHERE username = ? COLLATE NOCASE",
+            (username,),
+        ).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="user not found")
+        uid = row["id"]
+        rooms = conn.execute(
+            "SELECT COUNT(*) AS cnt FROM chat_memberships WHERE user_id = ?",
+            (uid,),
+        ).fetchone()["cnt"]
+        msgs = conn.execute(
+            "SELECT COUNT(*) AS cnt FROM chat_messages WHERE sender_id = ?",
+            (uid,),
+        ).fetchone()["cnt"]
+    return UserProfile(
+        id=uid,
+        username=row["username"],
+        created_at=row["created_at"],
+        online=_is_online(row["last_seen_at"]),
+        rooms_joined=rooms,
+        messages_sent=msgs,
+    )
+
+
+@router.get("/chat/presence")
+async def get_presence(
+    user_id: int = Depends(current_user_id),
+):
+    """Return online status for all users seen in the last 5 minutes."""
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT id, username, last_seen_at FROM users "
+            "WHERE last_seen_at IS NOT NULL "
+            "AND last_seen_at > datetime('now', '-5 minutes')",
+        ).fetchall()
+    return [
+        {"id": r["id"], "username": r["username"], "online": True}
+        for r in rows
+    ]

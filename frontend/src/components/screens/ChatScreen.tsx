@@ -11,6 +11,7 @@ import {
   chatDMMessages,
   chatSendDM,
   chatSearchUsers,
+  chatPresence,
 } from '../../lib/api'
 import type { ChatMessage, ChatRoom, ChatDMThread } from '../../types'
 import { useAuth, errorMessage } from '../../lib/auth'
@@ -77,6 +78,19 @@ export default function ChatScreen({ sub, onNavigate }: Props) {
     refetchInterval: 10_000,
     staleTime: 5_000,
   })
+
+  // ── Presence (poll every 30s) ─────────────────────────────────────────
+  const presenceQ = useQuery({
+    queryKey: ['chat', 'presence'],
+    queryFn: chatPresence,
+    refetchInterval: 30_000,
+    staleTime: 15_000,
+  })
+  const onlineSet = useMemo(() => {
+    const s = new Set<string>()
+    presenceQ.data?.forEach((u) => s.add(u.username.toLowerCase()))
+    return s
+  }, [presenceQ.data])
 
   // ── Active thread messages (poll every 2s) ─────────────────────────────
   const msgsQ = useQuery<ChatMessage[]>({
@@ -214,6 +228,7 @@ export default function ChatScreen({ sub, onNavigate }: Props) {
                 active={thread.kind === 'dm' && thread.username.toLowerCase() === t.peer_username.toLowerCase()}
                 onClick={() => onNavigate(`CHAT @${t.peer_username}`)}
               >
+                <PresenceDot online={onlineSet.has(t.peer_username.toLowerCase())} />
                 <span style={{ color: color.accentInfo }}>@</span>
                 <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {t.peer_username}
@@ -298,7 +313,13 @@ export default function ChatScreen({ sub, onNavigate }: Props) {
                 key={m.id}
                 message={m}
                 isSelf={user?.user_id === m.sender_id}
+                online={onlineSet.has(m.sender_username.toLowerCase())}
                 onOpenUrl={setReadingUrl}
+                onReply={(username, body) => {
+                  const quote = body.split('\n')[0].slice(0, 80)
+                  setComposer(`> ${username}: ${quote}\n`)
+                  composerRef.current?.focus()
+                }}
               />
             ))}
           </div>
@@ -328,7 +349,7 @@ export default function ChatScreen({ sub, onNavigate }: Props) {
               }
               value={composer}
               onChange={(e) => setComposer(e.target.value)}
-              disabled={thread.kind === 'none' || sendMut.isPending}
+              disabled={thread.kind === 'none'}
               maxLength={2000}
             />
             <button
@@ -500,6 +521,20 @@ function TinyButton({
   )
 }
 
+function PresenceDot({ online }: { online: boolean }) {
+  return (
+    <span style={{
+      display: 'inline-block',
+      width: '6px',
+      height: '6px',
+      borderRadius: '50%',
+      background: online ? color.accentPositive : color.textTertiary,
+      opacity: online ? 1 : 0.4,
+      flexShrink: 0,
+    }} />
+  )
+}
+
 function EmptyState({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
@@ -557,19 +592,31 @@ function renderBodyWithLinks(
 function MessageRow({
   message,
   isSelf,
+  online,
   onOpenUrl,
+  onReply,
 }: {
   message: ChatMessage
   isSelf: boolean
+  online: boolean
   onOpenUrl: (url: string) => void
+  onReply: (username: string, body: string) => void
 }) {
+  const [hovered, setHovered] = useState(false)
+  const isReply = message.body.startsWith('> ')
+
   return (
-    <div style={{
-      marginBottom: '8px',
-      display: 'flex',
-      gap: '8px',
-      alignItems: 'baseline',
-    }}>
+    <div
+      style={{
+        marginBottom: '8px',
+        display: 'flex',
+        gap: '8px',
+        alignItems: 'baseline',
+        position: 'relative',
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
       <span style={{
         color: isSelf ? color.accentPositive : color.accentInfo,
         fontWeight: 700,
@@ -577,7 +624,11 @@ function MessageRow({
         overflow: 'hidden',
         textOverflow: 'ellipsis',
         whiteSpace: 'nowrap',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '5px',
       }}>
+        <PresenceDot online={online} />
         {message.sender_username}
       </span>
       <span style={{
@@ -593,8 +644,43 @@ function MessageRow({
         wordBreak: 'break-word',
         whiteSpace: 'pre-wrap',
       }}>
-        {renderBodyWithLinks(message.body, onOpenUrl)}
+        {isReply && (
+          <span style={{
+            display: 'block',
+            borderLeft: `2px solid ${color.textTertiary}`,
+            paddingLeft: '8px',
+            marginBottom: '4px',
+            color: color.textSecondary,
+            fontSize: '11px',
+          }}>
+            {message.body.split('\n')[0].slice(2)}
+          </span>
+        )}
+        {renderBodyWithLinks(
+          isReply ? message.body.split('\n').slice(1).join('\n') : message.body,
+          onOpenUrl,
+        )}
       </span>
+      {hovered && (
+        <button
+          onClick={() => onReply(message.sender_username, message.body)}
+          style={{
+            position: 'absolute',
+            right: 0,
+            top: 0,
+            background: color.bgSurface,
+            border: `1px solid ${color.borderSubtle}`,
+            color: color.textSecondary,
+            fontSize: '9px',
+            fontFamily: font.mono,
+            padding: '2px 6px',
+            cursor: 'pointer',
+            letterSpacing: '0.1em',
+          }}
+        >
+          REPLY
+        </button>
+      )}
     </div>
   )
 }
@@ -739,7 +825,9 @@ function NewDMDialog({
             key={u.id}
             onClick={() => onPick(u.username)}
             style={{
-              display: 'block',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
               width: '100%',
               textAlign: 'left',
               background: 'transparent',
@@ -752,7 +840,8 @@ function NewDMDialog({
               borderBottom: `1px solid ${color.borderSubtle}`,
             }}
           >
-            <span style={{ color: color.accentInfo }}>@</span>{u.username}
+            <PresenceDot online={!!u.online} />
+            <span><span style={{ color: color.accentInfo }}>@</span>{u.username}</span>
           </button>
         ))}
       </div>

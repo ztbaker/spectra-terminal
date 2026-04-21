@@ -34,6 +34,8 @@ const COMMANDS: HelpRow[] = [
   { command: 'FX', aliases: '', description: 'Foreign exchange rates dashboard.', needsTicker: false },
   { command: 'FXC', aliases: '', description: 'Cross-currency rates table.', needsTicker: false },
   { command: 'CRYPTO', aliases: '', description: 'Crypto market dashboard.', needsTicker: false },
+  { command: 'MEME', aliases: '', description: 'Meme coin tracker with real-time prices.', needsTicker: false },
+  { command: 'PROF', aliases: 'PROFILE', description: 'User profile. PROF @username for others.', needsTicker: false },
   { command: 'FILINGS', aliases: '', description: 'SEC filings browser for a ticker.', needsTicker: true },
   { command: 'GPO', aliases: '', description: 'Plot bar or candlestick charts.', needsTicker: true },
   { command: 'GIP', aliases: '', description: 'Graph intraday plot.', needsTicker: true },

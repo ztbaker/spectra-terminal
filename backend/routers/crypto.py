@@ -101,6 +101,40 @@ async def _safe_get_info(ticker: str) -> dict:
         return {}
 
 
+MEME_TICKERS: dict[str, str] = {
+    "DOGE-USD":  "DOGE",
+    "SHIB-USD":  "SHIB",
+    "PEPE24478-USD": "PEPE",
+    "BONK-USD":  "BONK",
+    "FLOKI-USD": "FLOKI",
+    "WIF-USD":   "WIF",
+    "MEME-USD":  "MEME",
+    "TURBO-USD": "TURBO",
+    "MYRO-USD":  "MYRO",
+    "BRETT-USD": "BRETT",
+}
+
+_MEME_CACHE_KEY = "meme_all"
+
+
+@router.get("/crypto/meme", response_model=CryptoResponse)
+async def get_meme_coins():
+    cached = cache_get("price", _MEME_CACHE_KEY, TTL["price"])
+    if cached:
+        return CryptoResponse(**cached, cached=True)
+
+    tasks = [
+        _fetch_asset(ticker, symbol)
+        for ticker, symbol in MEME_TICKERS.items()
+    ]
+    assets = list(await asyncio.gather(*tasks))
+
+    payload = {"assets": [a.model_dump() for a in assets]}
+    cache_set("price", _MEME_CACHE_KEY, payload)
+
+    return CryptoResponse(assets=assets, cached=False)
+
+
 @router.get("/crypto", response_model=CryptoResponse)
 async def get_crypto():
     cached = cache_get("price", _CACHE_KEY, TTL["price"])
