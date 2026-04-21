@@ -116,7 +116,7 @@ async function macDownloadAndInstall(version, send) {
     // Force-remove any leftover backup from a prior update (rm -rf handles
     // macOS edge cases like in-use files better than fs.rmSync)
     try { execSync(`rm -rf "${backupPath}"`, { timeout: 10_000 }) } catch {}
-    fs.renameSync(currentApp, backupPath)
+    execSync(`mv "${currentApp}" "${backupPath}"`, { timeout: 10_000 })
     execSync(`ditto "${extractedApp}" "${currentApp}"`, { timeout: 30_000 })
 
     // Clean up backup and temp
