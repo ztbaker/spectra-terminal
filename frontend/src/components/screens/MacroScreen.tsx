@@ -186,8 +186,6 @@ const HeaderRow: React.FC = () => (
 
 const MacroRow: React.FC<{ card: MacroCard; onExpand: () => void }> = ({ card, onExpand }) => {
   const hasError = Boolean(card.error)
-  const chg = card.change ?? 0
-  const chgColor = hasError ? FLAT_COLOR : chg > 0 ? UP_COLOR : chg < 0 ? DOWN_COLOR : FLAT_COLOR
 
   return (
     <div

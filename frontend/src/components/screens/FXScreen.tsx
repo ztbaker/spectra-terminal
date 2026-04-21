@@ -39,12 +39,6 @@ function fmtPct(n: number | null): string {
   return `${sign}${n.toFixed(2)}%`
 }
 
-function fmtDayRange(lo: number | null, hi: number | null, pair: string): string {
-  if (lo == null || hi == null) return '—'
-  const d = isJpyPair(pair) ? 2 : 4
-  return `${lo.toFixed(d)} — ${hi.toFixed(d)}`
-}
-
 const HeaderRow: React.FC = () => (
   <div style={{
     display: 'grid', gridTemplateColumns: ROW_GRID,
