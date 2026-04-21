@@ -8,6 +8,13 @@ export interface ReleaseNote {
 // "What's New" dialog on first launch after update.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.1.10',
+    date: '2026-04-21',
+    highlights: [
+      'Fixed price summary dropdown not expanding — the CSS transition approach was broken by rapid live-price re-renders.',
+    ],
+  },
+  {
     version: '1.1.9',
     date: '2026-04-21',
     highlights: [

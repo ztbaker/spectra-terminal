@@ -314,18 +314,14 @@ const PriceSidebar: React.FC<SidebarProps> = ({ stats, crosshair, period, livePr
       </div>
 
       {/* Dropdown panel */}
-      <div
+      {open && <div
         style={{
           marginTop:     2,
           width:         168,
-          background:    open ? TH.color.bgSurface : 'transparent',
-          border:        open ? `1px solid ${TH.color.borderMedium}` : '1px solid transparent',
+          background:    TH.color.bgSurface,
+          border:        `1px solid ${TH.color.borderMedium}`,
           borderRadius:  '4px',
-          padding:       open ? '8px 10px' : '0 10px',
-          overflow:      'hidden',
-          maxHeight:     open ? 400 : 0,
-          opacity:       open ? 1 : 0,
-          transition:    'max-height 0.25s ease, opacity 0.2s ease, padding 0.25s ease',
+          padding:       '8px 10px',
         }}
       >
           {/* Last */}
@@ -378,7 +374,7 @@ const PriceSidebar: React.FC<SidebarProps> = ({ stats, crosshair, period, livePr
           <div style={{ marginTop: 'auto', paddingTop: 8, color: TH.color.textTertiary, fontSize: 9 }}>
             {period.toUpperCase()} PERIOD
           </div>
-        </div>
+        </div>}
     </div>
   )
 }

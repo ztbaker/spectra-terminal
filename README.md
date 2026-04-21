@@ -19,9 +19,9 @@
 
 ---
 
-## What's New in v1.1.9
+## What's New in v1.1.10
 
-- **Animated price summary** — the chart's price summary dropdown now animates open/close and no longer overlaps the Pre-market badge
+- **Fixed price summary dropdown** — the dropdown now expands reliably on click; the CSS transition approach was being disrupted by rapid live-price re-renders
 - **Chat cashtags** — type `$AAPL` in a chat message and it renders as an amber clickable link that opens the ticker's function menu
 - **Bloomberg-style function menu** — typing a bare ticker (e.g. `AAPL`) shows a "select function" screen with clickable options (GP, OPT, FA, NEWS, FILINGS, HS, QUANT, ETF, DES)
 - **Cursor fix** — command bar cursor only blinks when focused
