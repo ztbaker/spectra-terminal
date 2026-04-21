@@ -309,9 +309,12 @@ const HSScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
   const line2Ref = useRef<ISeriesApi<'Line'> | null>(null)
   const histRef = useRef<ISeriesApi<'Histogram'> | null>(null)
 
-  // Create charts
+  // Create charts — wait until compare dialog is closed so containers are sized
   useEffect(() => {
+    if (showCompare) return
     if (!mainChartRef.current || !spreadChartRef.current) return
+    // Already created
+    if (mainApiRef.current) return
 
     const chartOpts = (el: HTMLElement) => ({
       width: el.clientWidth,
@@ -389,8 +392,17 @@ const HSScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
     if (mainChartRef.current) ro.observe(mainChartRef.current)
     if (spreadChartRef.current) ro.observe(spreadChartRef.current)
 
-    return () => { ro.disconnect(); main.remove(); spread.remove() }
-  }, [])
+    return () => {
+      ro.disconnect()
+      main.remove()
+      spread.remove()
+      mainApiRef.current = null
+      spreadApiRef.current = null
+      line1Ref.current = null
+      line2Ref.current = null
+      histRef.current = null
+    }
+  }, [showCompare])
 
   // Update data
   useEffect(() => {
