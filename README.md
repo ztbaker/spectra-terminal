@@ -19,6 +19,16 @@
 
 ---
 
+## What's New in v1.1.0
+
+- **Chat improvements** — messages stay in the composer after sending, reply to messages with quoted blocks, online/offline presence dots, clickable URLs open in the reader
+- **Meme coin tracker** — new `MEME` command tracks DOGE, SHIB, PEPE, BONK, FLOKI, WIF, and more with real-time prices
+- **User profiles** — `PROF` or `PROF @username` shows a Bloomberg IB-style profile card with online status, rooms joined, and messages sent
+- **Period returns** — quant screen now shows 1M, 3M, 6M, YTD, 1Y, and 2Y returns
+- **Filings fix** — browse all SEC filing types (10-Q, 8-K, DEF 14A) — not just 10-K
+- **Thread navigation** — switching chat threads stays in the same pane instead of opening a new one
+- **Bug report dialog** — auto-closes after successful submission
+
 ## What is Spectra Terminal?
 
 Spectra Terminal is a Bloomberg-inspired desktop application that aggregates market data from entirely free sources — no paid API subscriptions required. It runs locally as an Electron app with a React frontend and Python FastAPI backend.
@@ -140,15 +150,6 @@ Bloomberg-style command bar:
 | `MEME` | Meme coin tracker |
 | `PROF` | User profile |
 
-## What's New in v1.1.0
-
-- **Chat improvements** — messages stay in the composer after sending, reply to messages with quoted blocks, online/offline presence dots, clickable URLs open in the reader
-- **Meme coin tracker** — new `MEME` command tracks DOGE, SHIB, PEPE, BONK, FLOKI, WIF, and more with real-time prices
-- **User profiles** — `PROF` or `PROF @username` shows a Bloomberg IB-style profile card with online status, rooms joined, and messages sent
-- **Period returns** — quant screen now shows 1M, 3M, 6M, YTD, 1Y, and 2Y returns
-- **Filings fix** — browse all SEC filing types (10-Q, 8-K, DEF 14A) — not just 10-K
-- **Thread navigation** — switching chat threads stays in the same pane instead of opening a new one
-- **Bug report dialog** — auto-closes after successful submission
 
 ## Architecture
 
