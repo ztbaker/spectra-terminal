@@ -244,6 +244,8 @@ interface SidebarProps {
 }
 
 const PriceSidebar: React.FC<SidebarProps> = ({ stats, crosshair, period, livePrice }) => {
+  const [open, setOpen] = useState(false)
+
   if (!stats) return null
 
   const dp     = stats.last >= 100 ? 2 : stats.last >= 10 ? 3 : 4
@@ -280,78 +282,95 @@ const PriceSidebar: React.FC<SidebarProps> = ({ stats, crosshair, period, livePr
       top:           8,
       right:         8,
       zIndex:        5,
-      width:         148,
-      background:    TH.color.bgSurface,
-      border: `1px solid ${TH.color.borderMedium}`,
-      borderRadius:  '4px',
-      padding:       '8px 10px',
       fontFamily:    "'JetBrains Mono','Courier New',monospace",
-      display:       'flex',
-      flexDirection: 'column',
-      pointerEvents: 'none',
     }}>
-      {/* Title */}
-      <div style={{
-        color:         TH.color.textPrimary,
-        fontSize:      10,
-        letterSpacing: '0.1em',
-        marginBottom:  10,
-        paddingBottom: 6,
-        borderBottom: `1px solid ${TH.color.borderSubtle}`,
-      }}>
-        PRICE SUMMARY
+      {/* Toggle button */}
+      <div
+        onClick={() => setOpen(o => !o)}
+        style={{
+          background:    TH.color.bgSurface,
+          border: `1px solid ${TH.color.borderMedium}`,
+          borderRadius:  '4px',
+          padding:       '5px 10px',
+          cursor:        'pointer',
+          display:       'flex',
+          alignItems:    'center',
+          gap:           6,
+          userSelect:    'none',
+        }}
+      >
+        <span style={{ color: TH.color.textSecondary, fontSize: 10, letterSpacing: '0.1em' }}>
+          PRICE SUMMARY
+        </span>
+        <span style={{ color: TH.color.textTertiary, fontSize: 9 }}>
+          {open ? '\u25B2' : '\u25BC'}
+        </span>
       </div>
 
-      {/* Last */}
-      <div style={{ marginBottom: 12 }}>
-        <div style={{ color: TH.color.textTertiary, fontSize: 9, letterSpacing: '0.08em', marginBottom: 3 }}>LAST</div>
-        <div style={{ color: chgCol, fontSize: 22, fontWeight: 700, lineHeight: 1 }}>
-          {crosshair.close != null ? fv(last) : <OdometerNumber value={last} decimals={dp} />}
-        </div>
-      </div>
+      {/* Dropdown panel */}
+      {open && (
+        <div style={{
+          marginTop:     2,
+          width:         168,
+          background:    TH.color.bgSurface,
+          border: `1px solid ${TH.color.borderMedium}`,
+          borderRadius:  '4px',
+          padding:       '8px 10px',
+          display:       'flex',
+          flexDirection: 'column',
+        }}>
+          {/* Last */}
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ color: TH.color.textTertiary, fontSize: 9, letterSpacing: '0.08em', marginBottom: 3 }}>LAST</div>
+            <div style={{ color: chgCol, fontSize: 22, fontWeight: 700, lineHeight: 1 }}>
+              {crosshair.close != null ? fv(last) : <OdometerNumber value={last} decimals={dp} />}
+            </div>
+          </div>
 
-      {/* Stats rows */}
-      <div style={{ borderTop: `1px solid ${TH.color.borderSubtle}`, paddingTop: 8 }}>
-        <Row label="Chg"  value={fvSigned(chg)}          color={chgCol} />
-        <Row label="Chg%" value={fvSigned(pct, 2) + '%'} color={chgCol} />
-        <Row label="High" value={fv(stats.high.value)}    color={TH.color.textPrimary} />
-        <Row label="Low"  value={fv(stats.low.value)}     color={TH.color.textPrimary} />
-        <Row label="Avg"  value={fv(stats.avg)}           color={TH.color.textSecondary} />
-      </div>
+          {/* Stats rows */}
+          <div style={{ borderTop: `1px solid ${TH.color.borderSubtle}`, paddingTop: 8 }}>
+            <Row label="Chg"  value={fvSigned(chg)}          color={chgCol} />
+            <Row label="Chg%" value={fvSigned(pct, 2) + '%'} color={chgCol} />
+            <Row label="High" value={fv(stats.high.value)}    color={TH.color.textPrimary} />
+            <Row label="Low"  value={fv(stats.low.value)}     color={TH.color.textPrimary} />
+            <Row label="Avg"  value={fv(stats.avg)}           color={TH.color.textSecondary} />
+          </div>
 
-      {/* RTH Close row */}
-      {showRthRow && regularClose != null && (
-        <div style={{ borderTop: `1px solid ${TH.color.borderSubtle}`, paddingTop: 6, marginTop: 4 }}>
-          <Row label="RTH CLOSE" value={fv(regularClose)} color={TH.color.textSecondary} />
+          {/* RTH Close row */}
+          {showRthRow && regularClose != null && (
+            <div style={{ borderTop: `1px solid ${TH.color.borderSubtle}`, paddingTop: 6, marginTop: 4 }}>
+              <Row label="RTH CLOSE" value={fv(regularClose)} color={TH.color.textSecondary} />
+            </div>
+          )}
+
+          {/* Extended-hours price row */}
+          {showExtRow && (
+            <div>
+              {ms === 'PRE' && prePrice != null && (
+                <>
+                  <Row label="PRE" value={fv(prePrice)} color={TH.color.accentWarning} />
+                  {preChgPct != null && regularClose != null && (
+                    <Row label="PRE \u0394%" value={fvSigned((prePrice - regularClose) / regularClose * 100, 2) + '%'} color={TH.color.accentWarning} />
+                  )}
+                </>
+              )}
+              {ms === 'POST' && postPrice != null && (
+                <>
+                  <Row label="POST" value={fv(postPrice)} color={TH.color.accentInfo} />
+                  {postChgPct != null && regularClose != null && (
+                    <Row label="POST \u0394%" value={fvSigned((postPrice - regularClose) / regularClose * 100, 2) + '%'} color={TH.color.accentInfo} />
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Period label */}
+          <div style={{ marginTop: 'auto', paddingTop: 8, color: TH.color.textTertiary, fontSize: 9 }}>
+            {period.toUpperCase()} PERIOD
+          </div>
         </div>
       )}
-
-      {/* Extended-hours price row */}
-      {showExtRow && (
-        <div>
-          {ms === 'PRE' && prePrice != null && (
-            <>
-              <Row label="PRE" value={fv(prePrice)} color={TH.color.accentWarning} />
-              {preChgPct != null && regularClose != null && (
-                <Row label="PRE \u0394%" value={fvSigned((prePrice - regularClose) / regularClose * 100, 2) + '%'} color={TH.color.accentWarning} />
-              )}
-            </>
-          )}
-          {ms === 'POST' && postPrice != null && (
-            <>
-              <Row label="POST" value={fv(postPrice)} color={TH.color.accentInfo} />
-              {postChgPct != null && regularClose != null && (
-                <Row label="POST \u0394%" value={fvSigned((postPrice - regularClose) / regularClose * 100, 2) + '%'} color={TH.color.accentInfo} />
-              )}
-            </>
-          )}
-        </div>
-      )}
-
-      {/* Period label */}
-      <div style={{ marginTop: 'auto', paddingTop: 8, color: TH.color.textTertiary, fontSize: 9 }}>
-        {period.toUpperCase()} PERIOD
-      </div>
     </div>
   )
 }

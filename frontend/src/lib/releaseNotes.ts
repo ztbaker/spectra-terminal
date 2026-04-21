@@ -8,6 +8,13 @@ export interface ReleaseNote {
 // "What's New" dialog on first launch after update.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.1.8',
+    date: '2026-04-21',
+    highlights: [
+      'Price summary is now a collapsible dropdown — click to expand/collapse so it no longer covers the chart y-axis labels.',
+    ],
+  },
+  {
     version: '1.1.7',
     date: '2026-04-21',
     highlights: [
