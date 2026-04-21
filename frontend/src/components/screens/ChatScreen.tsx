@@ -15,6 +15,7 @@ import {
 import type { ChatMessage, ChatRoom, ChatDMThread } from '../../types'
 import { useAuth, errorMessage } from '../../lib/auth'
 import theme from '../../lib/theme'
+import ReaderPanel from '../news/ReaderPanel'
 
 const { color, font } = theme
 
@@ -61,6 +62,7 @@ export default function ChatScreen({ sub, onNavigate }: Props) {
   const logRef = useRef<HTMLDivElement>(null)
   const composerRef = useRef<HTMLInputElement>(null)
   const lastMsgCountRef = useRef(0)
+  const [readingUrl, setReadingUrl] = useState<string | null>(null)
 
   // ── Sidebar queries ────────────────────────────────────────────────────
   const roomsQ = useQuery<ChatRoom[]>({
@@ -296,6 +298,7 @@ export default function ChatScreen({ sub, onNavigate }: Props) {
                 key={m.id}
                 message={m}
                 isSelf={user?.user_id === m.sender_id}
+                onOpenUrl={setReadingUrl}
               />
             ))}
           </div>
@@ -374,6 +377,13 @@ export default function ChatScreen({ sub, onNavigate }: Props) {
             setShowNewDM(false)
             onNavigate(`CHAT @${username}`)
           }}
+        />
+      )}
+
+      {readingUrl && (
+        <ReaderPanel
+          url={readingUrl}
+          onClose={() => setReadingUrl(null)}
         />
       )}
     </div>
@@ -507,12 +517,51 @@ function EmptyState({ children }: { children: React.ReactNode }) {
   )
 }
 
+const URL_RE = /https?:\/\/[^\s]+/g
+
+function renderBodyWithLinks(
+  body: string,
+  onOpenUrl: (url: string) => void,
+) {
+  const parts: React.ReactNode[] = []
+  let lastIndex = 0
+  let match: RegExpExecArray | null
+  const re = new RegExp(URL_RE)
+  while ((match = re.exec(body)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(body.slice(lastIndex, match.index))
+    }
+    const url = match[0]
+    parts.push(
+      <a
+        key={match.index}
+        href="#"
+        onClick={(e) => { e.preventDefault(); onOpenUrl(url) }}
+        style={{
+          color: color.accentInfo,
+          textDecoration: 'underline',
+          cursor: 'pointer',
+        }}
+      >
+        {url}
+      </a>
+    )
+    lastIndex = re.lastIndex
+  }
+  if (lastIndex < body.length) {
+    parts.push(body.slice(lastIndex))
+  }
+  return parts
+}
+
 function MessageRow({
   message,
   isSelf,
+  onOpenUrl,
 }: {
   message: ChatMessage
   isSelf: boolean
+  onOpenUrl: (url: string) => void
 }) {
   return (
     <div style={{
@@ -544,7 +593,7 @@ function MessageRow({
         wordBreak: 'break-word',
         whiteSpace: 'pre-wrap',
       }}>
-        {message.body}
+        {renderBodyWithLinks(message.body, onOpenUrl)}
       </span>
     </div>
   )
