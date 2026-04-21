@@ -202,7 +202,7 @@ const NewsScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
   } = useQuery({
     queryKey: ['news', ticker ?? 'MARKET'],
     queryFn: () => ticker ? fetchNewsCompany(ticker) : fetchNews(ticker, 100),
-    staleTime: 60_000,
+    staleTime: 10_000,
   })
 
   // WORLD data
@@ -214,11 +214,11 @@ const NewsScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
     queryKey: ['news-world', worldTopic],
     queryFn: () => fetchNewsWorld(TOPIC_MAP[worldTopic] ?? 'general'),
     enabled: activeTab === 'WORLD',
-    staleTime: 60_000,
+    staleTime: 10_000,
   })
 
-  usePolling(refetchCompany, 5 * 60_000)
-  usePolling(refetchWorld, 5 * 60_000, activeTab === 'WORLD')
+  usePolling(refetchCompany, 15_000)
+  usePolling(refetchWorld, 15_000, activeTab === 'WORLD')
 
   const companyItems = useMemo(() =>
     [...(companyData?.items ?? [])].sort((a, b) => b.datetime - a.datetime),

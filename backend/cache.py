@@ -7,7 +7,7 @@ TTL = {
     "price":      15,
     "intraday":   300,   # 5 min
     "daily":      3600,  # 1 hr
-    "news":       300,   # 5 min
+    "news":       30,    # 30 sec — live news feed
     "econ":       3600,  # 1 hr
     "options":    300,   # 5 min
     "screener":   3600,  # 1 hr
