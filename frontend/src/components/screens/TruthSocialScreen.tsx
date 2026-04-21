@@ -124,8 +124,8 @@ const TruthSocialScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
   const { data, isLoading, error } = useQuery({
     queryKey: ['truthsocial', 'realDonaldTrump'],
     queryFn: () => fetchTruthSocial('realDonaldTrump', 40),
-    staleTime: 120_000,
-    refetchInterval: 120_000,
+    staleTime: 10_000,
+    refetchInterval: 15_000,
   })
 
   return (
