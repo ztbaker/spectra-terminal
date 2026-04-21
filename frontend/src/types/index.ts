@@ -857,6 +857,7 @@ export type ScreenType =
   | 'chat'
   | 'meme'
   | 'profile'
+  | 'ticker-menu'
 
 // ─── Chat ────────────────────────────────────────────────────────────────────
 export interface ChatRoom {

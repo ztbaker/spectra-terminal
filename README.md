@@ -19,9 +19,9 @@
 
 ---
 
-## What's New in v1.1.5
+## What's New in v1.1.6
 
-- **Fixed BOND and ETF screens** — both screens were returning blank data because API auth headers were missing from requests
+- **Bloomberg-style function menu** — typing a bare ticker (e.g. `AAPL`) now shows a "select function" screen with clickable options (GP, OPT, FA, NEWS, FILINGS, HS, QUANT, ETF, DES) instead of jumping straight to equity
 - **Cursor fix** — command bar cursor only blinks when focused
 
 ## What is Spectra Terminal?

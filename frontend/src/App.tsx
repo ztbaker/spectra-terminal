@@ -38,6 +38,7 @@ import CommodityScreen  from './components/screens/CommodityScreen'
 import CongressScreen   from './components/screens/CongressScreen'
 import QuantScreen      from './components/screens/QuantScreen'
 import FAScreen         from './components/screens/FAScreen'
+import TickerMenuScreen from './components/screens/TickerMenuScreen'
 import EconScreen       from './components/screens/EconScreen'
 import HomeScreenV3     from './components/screens/HomeScreenV3'
 import HelpScreen       from './components/screens/HelpScreen'
@@ -392,6 +393,11 @@ function TerminalApp() {
   // ── Render screen for a panel ──────────────────────────────────────────────
   const renderScreen = (screen: ScreenType, ticker?: string, sub?: string) => {
     switch (screen) {
+      case 'ticker-menu':
+        return ticker
+          ? <TickerMenuScreen ticker={ticker} onNavigate={handleNavigate} />
+          : <HomeScreenV3 onNavigate={handleNavigate} />
+
       case 'equity':
         return ticker
           ? <EquityScreenV3 ticker={ticker} onNavigate={handleNavigate} />

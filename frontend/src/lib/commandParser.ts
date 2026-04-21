@@ -145,8 +145,8 @@ export function isValidTicker(s: string): boolean {
  * Parse a Bloomberg-style command string into a ParsedCommand.
  *
  * Rules (case-insensitive input, normalised to uppercase):
- *   "AAPL"          → equity / AAPL
- *   "AAPL EQUITY"   → equity / AAPL
+ *   "AAPL"          → ticker-menu / AAPL  (select function)
+ *   "AAPL EQUITY"   → ticker-menu / AAPL
  *   "AAPL GP"       → chart   / AAPL
  *   "AAPL OPT"      → options / AAPL
  *   "AAPL OPTIONS"  → options / AAPL
@@ -222,8 +222,8 @@ export function parseCommand(input: string): ParsedCommand {
     if (suffixScreen) {
       return { screen: suffixScreen, raw }
     }
-    // Single token with no known command → treat as ticker → equity
-    return { screen: 'equity', ticker: parts[0], raw }
+    // Single token with no known command → treat as ticker → function menu
+    return { screen: 'ticker-menu', ticker: parts[0], raw }
   }
 
   // 2. Multi-token: detect Bloomberg asset class qualifier
@@ -239,7 +239,7 @@ export function parseCommand(input: string): ParsedCommand {
       const assetClass = parts[acIdx]
 
       // Function suffix comes after the asset class token
-      let screen: ScreenType = 'equity'
+      let screen: ScreenType = 'ticker-menu'
       const afterAC = parts.slice(acIdx + 1)
       if (afterAC.length > 0) {
         const fnScreen = TICKER_SUFFIXES[afterAC[0]]
@@ -291,8 +291,8 @@ export function parseCommand(input: string): ParsedCommand {
       return { screen: standalone, raw }
     }
 
-    // Unknown two-token command: treat first token as ticker → equity
-    return { screen: 'equity', ticker: first, raw }
+    // Unknown two-token command: treat first token as ticker → function menu
+    return { screen: 'ticker-menu', ticker: first, raw }
   }
 
   // Fallback (unreachable given the checks above, but satisfies TypeScript)

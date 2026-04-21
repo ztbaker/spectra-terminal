@@ -8,6 +8,13 @@ export interface ReleaseNote {
 // "What's New" dialog on first launch after update.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.1.6',
+    date: '2026-04-21',
+    highlights: [
+      'Typing a bare ticker (e.g. "AAPL") now opens a Bloomberg-style function menu instead of jumping straight to equity. Select GP, OPT, FA, NEWS, FILINGS, HS, QUANT, and more from the menu or type the function in the command bar.',
+    ],
+  },
+  {
     version: '1.1.5',
     date: '2026-04-21',
     highlights: [
