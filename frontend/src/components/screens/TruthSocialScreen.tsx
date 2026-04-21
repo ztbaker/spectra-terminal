@@ -67,7 +67,7 @@ const TruthRow: React.FC<{ post: TruthPost }> = ({ post }) => {
           letterSpacing: '0.5px',
         }}>
           {post.created_at}
-          <span style={{ marginLeft: '8px', color: color.textQuaternary }}>
+          <span style={{ marginLeft: '8px', color: color.textTertiary }}>
             {timeAgo(post.created_at)}
           </span>
         </span>
@@ -77,7 +77,7 @@ const TruthRow: React.FC<{ post: TruthPost }> = ({ post }) => {
             <span style={{ color: '#ff6b6b' }}>&#9825;</span> {fmtNum(post.favourites_count)}
           </span>
           <span style={{ color: color.textTertiary, fontSize: '10px', fontFamily: font.mono }}>
-            <span style={{ color: color.accentSuccess }}>&#8635;</span> {fmtNum(post.reblogs_count)}
+            <span style={{ color: color.accentPositive }}>&#8635;</span> {fmtNum(post.reblogs_count)}
           </span>
           <span style={{ color: color.textTertiary, fontSize: '10px', fontFamily: font.mono }}>
             <span style={{ color: color.accentInfo }}>&#9993;</span> {fmtNum(post.replies_count)}
@@ -168,7 +168,7 @@ const TruthSocialScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
         </div>
         {data?.cached && (
           <span style={{
-            color: color.textQuaternary,
+            color: color.textTertiary,
             fontSize: '9px',
             fontFamily: font.mono,
             background: 'rgba(255,255,255,0.05)',
@@ -188,7 +188,7 @@ const TruthSocialScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
           <div style={{
             padding: '24px',
             textAlign: 'center',
-            color: color.accentDanger,
+            color: color.accentNegative,
             fontSize: '12px',
             fontFamily: font.mono,
           }}>

@@ -255,7 +255,7 @@ const ChainTab: React.FC<{
               marginLeft: '16px',
             }}>
               C/P VOL: <span style={{
-                color: data.call_put_ratio > 1 ? color.accentSuccess : data.call_put_ratio < 1 ? color.accentDanger : color.textPrimary,
+                color: data.call_put_ratio > 1 ? color.accentPositive : data.call_put_ratio < 1 ? color.accentNegative : color.textPrimary,
                 fontWeight: 700,
               }}>{data.call_put_ratio.toFixed(3)}</span>
             </span>
@@ -966,7 +966,7 @@ const OptionsScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => 
               fontVariantNumeric: 'tabular-nums',
             }}>
               C/P RATIO: <span style={{
-                color: chainData!.call_put_ratio! > 1 ? color.accentSuccess : chainData!.call_put_ratio! < 1 ? color.accentDanger : color.textPrimary,
+                color: chainData!.call_put_ratio! > 1 ? color.accentPositive : chainData!.call_put_ratio! < 1 ? color.accentNegative : color.textPrimary,
                 fontWeight: 700,
               }}>{chainData!.call_put_ratio!.toFixed(3)}</span>
             </span>
