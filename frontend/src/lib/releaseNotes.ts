@@ -8,6 +8,14 @@ export interface ReleaseNote {
 // "What's New" dialog on first launch after update.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.1.9',
+    date: '2026-04-21',
+    highlights: [
+      'Price summary dropdown now animates open/close and no longer overlaps the Pre-market badge.',
+      'CI release pipeline fixed — no more failed builds from duplicate asset uploads.',
+    ],
+  },
+  {
     version: '1.1.8',
     date: '2026-04-21',
     highlights: [
