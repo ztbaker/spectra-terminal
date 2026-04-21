@@ -8,6 +8,15 @@ export interface ReleaseNote {
 // "What's New" dialog on first launch after update.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.1.1',
+    date: '2026-04-21',
+    highlights: [
+      'Chat: reply now works correctly — your reply text appears below the quoted message instead of merging into the quote.',
+      'Chat: composer supports multi-line input (Shift+Enter for newline, Enter to send).',
+      'Fixed macOS auto-updater crash when replacing the app bundle.',
+    ],
+  },
+  {
     version: '1.1.0',
     date: '2026-04-21',
     highlights: [
