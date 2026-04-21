@@ -19,15 +19,17 @@
 
 ---
 
-## What's New in v1.1.0
+## What's New in v1.1.4
 
-- **Chat improvements** — messages stay in the composer after sending, reply to messages with quoted blocks, online/offline presence dots, clickable URLs open in the reader
-- **Meme coin tracker** — new `MEME` command tracks DOGE, SHIB, PEPE, BONK, FLOKI, WIF, and more with real-time prices
-- **User profiles** — `PROF` or `PROF @username` shows a Bloomberg IB-style profile card with online status, rooms joined, and messages sent
-- **Period returns** — quant screen now shows 1M, 3M, 6M, YTD, 1Y, and 2Y returns
-- **Filings fix** — browse all SEC filing types (10-Q, 8-K, DEF 14A) — not just 10-K
-- **Thread navigation** — switching chat threads stays in the same pane instead of opening a new one
-- **Bug report dialog** — auto-closes after successful submission
+- **Bloomberg-style HS screen** — dual overlaid price chart, spread histogram, full summary stats (mean, median, StDev, percentile, high/low with dates), distribution histogram, and Price/Percent normalize toggle
+- **Ticker comparison** — type `NVDA HS` to compare any ticker against another; a dialog prompts for the second security
+- **Table layouts** — MEME, FX, and MACRO screens now use clean WEI-style table rows instead of cards
+- **News sharing** — shared articles appear as clickable headline cards instead of raw URLs
+- **Chat improvements** — reply with quoted blocks, online/offline presence dots, multi-line composer (Shift+Enter), clickable URLs
+- **Meme coin tracker** — `MEME` command tracks DOGE, SHIB, PEPE, BONK, FLOKI, WIF, and more
+- **User profiles** — `PROF` or `PROF @username` shows a Bloomberg IB-style profile card
+- **Bug reports** — close immediately on send, show a confirmation toast
+- **Cursor fix** — command bar cursor only blinks when focused
 
 ## What is Spectra Terminal?
 
