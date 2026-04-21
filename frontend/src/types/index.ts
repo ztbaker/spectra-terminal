@@ -105,6 +105,7 @@ export interface OptionsData {
   ticker: string
   spot: number | null
   expiries: OptionsExpiry[]
+  call_put_ratio: number | null
 }
 
 // ─── News ─────────────────────────────────────────────────────────────────────
@@ -858,6 +859,7 @@ export type ScreenType =
   | 'meme'
   | 'profile'
   | 'ticker-menu'
+  | 'truth'
 
 // ─── Chat ────────────────────────────────────────────────────────────────────
 export interface ChatRoom {

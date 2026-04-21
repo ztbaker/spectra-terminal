@@ -19,12 +19,10 @@
 
 ---
 
-## What's New in v1.1.11
+## What's New in v1.1.12
 
-- **Live intraday candles (GPO)** — GPO defaults to 1D/1-minute candles with 500ms live polling, so candles update in near real-time during market hours
-- **Chat cashtags** — type `$AAPL` in a chat message and it renders as an amber clickable link that opens the ticker's function menu
-- **Bloomberg-style function menu** — typing a bare ticker (e.g. `AAPL`) shows a "select function" screen with clickable options (GP, OPT, FA, NEWS, FILINGS, HS, QUANT, ETF, DES)
-- **Cursor fix** — command bar cursor only blinks when focused
+- **TRUMP command** — view Trump's latest Truth Social posts in a Bloomberg-style feed with engagement stats (likes, retruths, replies)
+- **Call/Put ratio** — OPT screen now shows C/P volume ratio in the header, colored green (call-heavy) or red (put-heavy)
 
 ## What is Spectra Terminal?
 
@@ -145,6 +143,7 @@ Bloomberg-style command bar:
 | `CONG` | Congress bills |
 | `CHAT` | Chat rooms and DMs |
 | `MEME` | Meme coin tracker |
+| `TRUMP` | Trump's Truth Social posts |
 | `PROF` | User profile |
 
 

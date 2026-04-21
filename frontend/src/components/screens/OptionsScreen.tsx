@@ -187,7 +187,7 @@ const unusualColumns: DataGridColumn<UnusualRow>[] = [
 
 const ChainTab: React.FC<{
   ticker: string
-  data: { expiries: OptionsExpiry[]; spot: number | null } | undefined
+  data: { expiries: OptionsExpiry[]; spot: number | null; call_put_ratio?: number | null } | undefined
   isLoading: boolean
 }> = ({ ticker, data, isLoading }) => {
   const [selectedExpiry, setSelectedExpiry] = useState<string | null>(null)
@@ -247,6 +247,19 @@ const ChainTab: React.FC<{
           }}>
             {ticker}
           </span>
+          {data?.call_put_ratio !== null && data?.call_put_ratio !== undefined && (
+            <span style={{
+              color: color.textSecondary,
+              fontSize: '11px',
+              fontFamily: font.mono,
+              marginLeft: '16px',
+            }}>
+              C/P VOL: <span style={{
+                color: data.call_put_ratio > 1 ? color.accentSuccess : data.call_put_ratio < 1 ? color.accentDanger : color.textPrimary,
+                fontWeight: 700,
+              }}>{data.call_put_ratio.toFixed(3)}</span>
+            </span>
+          )}
         </div>
       )}
 
@@ -934,16 +947,31 @@ const OptionsScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => 
         }}>
           OPTIONS — {ticker}
         </span>
-        {chainData?.spot !== null && chainData?.spot !== undefined && (
-          <span style={{
-            color: color.textPrimary,
-            fontSize: '12px',
-            fontFamily: font.mono,
-            fontVariantNumeric: 'tabular-nums',
-          }}>
-            SPOT: <span style={{ color: color.textPrimary, fontWeight: 700 }}>${chainData!.spot!.toFixed(2)}</span>
-          </span>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          {chainData?.spot !== null && chainData?.spot !== undefined && (
+            <span style={{
+              color: color.textPrimary,
+              fontSize: '12px',
+              fontFamily: font.mono,
+              fontVariantNumeric: 'tabular-nums',
+            }}>
+              SPOT: <span style={{ color: color.textPrimary, fontWeight: 700 }}>${chainData!.spot!.toFixed(2)}</span>
+            </span>
+          )}
+          {chainData?.call_put_ratio !== null && chainData?.call_put_ratio !== undefined && (
+            <span style={{
+              color: color.textSecondary,
+              fontSize: '12px',
+              fontFamily: font.mono,
+              fontVariantNumeric: 'tabular-nums',
+            }}>
+              C/P RATIO: <span style={{
+                color: chainData!.call_put_ratio! > 1 ? color.accentSuccess : chainData!.call_put_ratio! < 1 ? color.accentDanger : color.textPrimary,
+                fontWeight: 700,
+              }}>{chainData!.call_put_ratio!.toFixed(3)}</span>
+            </span>
+          )}
+        </div>
       </div>
 
       <div style={{ flexShrink: 0, background: 'transparent' }}>
@@ -959,7 +987,7 @@ const OptionsScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => 
         {activeTab === 'CHAIN' && (
           <ChainTab
             ticker={ticker}
-            data={chainData ? { expiries: chainData.expiries, spot: chainData.spot } : undefined}
+            data={chainData ? { expiries: chainData.expiries, spot: chainData.spot, call_put_ratio: chainData.call_put_ratio } : undefined}
             isLoading={chainLoading}
           />
         )}

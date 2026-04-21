@@ -21,3 +21,4 @@ vaderSentiment>=3.3.2
 trafilatura>=2.0.0
 bcrypt>=4.1.0
 email-validator>=2.0.0
+truthbrush>=0.4.0

@@ -36,6 +36,7 @@ from routers import (
     bugreport,
     fa,
     chat,
+    truthsocial,
 )
 
 
@@ -98,6 +99,7 @@ app.include_router(ai.router, prefix="/api")
 app.include_router(bugreport.router, prefix="/api")
 app.include_router(fa.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
+app.include_router(truthsocial.router, prefix="/api")
 
 
 @app.get("/health")

@@ -108,6 +108,7 @@ const STANDALONE_COMMANDS: Record<string, ScreenType> = {
   LOGOUT:    'logout',
   SIGNOUT:   'logout',
   BUG:       'bugreport',
+  TRUMP:     'truth',
 }
 
 // ─── Ticker-qualified suffixes ────────────────────────────────────────────────

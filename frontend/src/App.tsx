@@ -39,6 +39,7 @@ import CongressScreen   from './components/screens/CongressScreen'
 import QuantScreen      from './components/screens/QuantScreen'
 import FAScreen         from './components/screens/FAScreen'
 import TickerMenuScreen from './components/screens/TickerMenuScreen'
+import TruthSocialScreen from './components/screens/TruthSocialScreen'
 import EconScreen       from './components/screens/EconScreen'
 import HomeScreenV3     from './components/screens/HomeScreenV3'
 import HelpScreen       from './components/screens/HelpScreen'
@@ -498,6 +499,9 @@ function TerminalApp() {
 
       case 'meme':
         return <MemeScreen onNavigate={handleNavigate} />
+
+      case 'truth':
+        return <TruthSocialScreen onNavigate={handleNavigate} />
 
       case 'profile':
         return <ProfileScreen username={sub} onNavigate={handleNavigate} />

@@ -46,6 +46,7 @@ class OptionsResponse(BaseModel):
     ticker: str
     spot: float | None
     expiries: list[OptionsExpiry]
+    call_put_ratio: float | None = None
 
 
 class IVSurfaceResponse(BaseModel):
@@ -180,7 +181,22 @@ async def get_options(ticker: str):
     else:
         expiries = []
 
-    return OptionsResponse(ticker=ticker, spot=spot, expiries=expiries)
+    # Compute call/put volume ratio across all expiries
+    total_call_vol = 0
+    total_put_vol = 0
+    for exp in expiries:
+        for c in exp.calls:
+            v = c.get("volume") if isinstance(c, dict) else getattr(c, "volume", None)
+            if v and v > 0:
+                total_call_vol += v
+        for p in exp.puts:
+            v = p.get("volume") if isinstance(p, dict) else getattr(p, "volume", None)
+            if v and v > 0:
+                total_put_vol += v
+
+    cp_ratio = round(total_call_vol / total_put_vol, 3) if total_put_vol > 0 else None
+
+    return OptionsResponse(ticker=ticker, spot=spot, expiries=expiries, call_put_ratio=cp_ratio)
 
 
 @router.get("/options/{ticker}/surface", response_model=IVSurfaceResponse)

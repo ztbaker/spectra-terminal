@@ -322,3 +322,25 @@ export const fetchUserProfile = (username: string): Promise<UserProfile> =>
 
 export const chatNotifications = (sinceId: number): Promise<ChatNotification[]> =>
   api.get('/chat/notifications', { params: { since_id: sinceId } }).then(r => r.data)
+
+// ─── Truth Social ───────────────────────────────────────────────────────────
+export interface TruthPost {
+  id: string
+  created_at: string
+  content: string
+  url: string
+  replies_count: number
+  reblogs_count: number
+  favourites_count: number
+  media: { type: string; url: string; preview_url: string }[] | null
+}
+
+export interface TruthSocialData {
+  username: string
+  display_name: string
+  posts: TruthPost[]
+  cached: boolean
+}
+
+export const fetchTruthSocial = (username: string = 'realDonaldTrump', limit: number = 40): Promise<TruthSocialData> =>
+  api.get(`/truthsocial/${encodeURIComponent(username)}`, { params: { limit } }).then(r => r.data)
