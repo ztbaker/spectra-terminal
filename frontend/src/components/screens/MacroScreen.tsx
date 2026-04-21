@@ -9,8 +9,6 @@ import theme from '../../lib/theme'
 const { color, font } = theme
 
 const MONO: React.CSSProperties = { fontFamily: font.mono, letterSpacing: '0.03em' }
-const UP_COLOR = color.accentPositive
-const DOWN_COLOR = color.accentNegative
 const FLAT_COLOR = color.textTertiary
 const ROW_GRID = '1fr 100px 90px 120px'
 
