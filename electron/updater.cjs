@@ -111,6 +111,10 @@ async function macDownloadAndInstall(version, send) {
     // Remove quarantine xattr from the extracted app
     try { execSync(`xattr -rd com.apple.quarantine "${extractedApp}"`, { timeout: 5_000 }) } catch {}
 
+    // Ensure the main executable has the execute permission bit
+    // (some zip tools strip +x during archive creation)
+    try { execSync(`chmod +x "${extractedApp}/Contents/MacOS/"*`, { timeout: 5_000, shell: '/bin/bash' }) } catch {}
+
     // Replace the current app with the new one
     const backupPath = currentApp + '.bak'
     // Force-remove any leftover backup from a prior update (rm -rf handles
@@ -118,6 +122,9 @@ async function macDownloadAndInstall(version, send) {
     try { execSync(`rm -rf "${backupPath}"`, { timeout: 10_000 }) } catch {}
     execSync(`mv "${currentApp}" "${backupPath}"`, { timeout: 10_000 })
     execSync(`ditto "${extractedApp}" "${currentApp}"`, { timeout: 30_000 })
+
+    // Ensure the installed executable has +x (safety net)
+    try { execSync(`chmod +x "${currentApp}/Contents/MacOS/"*`, { timeout: 5_000, shell: '/bin/bash' }) } catch {}
 
     // Clean up backup and temp
     try { execSync(`rm -rf "${backupPath}"`, { timeout: 10_000 }) } catch {}
