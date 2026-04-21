@@ -113,26 +113,28 @@ async function macDownloadAndInstall(version, send) {
 
     // Replace the current app with the new one
     const backupPath = currentApp + '.bak'
-    try { fs.rmSync(backupPath, { recursive: true }) } catch {}
+    // Force-remove any leftover backup from a prior update (rm -rf handles
+    // macOS edge cases like in-use files better than fs.rmSync)
+    try { execSync(`rm -rf "${backupPath}"`, { timeout: 10_000 }) } catch {}
     fs.renameSync(currentApp, backupPath)
     execSync(`ditto "${extractedApp}" "${currentApp}"`, { timeout: 30_000 })
 
     // Clean up backup and temp
-    try { fs.rmSync(backupPath, { recursive: true }) } catch {}
-    try { fs.rmSync(tmpDir, { recursive: true }) } catch {}
+    try { execSync(`rm -rf "${backupPath}"`, { timeout: 10_000 }) } catch {}
+    try { execSync(`rm -rf "${tmpDir}"`, { timeout: 10_000 }) } catch {}
 
     send('update:progress', { percent: 100 })
     send('update:downloaded', { version })
   } catch (err) {
     log.error('[mac-updater]', err)
-    // Restore backup if it exists
+    // Restore backup if the current app was removed but backup exists
     let currentApp = app.getAppPath()
     while (currentApp && currentApp !== '/' && !currentApp.endsWith('.app')) {
       currentApp = path.dirname(currentApp)
     }
     const backupPath = currentApp + '.bak'
     if (fs.existsSync(backupPath) && !fs.existsSync(currentApp)) {
-      try { fs.renameSync(backupPath, currentApp) } catch {}
+      try { execSync(`mv "${backupPath}" "${currentApp}"`, { timeout: 10_000 }) } catch {}
     }
     send('update:error', { message: `Update failed: ${err.message}` })
   } finally {
