@@ -1,8 +1,16 @@
 import { useQuery } from '@tanstack/react-query'
+import axios from 'axios'
 import theme from '../../lib/theme'
 const { color, font } = theme
 
-const API = import.meta.env.VITE_API_URL || '/api'
+const API_URL = import.meta.env.VITE_API_URL || '/api'
+const API_KEY = import.meta.env.VITE_API_KEY || ''
+
+function etfGet(path: string) {
+  const headers: Record<string, string> = {}
+  if (API_KEY) headers['X-Spectra-Key'] = API_KEY
+  return axios.get(`${API_URL}${path}`, { headers }).then(r => r.data)
+}
 
 interface Props { ticker: string; onNavigate: (cmd: string) => void }
 
@@ -11,22 +19,22 @@ export default function ETFScreen({ ticker, onNavigate }: Props) {
 
   const { data: info, isLoading: infoLoading } = useQuery({
     queryKey: ['etf-info', sym],
-    queryFn: () => fetch(`${API}/etf/${sym}/info`).then(r => r.json()),
+    queryFn: () => etfGet(`/etf/${sym}/info`),
   })
 
   const { data: holdings } = useQuery({
     queryKey: ['etf-holdings', sym],
-    queryFn: () => fetch(`${API}/etf/${sym}/holdings`).then(r => r.json()),
+    queryFn: () => etfGet(`/etf/${sym}/holdings`),
   })
 
   const { data: sectors } = useQuery({
     queryKey: ['etf-sectors', sym],
-    queryFn: () => fetch(`${API}/etf/${sym}/sectors`).then(r => r.json()),
+    queryFn: () => etfGet(`/etf/${sym}/sectors`),
   })
 
   const { data: performance } = useQuery({
     queryKey: ['etf-perf', sym],
-    queryFn: () => fetch(`${API}/etf/${sym}/performance`).then(r => r.json()),
+    queryFn: () => etfGet(`/etf/${sym}/performance`),
   })
 
   if (infoLoading) return <div style={{ color: color.textPrimary, padding: 24, fontFamily: font.sans }}>Loading {sym}...</div>

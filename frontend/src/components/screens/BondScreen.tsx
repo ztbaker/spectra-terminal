@@ -1,30 +1,38 @@
 import { useQuery } from '@tanstack/react-query'
+import axios from 'axios'
 import theme from '../../lib/theme'
 const { color, font } = theme
 
-const API = import.meta.env.VITE_API_URL || '/api'
+const API_URL = import.meta.env.VITE_API_URL || '/api'
+const API_KEY = import.meta.env.VITE_API_KEY || ''
+
+function fiGet(path: string, params?: Record<string, string>) {
+  const headers: Record<string, string> = {}
+  if (API_KEY) headers['X-Spectra-Key'] = API_KEY
+  return axios.get(`${API_URL}${path}`, { headers, params }).then(r => r.data)
+}
 
 interface Props { ticker?: string; onNavigate: (cmd: string) => void }
 
 export default function BondScreen(_props: Props) {
   const { data: curve, isLoading: curveLoading } = useQuery({
     queryKey: ['treasury-rates'],
-    queryFn: () => fetch(`${API}/fi/treasury/rates`).then(r => r.json()),
+    queryFn: () => fiGet('/fi/treasury/rates'),
   })
 
   const { data: effr } = useQuery({
     queryKey: ['effr'],
-    queryFn: () => fetch(`${API}/fi/effr`).then(r => r.json()),
+    queryFn: () => fiGet('/fi/effr'),
   })
 
   const { data: mortgage } = useQuery({
     queryKey: ['mortgage-rates'],
-    queryFn: () => fetch(`${API}/fi/mortgage`).then(r => r.json()),
+    queryFn: () => fiGet('/fi/mortgage'),
   })
 
   const { data: spreads } = useQuery({
     queryKey: ['curve-spreads'],
-    queryFn: () => fetch(`${API}/fi/curve-spread?spread=2s10s`).then(r => r.json()),
+    queryFn: () => fiGet('/fi/curve-spread', { spread: '2s10s' }),
   })
 
   if (curveLoading) return <div style={{ color: color.textPrimary, padding: 24 }}>Loading yield curve...</div>

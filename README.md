@@ -19,16 +19,9 @@
 
 ---
 
-## What's New in v1.1.4
+## What's New in v1.1.5
 
-- **Bloomberg-style HS screen** — dual overlaid price chart, spread histogram, full summary stats (mean, median, StDev, percentile, high/low with dates), distribution histogram, and Price/Percent normalize toggle
-- **Ticker comparison** — type `NVDA HS` to compare any ticker against another; a dialog prompts for the second security
-- **Table layouts** — MEME, FX, and MACRO screens now use clean WEI-style table rows instead of cards
-- **News sharing** — shared articles appear as clickable headline cards instead of raw URLs
-- **Chat improvements** — reply with quoted blocks, online/offline presence dots, multi-line composer (Shift+Enter), clickable URLs
-- **Meme coin tracker** — `MEME` command tracks DOGE, SHIB, PEPE, BONK, FLOKI, WIF, and more
-- **User profiles** — `PROF` or `PROF @username` shows a Bloomberg IB-style profile card
-- **Bug reports** — close immediately on send, show a confirmation toast
+- **Fixed BOND and ETF screens** — both screens were returning blank data because API auth headers were missing from requests
 - **Cursor fix** — command bar cursor only blinks when focused
 
 ## What is Spectra Terminal?
