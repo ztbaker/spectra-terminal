@@ -277,6 +277,7 @@ export interface FXResponse {
 export interface CryptoAsset {
   ticker: string
   symbol: string
+  name?: string | null
   price: number | null
   change: number | null
   change_pct: number | null
