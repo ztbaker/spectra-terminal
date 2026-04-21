@@ -113,6 +113,10 @@ class SpreadPoint(BaseModel):
     value: float
 
 
+class PricePoint(BaseModel):
+    time:  str
+    value: float
+
 class SpreadData(BaseModel):
     ticker1: str
     ticker2: str
@@ -120,10 +124,17 @@ class SpreadData(BaseModel):
     label2:  str
     period:  str
     spread:  list[SpreadPoint]
+    series1: list[PricePoint] = []
+    series2: list[PricePoint] = []
     current: float | None
     high:    float | None
     low:     float | None
     avg:     float | None
+    median:  float | None = None
+    stdev:   float | None = None
+    high_date: str | None = None
+    low_date:  str | None = None
+    percentile: float | None = None
 
 
 @router.get("/chart/spread", response_model=SpreadData)
@@ -169,13 +180,42 @@ async def get_chart_spread(
     low     = round(float(vals.min()),    4) if len(vals) > 0 else None
     avg     = round(float(vals.mean()),   4) if len(vals) > 0 else None
 
+    # Extended stats for Bloomberg-style HS
+    import numpy as np
+    median_val = round(float(np.median(vals)), 4) if len(vals) > 0 else None
+    stdev_val  = round(float(np.std(vals)),    4) if len(vals) > 0 else None
+    high_idx   = vals.idxmax() if len(vals) > 0 else None
+    low_idx    = vals.idxmin() if len(vals) > 0 else None
+    high_date  = high_idx.strftime("%Y-%m-%d") if high_idx is not None else None
+    low_date   = low_idx.strftime("%Y-%m-%d")  if low_idx  is not None else None
+    # Percentile of current value within the historical range
+    percentile_val = None
+    if current is not None and len(vals) > 1:
+        from scipy import stats as sp_stats
+        percentile_val = round(float(sp_stats.percentileofscore(vals, current)), 2)
+
+    # Individual price series for overlaid chart
+    s1_pts = [
+        PricePoint(time=idx.strftime("%Y-%m-%d"), value=round(float(row["s1"]), 4))
+        for idx, row in combined.iterrows()
+    ]
+    s2_pts = [
+        PricePoint(time=idx.strftime("%Y-%m-%d"), value=round(float(row["s2"]), 4))
+        for idx, row in combined.iterrows()
+    ]
+
     return SpreadData(
         ticker1=t1, ticker2=t2,
         label1=SPREAD_LABELS.get(t1, t1),
         label2=SPREAD_LABELS.get(t2, t2),
         period=period,
         spread=spread_pts,
+        series1=s1_pts,
+        series2=s2_pts,
         current=current, high=high, low=low, avg=avg,
+        median=median_val, stdev=stdev_val,
+        high_date=high_date, low_date=low_date,
+        percentile=percentile_val,
     )
 
 

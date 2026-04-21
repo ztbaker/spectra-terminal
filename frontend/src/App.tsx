@@ -437,7 +437,7 @@ function TerminalApp() {
         return <WEIScreen onNavigate={handleNavigate} />
 
       case 'hs':
-        return <HSScreen onNavigate={handleNavigate} />
+        return <HSScreen ticker={ticker} onNavigate={handleNavigate} />
 
       case 'ecst':
         return <ECSTScreen onNavigate={handleNavigate} />

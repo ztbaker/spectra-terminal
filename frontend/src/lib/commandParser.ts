@@ -130,6 +130,7 @@ const TICKER_SUFFIXES: Record<string, ScreenType> = {
   COMD:     'comd',
   CONG:     'cong',
   QUANT:    'quant',
+  HS:       'hs',
 }
 
 /**

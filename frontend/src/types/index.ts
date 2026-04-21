@@ -349,17 +349,29 @@ export interface SpreadPoint {
   value: number
 }
 
+export interface PricePoint {
+  time:  string
+  value: number
+}
+
 export interface SpreadData {
-  ticker1:  string
-  ticker2:  string
-  label1:   string
-  label2:   string
-  period:   string
-  spread:   SpreadPoint[]
-  current:  number | null
-  high:     number | null
-  low:      number | null
-  avg:      number | null
+  ticker1:     string
+  ticker2:     string
+  label1:      string
+  label2:      string
+  period:      string
+  spread:      SpreadPoint[]
+  series1:     PricePoint[]
+  series2:     PricePoint[]
+  current:     number | null
+  high:        number | null
+  low:         number | null
+  avg:         number | null
+  median:      number | null
+  stdev:       number | null
+  high_date:   string | null
+  low_date:    string | null
+  percentile:  number | null
 }
 
 // ─── Index constituents ───────────────────────────────────────────────────────

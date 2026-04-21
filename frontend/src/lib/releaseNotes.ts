@@ -8,6 +8,16 @@ export interface ReleaseNote {
 // "What's New" dialog on first launch after update.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.1.4',
+    date: '2026-04-21',
+    highlights: [
+      'HS screen rebuilt to match Bloomberg: dual overlaid price chart, spread histogram, full summary stats (mean, median, StDev, percentile, high/low with dates), and distribution histogram.',
+      'Type "NVDA HS" to compare NVDA against any second ticker — a dialog prompts for the comparison security.',
+      'Price/Percent normalize toggle and expanded period selectors (1M, 6M, YTD, 1Y, 2Y, 5Y, MAX).',
+      'Custom ticker inputs always visible in the header bar for quick changes.',
+    ],
+  },
+  {
     version: '1.1.3',
     date: '2026-04-21',
     highlights: [
