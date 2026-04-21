@@ -61,7 +61,7 @@ export default function ChatScreen({ sub, onNavigate }: Props) {
   const [showNewRoom, setShowNewRoom] = useState(false)
   const [showNewDM, setShowNewDM] = useState(false)
   const logRef = useRef<HTMLDivElement>(null)
-  const composerRef = useRef<HTMLInputElement>(null)
+  const composerRef = useRef<HTMLTextAreaElement>(null)
   const lastMsgCountRef = useRef(0)
   const [readingUrl, setReadingUrl] = useState<string | null>(null)
 
@@ -336,10 +336,11 @@ export default function ChatScreen({ sub, onNavigate }: Props) {
               alignItems: 'center',
             }}
           >
-            <input
+            <textarea
               ref={composerRef}
               className="bb-input"
-              style={{ flex: 1, fontSize: '12px' }}
+              rows={composer.includes('\n') ? 2 : 1}
+              style={{ flex: 1, fontSize: '12px', resize: 'none', lineHeight: '1.4' }}
               placeholder={
                 thread.kind === 'none'
                   ? 'Select a room or DM…'
@@ -349,6 +350,15 @@ export default function ChatScreen({ sub, onNavigate }: Props) {
               }
               value={composer}
               onChange={(e) => setComposer(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  if (composer.trim()) {
+                    const form = e.currentTarget.closest('form')
+                    if (form) form.requestSubmit()
+                  }
+                }
+              }}
               disabled={thread.kind === 'none'}
               maxLength={2000}
             />
