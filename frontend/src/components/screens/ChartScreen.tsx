@@ -245,6 +245,26 @@ interface SidebarProps {
 
 const PriceSidebar: React.FC<SidebarProps> = ({ stats, crosshair, period, livePrice }) => {
   const [open, setOpen] = useState(false)
+  const [visible, setVisible] = useState(false)
+  const panelRef = useRef<HTMLDivElement>(null)
+
+  // Animate open/close
+  useEffect(() => {
+    if (open) {
+      setVisible(true)
+      requestAnimationFrame(() => {
+        if (panelRef.current) {
+          panelRef.current.style.maxHeight = panelRef.current.scrollHeight + 'px'
+          panelRef.current.style.opacity = '1'
+        }
+      })
+    } else if (panelRef.current) {
+      panelRef.current.style.maxHeight = '0px'
+      panelRef.current.style.opacity = '0'
+      const timer = setTimeout(() => setVisible(false), 200)
+      return () => clearTimeout(timer)
+    }
+  }, [open])
 
   if (!stats) return null
 
@@ -279,7 +299,7 @@ const PriceSidebar: React.FC<SidebarProps> = ({ stats, crosshair, period, livePr
   return (
     <div style={{
       position:      'absolute',
-      top:           8,
+      top:           36,
       right:         8,
       zIndex:        5,
       fontFamily:    "'JetBrains Mono','Courier New',monospace",
@@ -293,7 +313,7 @@ const PriceSidebar: React.FC<SidebarProps> = ({ stats, crosshair, period, livePr
           borderRadius:  '4px',
           padding:       '5px 10px',
           cursor:        'pointer',
-          display:       'flex',
+          display:       'inline-flex',
           alignItems:    'center',
           gap:           6,
           userSelect:    'none',
@@ -302,23 +322,36 @@ const PriceSidebar: React.FC<SidebarProps> = ({ stats, crosshair, period, livePr
         <span style={{ color: TH.color.textSecondary, fontSize: 10, letterSpacing: '0.1em' }}>
           PRICE SUMMARY
         </span>
-        <span style={{ color: TH.color.textTertiary, fontSize: 9 }}>
-          {open ? '\u25B2' : '\u25BC'}
+        <span style={{
+          color: TH.color.textTertiary,
+          fontSize: 9,
+          transition: 'transform 0.2s ease',
+          display: 'inline-block',
+          transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+        }}>
+          {'\u25BC'}
         </span>
       </div>
 
       {/* Dropdown panel */}
-      {open && (
-        <div style={{
-          marginTop:     2,
-          width:         168,
-          background:    TH.color.bgSurface,
-          border: `1px solid ${TH.color.borderMedium}`,
-          borderRadius:  '4px',
-          padding:       '8px 10px',
-          display:       'flex',
-          flexDirection: 'column',
-        }}>
+      {visible && (
+        <div
+          ref={panelRef}
+          style={{
+            marginTop:     2,
+            width:         168,
+            background:    TH.color.bgSurface,
+            border: `1px solid ${TH.color.borderMedium}`,
+            borderRadius:  '4px',
+            padding:       '8px 10px',
+            display:       'flex',
+            flexDirection: 'column',
+            overflow:      'hidden',
+            maxHeight:     0,
+            opacity:       0,
+            transition:    'max-height 0.2s ease, opacity 0.15s ease',
+          }}
+        >
           {/* Last */}
           <div style={{ marginBottom: 12 }}>
             <div style={{ color: TH.color.textTertiary, fontSize: 9, letterSpacing: '0.08em', marginBottom: 3 }}>LAST</div>
