@@ -9,11 +9,12 @@ const BG    = '#000000'
 interface Props {
   open: boolean
   onClose: () => void
+  onFiled?: (issueNumber: number) => void
   currentScreen?: string
   lastError?: string
 }
 
-export function BugReportDialog({ open, onClose, currentScreen, lastError }: Props) {
+export function BugReportDialog({ open, onClose, onFiled, currentScreen, lastError }: Props) {
   const [summary, setSummary]         = useState('')
   const [description, setDescription] = useState('')
   const [reporter, setReporter]       = useState(() => localStorage.getItem('spectra.reporter') || '')
@@ -45,8 +46,8 @@ export function BugReportDialog({ open, onClose, currentScreen, lastError }: Pro
         lastError,
       })
       setStatus('ok')
-      setMessage(`Filed issue #${res.issue_number}`)
-      setTimeout(onClose, 1500)
+      onClose()
+      onFiled?.(res.issue_number)
     } catch (e: any) {
       setStatus('err')
       setMessage(e?.message || 'Failed to send')

@@ -133,7 +133,7 @@ const CommandBarV3: React.FC<Props> = ({ onCommand, onCommandNewPanel, activeCom
   const liveInputRef = useRef('')
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [suggestionIdx, setSuggestionIdx] = useState(-1)
-  const [, setFocused] = useState(false)
+  const [focused, setFocused] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const queryClient = useQueryClient()
@@ -467,8 +467,8 @@ const CommandBarV3: React.FC<Props> = ({ onCommand, onCommandNewPanel, activeCom
             }}
             aria-label="Command input"
           />
-          {/* Blinking cursor */}
-          <span
+          {/* Blinking cursor — only when command bar is focused */}
+          {focused && <span
             className="bb-cursor"
             style={{
               position: 'absolute',
@@ -482,7 +482,7 @@ const CommandBarV3: React.FC<Props> = ({ onCommand, onCommandNewPanel, activeCom
               borderRadius: '1px',
               pointerEvents: 'none',
             }}
-          />
+          />}
         </div>
 
         {/* Autocomplete dropdown */}

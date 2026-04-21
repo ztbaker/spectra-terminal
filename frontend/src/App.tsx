@@ -282,6 +282,7 @@ function TerminalApp() {
   const [showQuitModal, setShowQuitModal] = useState(false)
   const [showLogoutModal, setShowLogoutModal] = useState(false)
   const [bugOpen, setBugOpen] = useState(false)
+  const [bugToast, setBugToast] = useState<string | null>(null)
   const [lastError, setLastError] = useState<string | undefined>(undefined)
   const { state, openScreen, openScreenInNewPanel, closePanel, focusPanel, swapPanels, resizePanels, goBack, clearHistory } = useWorkspace()
   const focusedPanelRef = useRef<HTMLDivElement | null>(null)
@@ -546,9 +547,23 @@ function TerminalApp() {
       <BugReportDialog
         open={bugOpen}
         onClose={() => setBugOpen(false)}
+        onFiled={(n) => {
+          setBugToast(`Bug report filed — issue #${n}`)
+          setTimeout(() => setBugToast(null), 4000)
+        }}
         currentScreen={state.panels.find(p => p.focused)?.screen}
         lastError={lastError}
       />
+      {bugToast && (
+        <div style={{
+          position: 'fixed', bottom: 40, left: '50%', transform: 'translateX(-50%)',
+          background: '#002200', border: '1px solid #00ff41', color: '#00ff41',
+          padding: '8px 20px', fontSize: 11, fontFamily: 'JetBrains Mono, monospace',
+          letterSpacing: '0.05em', zIndex: 10001, borderRadius: 3,
+        }}>
+          {bugToast}
+        </div>
+      )}
       {showQuitModal && createPortal(
         <QuitModal
           onConfirm={handleQuit}

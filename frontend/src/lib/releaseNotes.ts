@@ -8,6 +8,15 @@ export interface ReleaseNote {
 // "What's New" dialog on first launch after update.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.1.3',
+    date: '2026-04-21',
+    highlights: [
+      'MEME, FX, and MACRO screens now use a clean table layout matching WEI instead of cards.',
+      'Command bar cursor no longer blinks when typing in chat or other inputs.',
+      'Bug reports close immediately on send and show a confirmation toast.',
+    ],
+  },
+  {
     version: '1.1.2',
     date: '2026-04-21',
     highlights: [

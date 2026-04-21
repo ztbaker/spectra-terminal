@@ -1,14 +1,18 @@
-import Panel from '../Terminal/Panel'
 import React, { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchMacroDashboard, fetchEcon } from '../../lib/api'
 import type { MacroCard, EconSeries, EconObservation } from '../../types'
 import LoadingBar from '../shared/LoadingBar'
-import Sparkline from '../shared/Sparkline'
 import TickerBadge from '../shared/TickerBadge'
 import theme from '../../lib/theme'
 
 const { color, font } = theme
+
+const MONO: React.CSSProperties = { fontFamily: font.mono, letterSpacing: '0.03em' }
+const UP_COLOR = color.accentPositive
+const DOWN_COLOR = color.accentNegative
+const FLAT_COLOR = color.textTertiary
+const ROW_GRID = '1fr 100px 90px 120px'
 
 interface Props {
   onNavigate: (cmd: string) => void
@@ -83,70 +87,17 @@ const EconLineChart: React.FC<LineChartProps> = ({
       aria-label={`Chart for ${series.title}`}
     >
       {yTicks.map((t, i) => (
-        <line
-          key={i}
-          x1={PAD.left}
-          y1={t.y.toFixed(2)}
-          x2={PAD.left + innerW}
-          y2={t.y.toFixed(2)}
-          stroke={color.borderSubtle}
-          strokeWidth="1"
-        />
+        <line key={i} x1={PAD.left} y1={t.y.toFixed(2)} x2={PAD.left + innerW} y2={t.y.toFixed(2)} stroke={color.borderSubtle} strokeWidth="1" />
       ))}
-
       {yTicks.map((t, i) => (
-        <text
-          key={i}
-          x={PAD.left - 4}
-          y={t.y + 4}
-          textAnchor="end"
-          fill={color.textTertiary}
-          fontSize="9"
-          fontFamily="monospace"
-        >
-          {t.label}
-        </text>
+        <text key={i} x={PAD.left - 4} y={t.y + 4} textAnchor="end" fill={color.textTertiary} fontSize="9" fontFamily="monospace">{t.label}</text>
       ))}
-
       {xTicks.map((t, i) => (
-        <text
-          key={i}
-          x={t.x}
-          y={PAD.top + innerH + 20}
-          textAnchor="middle"
-          fill={color.textTertiary}
-          fontSize="9"
-          fontFamily="monospace"
-        >
-          {t.label}
-        </text>
+        <text key={i} x={t.x} y={PAD.top + innerH + 20} textAnchor="middle" fill={color.textTertiary} fontSize="9" fontFamily="monospace">{t.label}</text>
       ))}
-
-      <line
-        x1={PAD.left}
-        y1={PAD.top}
-        x2={PAD.left}
-        y2={PAD.top + innerH}
-        stroke={color.borderMedium}
-        strokeWidth="1"
-      />
-      <line
-        x1={PAD.left}
-        y1={PAD.top + innerH}
-        x2={PAD.left + innerW}
-        y2={PAD.top + innerH}
-        stroke={color.borderMedium}
-        strokeWidth="1"
-      />
-
-      <path
-        d={d}
-        fill="none"
-        stroke={color.accentInfo}
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
+      <line x1={PAD.left} y1={PAD.top} x2={PAD.left} y2={PAD.top + innerH} stroke={color.borderMedium} strokeWidth="1" />
+      <line x1={PAD.left} y1={PAD.top + innerH} x2={PAD.left + innerW} y2={PAD.top + innerH} stroke={color.borderMedium} strokeWidth="1" />
+      <path d={d} fill="none" stroke={color.accentInfo} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
     </svg>
   )
 }
@@ -168,202 +119,103 @@ const ExpandedCard: React.FC<ExpandedCardProps> = ({ card, onClose }) => {
   return (
     <div
       style={{
-        position: 'fixed',
-        inset: 0,
-        background: `${color.bgBase}DA`,
-        zIndex: 100,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+        position: 'fixed', inset: 0, background: `${color.bgBase}DA`,
+        zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}
       onClick={onClose}
     >
       <div
         style={{
-          background: 'rgba(19, 22, 25, 0.6)',
-          border: `1px solid ${color.borderMedium}`,
-          borderRadius: 8,
-          minWidth: 520,
-          maxWidth: 620,
-          width: '90vw',
-          padding: 0,
-          position: 'relative',
+          background: 'rgba(19, 22, 25, 0.6)', border: `1px solid ${color.borderMedium}`,
+          borderRadius: 8, minWidth: 520, maxWidth: 620, width: '90vw', padding: 0, position: 'relative',
         }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '10px 16px',
-            borderBottom: `1px solid ${color.borderSubtle}`,
-          }}
-        >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderBottom: `1px solid ${color.borderSubtle}` }}>
           <span style={{ color: color.textPrimary, fontFamily: font.sans, fontSize: 13, fontWeight: 600 }}>
             {card.label}&nbsp;
             <span style={{ color: color.textTertiary, fontSize: 10, fontFamily: font.mono }}>({card.series_id})</span>
           </span>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'transparent',
-              border: `1px solid ${color.borderSubtle}`,
-              color: color.textSecondary,
-              cursor: 'pointer',
-              fontSize: 13,
-              padding: '1px 8px',
-              lineHeight: 1,
-              borderRadius: 4,
-              fontFamily: font.sans,
-            }}
-          >
-            ×
+          <button onClick={onClose} style={{ background: 'transparent', border: `1px solid ${color.borderSubtle}`, color: color.textSecondary, cursor: 'pointer', fontSize: 13, padding: '1px 8px', lineHeight: 1, borderRadius: 4, fontFamily: font.sans }}>
+            x
           </button>
         </div>
 
-        {/* Summary row */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'baseline',
-            gap: 12,
-            padding: '8px 16px',
-            borderBottom: `1px solid ${color.borderSubtle}`,
-          }}
-        >
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, padding: '8px 16px', borderBottom: `1px solid ${color.borderSubtle}` }}>
           <span style={{ fontSize: 22, color: color.textPrimary, fontWeight: 600, fontFamily: font.sans }}>
-            {card.value !== null ? card.value.toFixed(2) : '—'}
+            {card.value !== null ? card.value.toFixed(2) : '\u2014'}
           </span>
           <TickerBadge value={card.change} decimals={2} />
           <span style={{ color: color.textTertiary, fontSize: 11, fontFamily: font.sans }}>{card.units}</span>
           {data?.cached && (
-            <span style={{ marginLeft: 'auto', color: color.textTertiary, fontSize: 10, fontFamily: font.mono }}>
-              cached
-            </span>
+            <span style={{ marginLeft: 'auto', color: color.textTertiary, fontSize: 10, fontFamily: font.mono }}>cached</span>
           )}
         </div>
 
-        {/* Chart area */}
         <div style={{ padding: '12px 16px 16px' }}>
           <LoadingBar loading={isLoading} />
-          {isError && (
-            <div style={{ color: color.accentNegative, fontSize: 11, padding: 8, fontFamily: font.sans }}>
-              Could not load series data.
-            </div>
-          )}
+          {isError && <div style={{ color: color.accentNegative, fontSize: 11, padding: 8, fontFamily: font.sans }}>Could not load series data.</div>}
           {!isLoading && !isError && data && <EconLineChart series={data} />}
-          {!isLoading && !isError && !data && (
-            <div style={{ color: color.textTertiary, fontSize: 11, padding: 8, fontFamily: font.sans }}>
-              No data available.
-            </div>
-          )}
+          {!isLoading && !isError && !data && <div style={{ color: color.textTertiary, fontSize: 11, padding: 8, fontFamily: font.sans }}>No data available.</div>}
         </div>
       </div>
     </div>
   )
 }
 
-// ─── Single macro metric card ─────────────────────────────────────────────────
+// ─── Table row ────────────────────────────────────────────────────────────────
 
-interface MacroCardViewProps {
-  card: MacroCard
-  onExpand: () => void
-}
+const HeaderRow: React.FC = () => (
+  <div style={{
+    display: 'grid', gridTemplateColumns: ROW_GRID,
+    padding: '4px 12px', gap: 0,
+    borderBottom: `1px solid ${color.borderSubtle}`,
+    ...MONO,
+  }}>
+    {['INDICATOR', 'VALUE', 'CHG', 'UNITS'].map(h => (
+      <div key={h} style={{
+        color: color.textTertiary, fontSize: 10,
+        textAlign: h === 'INDICATOR' || h === 'UNITS' ? 'left' : 'right',
+        paddingRight: h === 'INDICATOR' || h === 'UNITS' ? 0 : 8,
+      }}>
+        {h}
+      </div>
+    ))}
+  </div>
+)
 
-const MacroCardView: React.FC<MacroCardViewProps> = ({ card, onExpand }) => {
+const MacroRow: React.FC<{ card: MacroCard; onExpand: () => void }> = ({ card, onExpand }) => {
   const hasError = Boolean(card.error)
-  const sparkData = card.sparkline.slice(-24)
+  const chg = card.change ?? 0
+  const chgColor = hasError ? FLAT_COLOR : chg > 0 ? UP_COLOR : chg < 0 ? DOWN_COLOR : FLAT_COLOR
 
   return (
     <div
       style={{
-        background: 'rgba(19, 22, 25, 0.6)',
-        border: `1px solid ${color.borderSubtle}`,
-        borderRadius: 8,
-        padding: '12px 14px',
+        display: 'grid', gridTemplateColumns: ROW_GRID,
+        padding: '5px 12px', gap: 0,
+        borderBottom: `1px solid ${color.bgElevated}`,
+        alignItems: 'center',
         cursor: 'pointer',
-        minWidth: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 6,
-        transition: 'border-color 0.15s, background 0.15s',
+        ...MONO,
       }}
       onClick={onExpand}
-      onMouseEnter={e => {
-        ;(e.currentTarget as HTMLDivElement).style.borderColor = color.borderMedium
-        ;(e.currentTarget as HTMLDivElement).style.background = color.bgSurface
-      }}
-      onMouseLeave={e => {
-        ;(e.currentTarget as HTMLDivElement).style.borderColor = color.borderSubtle
-        ;(e.currentTarget as HTMLDivElement).style.background = color.bgElevated
-      }}
+      onMouseEnter={e => (e.currentTarget.style.background = color.bgHover)}
+      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
     >
-      {/* Label */}
-      <div
-        style={{
-          color: color.textSecondary,
-          fontSize: 11,
-          fontFamily: font.sans,
-          fontWeight: 500,
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-        }}
-      >
-        {card.label}
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <span style={{ color: color.textPrimary, fontSize: 11, fontWeight: 600 }}>{card.label}</span>
+        <span style={{ color: color.textTertiary, fontSize: 9 }}>{card.series_id}</span>
       </div>
-
-      {/* Current value */}
-      <div
-        style={{
-          fontSize: 24,
-          color: hasError ? color.textTertiary : color.textPrimary,
-          fontWeight: 600,
-          lineHeight: 1.1,
-          letterSpacing: '-0.02em',
-          fontFamily: font.sans,
-          fontVariantNumeric: 'tabular-nums',
-        }}
-      >
-        {hasError ? 'N/A' : card.value !== null ? card.value.toFixed(2) : '—'}
+      <div style={{ color: hasError ? FLAT_COLOR : color.textPrimary, fontSize: 12, fontWeight: 600, textAlign: 'right', paddingRight: 8 }}>
+        {hasError ? 'N/A' : card.value !== null ? card.value.toFixed(2) : '\u2014'}
       </div>
-
-      {/* Change badge */}
-      <div style={{ fontSize: 12 }}>
+      <div style={{ textAlign: 'right', paddingRight: 8 }}>
         <TickerBadge value={hasError ? null : card.change} decimals={2} />
       </div>
-
-      {/* Units */}
-      <div
-        style={{
-          color: color.textTertiary,
-          fontSize: 10,
-          fontFamily: font.sans,
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-        }}
-      >
+      <div style={{ color: color.textTertiary, fontSize: 10, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {card.units}
       </div>
-
-      {/* Sparkline */}
-      {!hasError && sparkData.length >= 2 && (
-        <div style={{ marginTop: 2 }}>
-          <Sparkline
-            data={sparkData}
-            width={120}
-            height={28}
-            color={
-              card.change !== null && card.change < 0 ? color.accentNegative
-              : card.change !== null && card.change > 0 ? color.accentPositive
-              : color.accentInfo
-            }
-          />
-        </div>
-      )}
     </div>
   )
 }
@@ -383,49 +235,46 @@ const MacroScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
   const expandedCard = cards.find(c => c.series_id === expandedId) ?? null
 
   return (
-    <Panel
-      title="Macro dashboard"
-      actions={
-        data?.cached ? (
-          <span style={{ color: color.textTertiary, fontSize: 10, fontFamily: font.mono }}>
-            cached
-          </span>
-        ) : undefined
-      }
-    >
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'transparent', overflow: 'hidden' }}>
       <LoadingBar loading={isLoading} />
 
+      <div
+        className="bb-header"
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, padding: '6px 12px' }}
+      >
+        <span>MACRO DASHBOARD</span>
+        <span style={{ color: color.textTertiary, fontSize: '11px' }}>
+          {data?.cached && <span style={{ color: color.borderSubtle }}>CACHED</span>}
+        </span>
+      </div>
+
       {isError && (
-        <div style={{ padding: 16, color: color.accentNegative, fontFamily: font.sans, fontSize: 13 }}>
+        <div style={{ padding: '8px 12px', color: color.accentNegative, fontSize: '12px', borderBottom: `1px solid ${color.borderSubtle}`, flexShrink: 0 }}>
           Failed to load macro dashboard data.
         </div>
       )}
 
       {!isLoading && !isError && cards.length === 0 && (
-        <div style={{ padding: 16, color: color.textTertiary, fontFamily: font.sans, fontSize: 13 }}>
+        <div style={{ padding: '20px 12px', color: color.textTertiary, fontSize: 11 }}>
           No macro data available.
         </div>
       )}
 
-      {cards.length > 0 && (
-        <div
-          style={{
-            padding: 12,
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
-            gap: 8,
-            overflowY: 'auto',
-          }}
-        >
-          {cards.map(card => (
-            <MacroCardView
-              key={card.series_id}
-              card={card}
-              onExpand={() => setExpandedId(card.series_id)}
-            />
-          ))}
-        </div>
-      )}
+      <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
+        {cards.length > 0 && <HeaderRow />}
+        {isLoading && cards.length === 0 && (
+          <div style={{ padding: '20px 12px', color: color.borderSubtle, fontSize: 11 }}>
+            FETCHING MACRO DATA…
+          </div>
+        )}
+        {cards.map(card => (
+          <MacroRow
+            key={card.series_id}
+            card={card}
+            onExpand={() => setExpandedId(card.series_id)}
+          />
+        ))}
+      </div>
 
       {expandedCard && (
         <ExpandedCard
@@ -433,7 +282,7 @@ const MacroScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
           onClose={() => setExpandedId(null)}
         />
       )}
-    </Panel>
+    </div>
   )
 }
 
