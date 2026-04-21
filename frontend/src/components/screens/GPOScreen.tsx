@@ -44,8 +44,8 @@ type PeriodKey = '1D' | '5D' | '1M' | '3M' | '6M' | '1Y' | '2Y' | '5Y' | 'MAX'
 interface PeriodConfig { period: string; interval: string }
 
 const PERIOD_MAP: Record<PeriodKey, PeriodConfig> = {
-  '1D':  { period: '1d',  interval: '5m'  },
-  '5D':  { period: '5d',  interval: '15m' },
+  '1D':  { period: '1d',  interval: '1m'  },
+  '5D':  { period: '5d',  interval: '5m'  },
   '1M':  { period: '1mo', interval: '1d'  },
   '3M':  { period: '3mo', interval: '1d'  },
   '6M':  { period: '6mo', interval: '1d'  },
@@ -107,8 +107,8 @@ interface Props {
 }
 
 const GPOScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
-  const [activePeriod, setActivePeriod] = useState<PeriodKey>('1Y')
-  const [chartType,    setChartType]    = useState<ChartType>('BAR')
+  const [activePeriod, setActivePeriod] = useState<PeriodKey>('1D')
+  const [chartType,    setChartType]    = useState<ChartType>('CANDLE')
   const [crosshair,    setCrosshair]    = useState<OhlcvState>({
     open: null, high: null, low: null, close: null, volume: null,
   })
@@ -138,7 +138,8 @@ const GPOScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
 
   const displayBars = accumulatedOhlcv.length > 0 ? accumulatedOhlcv : (chartData?.ohlcv ?? [])
 
-  const { data: livePriceData } = useLivePrice(ticker, 1000, true)
+  // Poll every 500ms for snappier live candle updates
+  const { data: livePriceData } = useLivePrice(ticker, 500, true)
 
   useLiveBarUpdater({
     series: mainRef.current,

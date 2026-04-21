@@ -8,6 +8,15 @@ export interface ReleaseNote {
 // "What's New" dialog on first launch after update.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.1.11',
+    date: '2026-04-21',
+    highlights: [
+      'GPO now defaults to 1D view with 1-minute candles and CANDLE chart type for a true intraday trading experience.',
+      'Live candle updates poll every 500ms (was 1000ms) so the last candle moves with each trade tick.',
+      '5D view now uses 5-minute candles for finer resolution.',
+    ],
+  },
+  {
     version: '1.1.10',
     date: '2026-04-21',
     highlights: [
