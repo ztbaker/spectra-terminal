@@ -376,5 +376,117 @@ export interface WsbData {
   error: string | null
 }
 
-export const fetchWsb = (sort: string = 'new', limit: number = 200): Promise<WsbData> =>
-  api.get('/wsb', { params: { sort, limit } }).then(r => r.data)
+// Fetches directly from Reddit's public JSON API (client-side).
+// Reddit blocks server/data-center IPs, but Electron runs locally so this works.
+export async function fetchWsb(sort: string = 'new', limit: number = 200): Promise<WsbData> {
+  const UA = 'SpectraTerminal/1.0 (market-data-terminal)'
+
+  const tsToStr = (ts: number): string => {
+    try {
+      const d = new Date(ts * 1000)
+      return d.toISOString().slice(0, 16).replace('T', ' ')
+    } catch { return '' }
+  }
+
+  const stripMd = (t: string): string =>
+    t.replace(/\*{1,3}/g, '')
+     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+     .replace(/~~(.+?)~~/g, '$1')
+     .trim()
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const parseComments = (children: any[], opAuthor: string, maxDepth = 1): WsbComment[] => {
+    const result: WsbComment[] = []
+    for (const child of children) {
+      if (child.kind !== 't1') continue
+      const cd = child.data
+      const body = cd.body || ''
+      if (!body || body === '[deleted]' || body === '[removed]') continue
+      const depth = cd.depth || 0
+      if (depth > maxDepth) continue
+
+      result.push({
+        id: cd.id || '',
+        author: cd.author || '[deleted]',
+        body: stripMd(body),
+        score: cd.score || 0,
+        created_utc: cd.created_utc || 0,
+        created_at: tsToStr(cd.created_utc || 0),
+        depth,
+        is_op: cd.author === opAuthor,
+      })
+
+      // Include direct replies
+      if (cd.replies && typeof cd.replies === 'object') {
+        const replyChildren = cd.replies?.data?.children || []
+        result.push(...parseComments(replyChildren, opAuthor, maxDepth))
+      }
+    }
+    return result
+  }
+
+  try {
+    // 1. Find stickied daily/weekly thread
+    const hotResp = await fetch(
+      'https://www.reddit.com/r/wallstreetbets/hot.json?limit=10',
+      { headers: { 'User-Agent': UA } },
+    )
+    if (!hotResp.ok) throw new Error(`Reddit returned ${hotResp.status}`)
+    const hotData = await hotResp.json()
+    const posts = hotData?.data?.children || []
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const stickied = posts.filter((p: any) => p?.data?.stickied).map((p: any) => p.data)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let threadData: any = null
+    for (const pd of stickied) {
+      if ((pd.title || '').toLowerCase().includes('daily discussion')) { threadData = pd; break }
+    }
+    if (!threadData) {
+      for (const pd of stickied) {
+        const t = (pd.title || '').toLowerCase()
+        if (t.includes('weekly') || t.includes('discussion') || t.includes('thread')) { threadData = pd; break }
+      }
+    }
+    if (!threadData && stickied.length) threadData = stickied[0]
+
+    if (!threadData) {
+      return { thread: null, comments: [], total_comments: 0, cached: false, error: 'Could not find today\'s discussion thread.' }
+    }
+
+    const thread: WsbThread = {
+      thread_id: threadData.id,
+      title: threadData.title || '',
+      author: threadData.author || '',
+      url: `https://reddit.com${threadData.permalink || ''}`,
+      num_comments: threadData.num_comments || 0,
+      score: threadData.score || 0,
+      created_utc: threadData.created_utc || 0,
+      created_at: tsToStr(threadData.created_utc || 0),
+    }
+
+    // 2. Fetch comments
+    const commentsResp = await fetch(
+      `https://www.reddit.com/r/wallstreetbets/comments/${threadData.id}.json?sort=${sort}&limit=${limit}`,
+      { headers: { 'User-Agent': UA } },
+    )
+    let comments: WsbComment[] = []
+    if (commentsResp.ok) {
+      const cData = await commentsResp.json()
+      if (Array.isArray(cData) && cData.length >= 2) {
+        const children = cData[1]?.data?.children || []
+        comments = parseComments(children, threadData.author || '', 1)
+      }
+    }
+
+    if (sort === 'new') {
+      comments.sort((a, b) => b.created_utc - a.created_utc)
+    } else {
+      comments.sort((a, b) => b.score - a.score)
+    }
+
+    return { thread, comments: comments.slice(0, limit), total_comments: thread.num_comments, cached: false, error: null }
+  } catch (e) {
+    return { thread: null, comments: [], total_comments: 0, cached: false, error: `Failed to fetch: ${e instanceof Error ? e.message : 'Unknown error'}` }
+  }
+}
