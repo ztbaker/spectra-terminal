@@ -205,10 +205,19 @@ async function createWindow() {
     },
   })
 
-  // Allow cross-origin requests to Reddit's JSON API from the renderer.
-  // Reddit doesn't send CORS headers, so we inject them on responses.
+  // Reddit integration: override Electron's User-Agent (Reddit blocks it)
+  // and inject CORS headers on responses (Reddit doesn't send them).
+  const redditFilter = { urls: ['https://*.reddit.com/*'] }
+  mainWindow.webContents.session.webRequest.onBeforeSendHeaders(
+    redditFilter,
+    (details, callback) => {
+      const headers = Object.assign({}, details.requestHeaders)
+      headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+      callback({ requestHeaders: headers })
+    },
+  )
   mainWindow.webContents.session.webRequest.onHeadersReceived(
-    { urls: ['https://*.reddit.com/*'] },
+    redditFilter,
     (details, callback) => {
       const headers = details.responseHeaders || {}
       headers['access-control-allow-origin'] = ['*']

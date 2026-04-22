@@ -19,7 +19,7 @@
 
 ---
 
-## What's New in v1.1.17
+## What's New in v1.1.18
 
 - **WSB command** — live WallStreetBets daily/weekly discussion thread with real-time comments, sort by NEW or TOP, clickable $CASHTAG links
 

@@ -8,7 +8,7 @@ export interface ReleaseNote {
 // "What's New" dialog on first launch after update.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
-    version: '1.1.17',
+    version: '1.1.18',
     date: '2026-04-22',
     highlights: [
       'New WSB command: live WallStreetBets daily/weekly discussion thread with real-time comments.',
