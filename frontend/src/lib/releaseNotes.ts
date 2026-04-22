@@ -8,7 +8,7 @@ export interface ReleaseNote {
 // "What's New" dialog on first launch after update.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
-    version: '1.2.3',
+    version: '1.2.4',
     date: '2026-04-22',
     highlights: [
       'Robinhood now connects client-side — no more 401/502 errors from Fly.io IP blocking.',

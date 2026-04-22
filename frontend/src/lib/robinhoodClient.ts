@@ -8,6 +8,18 @@
 
 const RH_BASE = 'https://api.robinhood.com'
 const RH_CLIENT_ID = 'c82SH0WZOsabOXGP2sxqcj34FxkvfnWRZBKlBjFS'
+const RH_API_VERSION = '1.431.4'
+
+// Headers Robinhood expects on all requests
+function baseHeaders(): Record<string, string> {
+  return {
+    'Accept': 'application/json',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'X-Robinhood-API-Version': RH_API_VERSION,
+    'Origin': 'https://robinhood.com',
+    'Referer': 'https://robinhood.com/',
+  }
+}
 
 // Module-level auth state
 let _accessToken: string | null = null
@@ -19,6 +31,7 @@ function generateDeviceToken(): string {
 
 function authHeaders(): Record<string, string> {
   const h: Record<string, string> = {
+    ...baseHeaders(),
     'Content-Type': 'application/x-www-form-urlencoded',
   }
   if (_accessToken) {
@@ -29,6 +42,7 @@ function authHeaders(): Record<string, string> {
 
 function jsonHeaders(): Record<string, string> {
   const h: Record<string, string> = {
+    ...baseHeaders(),
     'Content-Type': 'application/json',
   }
   if (_accessToken) {
@@ -66,6 +80,7 @@ export async function rhLogin(
     password,
     scope: 'internal',
     username,
+    challenge_type: 'sms',
     device_token: deviceToken,
     try_passkeys: 'false',
     token_request_path: '/login',
@@ -81,7 +96,7 @@ export async function rhLogin(
   try {
     const res = await fetch(`${RH_BASE}/oauth2/token/`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: { ...baseHeaders(), 'Content-Type': 'application/x-www-form-urlencoded' },
       body: payload.toString(),
     })
 
@@ -114,7 +129,7 @@ export async function rhLogin(
         // Retry login after push approval
         const retryRes = await fetch(`${RH_BASE}/oauth2/token/`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          headers: { ...baseHeaders(), 'Content-Type': 'application/x-www-form-urlencoded' },
           body: payload.toString(),
         })
         const retryData = await retryRes.json()
@@ -226,7 +241,7 @@ export async function rhSubmitChallenge(code: string): Promise<RhLoginResult> {
     // Submit the code
     const challengeRes = await fetch(`${RH_BASE}/challenge/${_pendingChallengeId}/respond/`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: { ...baseHeaders(), 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({ response: code }).toString(),
     })
     const challengeData = await challengeRes.json()
@@ -238,7 +253,7 @@ export async function rhSubmitChallenge(code: string): Promise<RhLoginResult> {
     // Retry login
     const res = await fetch(`${RH_BASE}/oauth2/token/`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: { ...baseHeaders(), 'Content-Type': 'application/x-www-form-urlencoded' },
       body: _pendingPayload.toString(),
     })
     const data = await res.json()
