@@ -38,7 +38,7 @@ api.interceptors.response.use(
     // Ignore 401s from the auth endpoints themselves (they're informational,
     // not "session expired"). Only invalidate when an authenticated request
     // is rejected.
-    if (status === 401 && !url.startsWith('/auth/')) {
+    if (status === 401 && !url.startsWith('/auth/') && !url.startsWith('/portfolio/robinhood/')) {
       localStorage.removeItem(AUTH_TOKEN_KEY)
       localStorage.removeItem(AUTH_USER_KEY)
       window.dispatchEvent(new Event(AUTH_INVALIDATED_EVENT))
