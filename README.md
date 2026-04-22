@@ -19,10 +19,10 @@
 
 ---
 
-## What's New in v1.1.13
+## What's New in v1.1.14
 
-- **TRUMP feed live polling** — polls every 1 second so new Truths appear within seconds of posting
-- **macOS updater fix** — app no longer fails to open after auto-update
+- **TOP command** — world news feed with topic filters (Economy, Tech, Energy, Crypto, Politics)
+- **HELP screen** — now lists TRUMP and TOP commands
 
 ## What is Spectra Terminal?
 
@@ -143,6 +143,7 @@ Bloomberg-style command bar:
 | `CONG` | Congress bills |
 | `CHAT` | Chat rooms and DMs |
 | `MEME` | Meme coin tracker |
+| `TOP` | Top world news |
 | `TRUMP` | Trump's Truth Social posts |
 | `PROF` | User profile |
 

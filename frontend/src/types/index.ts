@@ -860,6 +860,7 @@ export type ScreenType =
   | 'profile'
   | 'ticker-menu'
   | 'truth'
+  | 'top'
 
 // ─── Chat ────────────────────────────────────────────────────────────────────
 export interface ChatRoom {

@@ -40,6 +40,7 @@ import QuantScreen      from './components/screens/QuantScreen'
 import FAScreen         from './components/screens/FAScreen'
 import TickerMenuScreen from './components/screens/TickerMenuScreen'
 import TruthSocialScreen from './components/screens/TruthSocialScreen'
+import TopNewsScreen from './components/screens/TopNewsScreen'
 import EconScreen       from './components/screens/EconScreen'
 import HomeScreenV3     from './components/screens/HomeScreenV3'
 import HelpScreen       from './components/screens/HelpScreen'
@@ -502,6 +503,9 @@ function TerminalApp() {
 
       case 'truth':
         return <TruthSocialScreen onNavigate={handleNavigate} />
+
+      case 'top':
+        return <TopNewsScreen onNavigate={handleNavigate} />
 
       case 'profile':
         return <ProfileScreen username={sub} onNavigate={handleNavigate} />

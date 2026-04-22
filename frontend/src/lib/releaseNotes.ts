@@ -8,6 +8,15 @@ export interface ReleaseNote {
 // "What's New" dialog on first launch after update.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.1.14',
+    date: '2026-04-22',
+    highlights: [
+      'New TOP command: world news feed with topic filters (Economy, Tech, Energy, Crypto, Politics).',
+      'TRUMP and TOP commands added to the HELP screen.',
+      'World news tab removed from N function — use TOP instead.',
+    ],
+  },
+  {
     version: '1.1.13',
     date: '2026-04-21',
     highlights: [

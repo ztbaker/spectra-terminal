@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { fetchNews, fetchNewsCompany, fetchNewsWorld } from '../../lib/api'
+import { fetchNews, fetchNewsCompany } from '../../lib/api'
 import type { NewsItem } from '../../types'
 import theme from '../../lib/theme'
 import TabBar from '../shared/TabBar'
@@ -14,30 +14,12 @@ interface Props {
   onNavigate: (cmd: string) => void
 }
 
-type Tab = 'COMPANY' | 'WORLD' | 'SENTIMENT'
-type WorldTopic = 'general' | 'technology' | 'business' | 'science'
+type Tab = 'COMPANY' | 'SENTIMENT'
 
 const TABS = [
   { key: 'COMPANY', label: 'Company' },
-  { key: 'WORLD', label: 'World' },
   { key: 'SENTIMENT', label: 'Sentiment' },
 ]
-
-const WORLD_TOPICS: { key: WorldTopic; label: string }[] = [
-  { key: 'general', label: 'Economy' },
-  { key: 'technology', label: 'Tech' },
-  { key: 'business', label: 'Energy' },
-  { key: 'science', label: 'Crypto' },
-  { key: 'general', label: 'Politics' },
-]
-
-const TOPIC_MAP: Record<string, WorldTopic> = {
-  Economy: 'general',
-  Tech: 'technology',
-  Energy: 'business',
-  Crypto: 'science',
-  Politics: 'general',
-}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -191,7 +173,6 @@ const SentimentHistogram: React.FC<SentimentHistogramProps> = ({ items }) => {
 
 const NewsScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
   const [activeTab, setActiveTab] = useState<Tab>('COMPANY')
-  const [worldTopic, setWorldTopic] = useState<string>('Economy')
   const [reading, setReading] = useState<NewsItem | null>(null)
 
   // COMPANY data
@@ -205,38 +186,20 @@ const NewsScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
     staleTime: 10_000,
   })
 
-  // WORLD data
-  const {
-    data: worldData,
-    isLoading: worldLoading,
-    refetch: refetchWorld,
-  } = useQuery({
-    queryKey: ['news-world', worldTopic],
-    queryFn: () => fetchNewsWorld(TOPIC_MAP[worldTopic] ?? 'general'),
-    enabled: activeTab === 'WORLD',
-    staleTime: 10_000,
-  })
-
   usePolling(refetchCompany, 15_000)
-  usePolling(refetchWorld, 15_000, activeTab === 'WORLD')
 
   const companyItems = useMemo(() =>
     [...(companyData?.items ?? [])].sort((a, b) => b.datetime - a.datetime),
     [companyData]
   )
 
-  const worldItems = useMemo(() =>
-    [...(worldData?.items ?? [])].sort((a, b) => b.datetime - a.datetime),
-    [worldData]
-  )
-
   const sentimentData = useMemo(() => {
-    const src = activeTab === 'WORLD' ? worldItems : companyItems
+    const src = companyItems
     return src.map(item => ({
       ...item,
       sentiment_score: item.sentiment === 'positive' ? 1 : item.sentiment === 'negative' ? -1 : 0,
     }))
-  }, [activeTab, companyItems, worldItems])
+  }, [companyItems])
 
   const sentimentColumns = [
     { key: 'headline', header: 'Headline', type: 'text' as const, render: (row: any) => (
@@ -255,7 +218,7 @@ const NewsScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
     )},
   ]
 
-  const isLoading = activeTab === 'COMPANY' ? companyLoading : activeTab === 'WORLD' ? worldLoading : companyLoading
+  const isLoading = companyLoading
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -275,45 +238,6 @@ const NewsScreen: React.FC<Props> = ({ ticker, onNavigate: _onNavigate }) => {
             </div>
           )}
           {companyItems.map((item, idx) => (
-            <NewsRow key={`${item.datetime}-${idx}`} item={item} onOpen={setReading} />
-          ))}
-        </div>
-      )}
-
-      {/* WORLD tab */}
-      {activeTab === 'WORLD' && (
-        <div style={{ flex: 1, overflowY: 'auto' }}>
-          {/* Topic chips */}
-          <div style={{ display: 'flex', gap: 6, padding: '8px 12px', borderBottom: `1px solid ${theme.color.borderSubtle}`, background: theme.color.bgElevated }}>
-            {WORLD_TOPICS.map(t => {
-              const isActive = worldTopic === t.label
-              return (
-                <button
-                  key={t.label}
-                  onClick={() => setWorldTopic(t.label)}
-                  style={{
-                    background: isActive ? theme.color.bgSurface : 'transparent',
-                    color: isActive ? theme.color.textPrimary : theme.color.textSecondary,
-                    border: `1px solid ${isActive ? theme.color.borderStrong : theme.color.borderMedium}`,
-                    padding: '4px 10px',
-                    fontSize: 11,
-                    fontFamily: theme.font.sans,
-                    fontWeight: isActive ? 600 : 400,
-                    cursor: 'pointer',
-                    borderRadius: 4,
-                    transition: 'all 150ms ease',
-                  }}
-                >
-                  {t.label}
-                </button>
-              )
-            })}
-          </div>
-
-          {worldItems.length === 0 && !worldLoading && (
-            <div style={{ padding: 24, color: theme.color.textTertiary, textAlign: 'center' }}>No world news available</div>
-          )}
-          {worldItems.map((item, idx) => (
             <NewsRow key={`${item.datetime}-${idx}`} item={item} onOpen={setReading} />
           ))}
         </div>
