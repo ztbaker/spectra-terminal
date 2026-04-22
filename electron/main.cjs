@@ -205,11 +205,11 @@ async function createWindow() {
     },
   })
 
-  // Reddit integration: override Electron's User-Agent (Reddit blocks it)
-  // and inject CORS headers on responses (Reddit doesn't send them).
-  const redditFilter = { urls: ['https://*.reddit.com/*'] }
+  // External API integration: spoof User-Agent and inject CORS headers
+  // for Reddit and Robinhood (both block Electron's default headers).
+  const externalFilter = { urls: ['https://*.reddit.com/*', 'https://*.robinhood.com/*'] }
   mainWindow.webContents.session.webRequest.onBeforeSendHeaders(
-    redditFilter,
+    externalFilter,
     (details, callback) => {
       const headers = Object.assign({}, details.requestHeaders)
       headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
@@ -217,11 +217,12 @@ async function createWindow() {
     },
   )
   mainWindow.webContents.session.webRequest.onHeadersReceived(
-    redditFilter,
+    externalFilter,
     (details, callback) => {
       const headers = details.responseHeaders || {}
       headers['access-control-allow-origin'] = ['*']
       headers['access-control-allow-headers'] = ['*']
+      headers['access-control-allow-methods'] = ['GET, POST, PUT, DELETE, OPTIONS']
       callback({ responseHeaders: headers })
     },
   )
