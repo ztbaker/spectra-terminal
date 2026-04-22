@@ -205,6 +205,18 @@ async function createWindow() {
     },
   })
 
+  // Allow cross-origin requests to Reddit's JSON API from the renderer.
+  // Reddit doesn't send CORS headers, so we inject them on responses.
+  mainWindow.webContents.session.webRequest.onHeadersReceived(
+    { urls: ['https://*.reddit.com/*'] },
+    (details, callback) => {
+      const headers = details.responseHeaders || {}
+      headers['access-control-allow-origin'] = ['*']
+      headers['access-control-allow-headers'] = ['*']
+      callback({ responseHeaders: headers })
+    },
+  )
+
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url)
     return { action: 'deny' }
