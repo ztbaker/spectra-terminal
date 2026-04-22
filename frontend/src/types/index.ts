@@ -196,6 +196,35 @@ export interface PortfolioPerformance {
   total_pnl_pct: number
 }
 
+// ─── Robinhood ───────────────────────────────────────────────────────────────
+export interface RobinhoodSyncResult {
+  synced: number
+  holdings: Array<{
+    ticker: string
+    shares: number
+    avg_cost: number
+    current_price: number
+    equity: number
+    pct_change: number
+  }>
+}
+
+export interface RobinhoodEquityPoint {
+  date: string
+  equity: number
+}
+
+export interface RobinhoodHistoryResponse {
+  equity_history: RobinhoodEquityPoint[]
+  current_equity: number | null
+  span: string
+}
+
+export interface RobinhoodStatus {
+  connected: boolean
+  last_sync: string | null
+}
+
 // ─── Watchlist ────────────────────────────────────────────────────────────────
 export interface WatchlistRow {
   id: number

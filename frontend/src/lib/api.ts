@@ -148,6 +148,22 @@ export const addPosition = (ticker: string, shares: number, avg_cost: number): P
 export const deletePosition = (id: number): Promise<void> =>
   api.delete(`/portfolio/${id}`).then(r => r.data)
 
+// ─── Robinhood ───────────────────────────────────────────────────────────────
+export const robinhoodLogin = (username: string, password: string, mfa_code?: string) =>
+  api.post('/portfolio/robinhood/login', { username, password, mfa_code }).then(r => r.data)
+
+export const robinhoodSync = (): Promise<import('../types').RobinhoodSyncResult> =>
+  api.post('/portfolio/robinhood/sync').then(r => r.data)
+
+export const robinhoodHistory = (span: string = 'year'): Promise<import('../types').RobinhoodHistoryResponse> =>
+  api.get(`/portfolio/robinhood/history?span=${span}`).then(r => r.data)
+
+export const robinhoodStatus = (): Promise<import('../types').RobinhoodStatus> =>
+  api.get('/portfolio/robinhood/status').then(r => r.data)
+
+export const robinhoodLogout = () =>
+  api.post('/portfolio/robinhood/logout').then(r => r.data)
+
 // ─── Watchlist ────────────────────────────────────────────────────────────────
 export const fetchWatchlist = (): Promise<WatchlistRow[]> =>
   api.get('/watchlist').then(r => r.data)

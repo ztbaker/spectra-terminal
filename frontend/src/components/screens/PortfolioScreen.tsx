@@ -1,16 +1,33 @@
 import Panel from '../Terminal/Panel'
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   fetchPortfolioPerformance,
   addPosition,
   deletePosition,
+  robinhoodLogin,
+  robinhoodSync,
+  robinhoodHistory,
+  robinhoodStatus,
+  robinhoodLogout,
 } from '../../lib/api'
 import { usePolling } from '../../hooks/usePolling'
-import type { PortfolioPerformance, PortfolioRow } from '../../types'
+import type {
+  PortfolioPerformance,
+  PortfolioRow,
+  RobinhoodHistoryResponse,
+  RobinhoodStatus,
+} from '../../types'
 import LoadingBar from '../shared/LoadingBar'
 import TickerBadge from '../shared/TickerBadge'
 import theme from '../../lib/theme'
+import {
+  createChart,
+  LineSeries,
+  CrosshairMode,
+  type IChartApi,
+  type UTCTimestamp,
+} from 'lightweight-charts'
 
 const { color, font } = theme
 
@@ -32,6 +49,8 @@ const ALLOC_COLORS = [
   color.accentPositive, color.accentInfo, color.accentWarning, color.accentInfo, color.accentWarning,
   color.accentInfo, color.accentWarning, color.accentInfo, color.accentWarning, color.accentInfo,
 ]
+
+// ─── Allocation Bar ──────────────────────────────────────────────────────────
 
 interface AllocationBarProps {
   holdings: PortfolioRow[]
@@ -118,6 +137,257 @@ const AllocationBar: React.FC<AllocationBarProps> = ({ holdings, totalValue }) =
   )
 }
 
+// ─── Equity Chart ────────────────────────────────────────────────────────────
+
+const SPAN_OPTIONS = [
+  { label: '1D', value: 'day' },
+  { label: '1W', value: 'week' },
+  { label: '1M', value: 'month' },
+  { label: '3M', value: '3month' },
+  { label: '1Y', value: 'year' },
+  { label: '5Y', value: '5year' },
+  { label: 'ALL', value: 'all' },
+]
+
+interface EquityChartProps {
+  data: RobinhoodHistoryResponse
+  height?: number
+}
+
+const EquityChart: React.FC<EquityChartProps> = ({ data, height = 200 }) => {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const chartRef = useRef<IChartApi | null>(null)
+
+  const points = useMemo(
+    () => data.equity_history.filter(p => p.equity > 0),
+    [data.equity_history],
+  )
+
+  useEffect(() => {
+    if (!containerRef.current || points.length < 2) return
+
+    const chart = createChart(containerRef.current, {
+      width: containerRef.current.clientWidth,
+      height,
+      layout: {
+        background: { color: color.bgElevated },
+        textColor: color.textTertiary,
+        fontFamily: font.mono,
+        fontSize: 10,
+      },
+      grid: {
+        vertLines: { color: color.borderSubtle },
+        horzLines: { color: color.borderSubtle },
+      },
+      crosshair: { mode: CrosshairMode.Normal },
+      rightPriceScale: { borderColor: color.borderMedium },
+      timeScale: { borderColor: color.borderMedium, timeVisible: false },
+    })
+
+    const firstEq = points[0].equity
+    const lastEq = points[points.length - 1].equity
+    const lineColor = lastEq >= firstEq ? color.accentPositive : color.accentNegative
+
+    const series = chart.addSeries(LineSeries, {
+      color: lineColor,
+      lineWidth: 2,
+      priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
+    })
+
+    series.setData(points.map(p => ({
+      time: p.date as unknown as UTCTimestamp,
+      value: p.equity,
+    })))
+
+    chart.timeScale().fitContent()
+    chartRef.current = chart
+
+    const onResize = () => {
+      if (containerRef.current && chartRef.current) {
+        chartRef.current.applyOptions({ width: containerRef.current.clientWidth })
+      }
+    }
+    window.addEventListener('resize', onResize)
+
+    return () => {
+      window.removeEventListener('resize', onResize)
+      chart.remove()
+    }
+  }, [points, height])
+
+  if (points.length < 2) {
+    return (
+      <div style={{ padding: '16px', textAlign: 'center', color: color.textTertiary, fontSize: '11px' }}>
+        NOT ENOUGH DATA FOR CHART
+      </div>
+    )
+  }
+
+  const firstEq = points[0].equity
+  const lastEq = points[points.length - 1].equity
+  const change = lastEq - firstEq
+  const changePct = (change / firstEq) * 100
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 8px' }}>
+        <div style={{ fontSize: '11px' }}>
+          <span className="bb-label">EQUITY: </span>
+          <span style={{ color: color.textPrimary, fontWeight: 600 }}>{formatMoney(lastEq)}</span>
+          {' '}
+          <TickerBadge value={change} decimals={2} prefix="$" />
+          {' '}
+          <span style={{ color: color.textTertiary }}>(</span>
+          <TickerBadge value={changePct} pct decimals={2} />
+          <span style={{ color: color.textTertiary }}>)</span>
+        </div>
+      </div>
+      <div ref={containerRef} style={{ width: '100%' }} />
+    </div>
+  )
+}
+
+// ─── Robinhood Login Modal ───────────────────────────────────────────────────
+
+interface RhLoginProps {
+  onClose: () => void
+  onSuccess: () => void
+}
+
+const RobinhoodLoginModal: React.FC<RhLoginProps> = ({ onClose, onSuccess }) => {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [mfaCode, setMfaCode] = useState('')
+  const [needsMfa, setNeedsMfa] = useState(false)
+  const [error, setError] = useState('')
+
+  const loginMutation = useMutation({
+    mutationFn: () => robinhoodLogin(email, password, mfaCode || undefined),
+    onSuccess: () => onSuccess(),
+    onError: (err: Error) => {
+      const msg = err.message || ''
+      if (msg.toLowerCase().includes('mfa') || msg.toLowerCase().includes('challenge')) {
+        setNeedsMfa(true)
+        setError('Enter your 2FA code')
+      } else {
+        setError(msg || 'Login failed')
+      }
+    },
+  })
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    loginMutation.mutate()
+  }
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.7)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000,
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          background: color.bgElevated,
+          border: `1px solid ${color.borderMedium}`,
+          padding: '20px',
+          width: '360px',
+          maxWidth: '90vw',
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div style={{ fontSize: '13px', fontWeight: 600, color: color.textPrimary, marginBottom: '16px' }}>
+          ROBINHOOD LOGIN
+        </div>
+        <div style={{ fontSize: '10px', color: color.textTertiary, marginBottom: '12px' }}>
+          Credentials are sent directly to Robinhood and are not stored.
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: '10px' }}>
+            <label className="bb-label" style={{ display: 'block', marginBottom: '3px', fontSize: '10px' }}>
+              EMAIL
+            </label>
+            <input
+              className="bb-input"
+              style={{ width: '100%', fontSize: '13px' }}
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              autoComplete="email"
+              required
+            />
+          </div>
+
+          <div style={{ marginBottom: '10px' }}>
+            <label className="bb-label" style={{ display: 'block', marginBottom: '3px', fontSize: '10px' }}>
+              PASSWORD
+            </label>
+            <input
+              className="bb-input"
+              style={{ width: '100%', fontSize: '13px' }}
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="Password"
+              autoComplete="current-password"
+              required
+            />
+          </div>
+
+          {needsMfa && (
+            <div style={{ marginBottom: '10px' }}>
+              <label className="bb-label" style={{ display: 'block', marginBottom: '3px', fontSize: '10px' }}>
+                2FA CODE
+              </label>
+              <input
+                className="bb-input"
+                style={{ width: '100%', fontSize: '13px' }}
+                type="text"
+                value={mfaCode}
+                onChange={e => setMfaCode(e.target.value)}
+                placeholder="123456"
+                maxLength={6}
+                autoFocus
+              />
+            </div>
+          )}
+
+          {error && (
+            <div style={{ fontSize: '11px', color: color.accentNegative, marginBottom: '8px' }}>
+              {error}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+            <button
+              className={loginMutation.isPending ? 'bb-btn bb-btn-active' : 'bb-btn'}
+              type="submit"
+              disabled={loginMutation.isPending || !email || !password}
+            >
+              {loginMutation.isPending ? 'CONNECTING...' : '[CONNECT]'}
+            </button>
+            <button className="bb-btn" type="button" onClick={onClose}>
+              [CANCEL]
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ─── Main Portfolio Screen ───────────────────────────────────────────────────
+
 interface Props {
   onNavigate: (cmd: string) => void
 }
@@ -128,7 +398,10 @@ const PortfolioScreen: React.FC<Props> = ({ onNavigate }) => {
   const [tickerInput, setTickerInput]   = useState('')
   const [sharesInput, setSharesInput]   = useState('')
   const [costInput,   setCostInput]     = useState('')
+  const [showRhLogin, setShowRhLogin]   = useState(false)
+  const [historySpan, setHistorySpan]   = useState('year')
 
+  // Portfolio data
   const { data, isLoading, isError, isFetching, refetch } = useQuery<PortfolioPerformance>({
     queryKey: ['portfolio', 'performance'],
     queryFn: fetchPortfolioPerformance,
@@ -136,6 +409,24 @@ const PortfolioScreen: React.FC<Props> = ({ onNavigate }) => {
   })
   usePolling(refetch, 15_000)
 
+  // Robinhood status
+  const rhStatusQuery = useQuery<RobinhoodStatus>({
+    queryKey: ['robinhood', 'status'],
+    queryFn: robinhoodStatus,
+    staleTime: 60_000,
+    retry: false,
+  })
+
+  // Robinhood equity history
+  const rhHistoryQuery = useQuery<RobinhoodHistoryResponse>({
+    queryKey: ['robinhood', 'history', historySpan],
+    queryFn: () => robinhoodHistory(historySpan),
+    staleTime: 60_000,
+    enabled: rhStatusQuery.data?.connected === true,
+    retry: false,
+  })
+
+  // Mutations
   const addMutation = useMutation({
     mutationFn: (vars: { ticker: string; shares: number; avg_cost: number }) =>
       addPosition(vars.ticker, vars.shares, vars.avg_cost),
@@ -154,6 +445,21 @@ const PortfolioScreen: React.FC<Props> = ({ onNavigate }) => {
     },
   })
 
+  const syncMutation = useMutation({
+    mutationFn: robinhoodSync,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['portfolio'] })
+      queryClient.invalidateQueries({ queryKey: ['robinhood'] })
+    },
+  })
+
+  const logoutMutation = useMutation({
+    mutationFn: robinhoodLogout,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['robinhood'] })
+    },
+  })
+
   const handleAdd = () => {
     const ticker   = tickerInput.trim().toUpperCase()
     const shares   = parseFloat(sharesInput)
@@ -166,11 +472,21 @@ const PortfolioScreen: React.FC<Props> = ({ onNavigate }) => {
     if (e.key === 'Enter') handleAdd()
   }
 
+  const handleRhLoginSuccess = () => {
+    setShowRhLogin(false)
+    // Auto-sync after login
+    syncMutation.mutate()
+    queryClient.invalidateQueries({ queryKey: ['robinhood'] })
+  }
+
   const holdings     = data?.holdings     ?? []
   const totalCost    = data?.total_cost   ?? 0
   const totalValue   = data?.total_value  ?? 0
   const totalPnl     = data?.total_pnl    ?? 0
   const totalPnlPct  = data?.total_pnl_pct ?? 0
+
+  const rhConnected = rhStatusQuery.data?.connected === true
+  const lastSync = rhStatusQuery.data?.last_sync
 
   const canAdd = (() => {
     const t = tickerInput.trim()
@@ -188,8 +504,115 @@ const PortfolioScreen: React.FC<Props> = ({ onNavigate }) => {
         </span>
       }
     >
-      <LoadingBar loading={isLoading || isFetching} />
+      <LoadingBar loading={isLoading || isFetching || syncMutation.isPending} />
 
+      {/* ─── Robinhood Controls ─────────────────────────────────────────── */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          padding: '6px 8px',
+          borderBottom: `1px solid ${color.borderSubtle}`,
+          background: 'rgba(19, 22, 25, 0.6)',
+          flexWrap: 'wrap',
+        }}
+      >
+        <span className="bb-label" style={{ fontSize: '10px', whiteSpace: 'nowrap' }}>
+          ROBINHOOD:
+        </span>
+
+        {rhConnected ? (
+          <>
+            <span style={{ fontSize: '10px', color: color.accentPositive }}>CONNECTED</span>
+            <button
+              className={syncMutation.isPending ? 'bb-btn bb-btn-active' : 'bb-btn'}
+              style={{ fontSize: '11px', padding: '2px 8px' }}
+              onClick={() => syncMutation.mutate()}
+              disabled={syncMutation.isPending}
+            >
+              {syncMutation.isPending ? 'SYNCING...' : '[SYNC HOLDINGS]'}
+            </button>
+            <button
+              className="bb-btn"
+              style={{ fontSize: '11px', padding: '2px 8px' }}
+              onClick={() => logoutMutation.mutate()}
+              disabled={logoutMutation.isPending}
+            >
+              [DISCONNECT]
+            </button>
+            {lastSync && (
+              <span style={{ fontSize: '10px', color: color.textTertiary }}>
+                Last sync: {lastSync}
+              </span>
+            )}
+          </>
+        ) : (
+          <>
+            <span style={{ fontSize: '10px', color: color.textTertiary }}>NOT CONNECTED</span>
+            <button
+              className="bb-btn"
+              style={{ fontSize: '11px', padding: '2px 8px' }}
+              onClick={() => setShowRhLogin(true)}
+            >
+              [CONNECT ROBINHOOD]
+            </button>
+          </>
+        )}
+
+        {syncMutation.isSuccess && (
+          <span style={{ fontSize: '10px', color: color.accentPositive }}>
+            {syncMutation.data.synced} positions synced
+          </span>
+        )}
+        {syncMutation.isError && (
+          <span style={{ fontSize: '10px', color: color.accentNegative }}>
+            Sync failed: {(syncMutation.error as Error)?.message ?? 'error'}
+          </span>
+        )}
+      </div>
+
+      {/* ─── Equity Chart (Robinhood history) ───────────────────────────── */}
+      {rhConnected && (
+        <div style={{ borderBottom: `1px solid ${color.borderSubtle}` }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              padding: '6px 8px 2px',
+            }}
+          >
+            <span className="bb-label" style={{ fontSize: '10px', marginRight: '6px' }}>
+              PORTFOLIO EQUITY
+            </span>
+            {SPAN_OPTIONS.map(opt => (
+              <button
+                key={opt.value}
+                className={historySpan === opt.value ? 'bb-btn bb-btn-active' : 'bb-btn'}
+                style={{ fontSize: '10px', padding: '1px 6px', minWidth: '28px' }}
+                onClick={() => setHistorySpan(opt.value)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          {rhHistoryQuery.isLoading ? (
+            <div style={{ padding: '20px', textAlign: 'center', color: color.textTertiary, fontSize: '11px' }}>
+              LOADING HISTORY...
+            </div>
+          ) : rhHistoryQuery.isError ? (
+            <div style={{ padding: '12px', textAlign: 'center', color: color.accentNegative, fontSize: '11px' }}>
+              HISTORY UNAVAILABLE {'\u2014'} {(rhHistoryQuery.error as Error)?.message ?? 'ERROR'}
+            </div>
+          ) : rhHistoryQuery.data ? (
+            <EquityChart data={rhHistoryQuery.data} />
+          ) : null}
+        </div>
+      )}
+
+      {/* ─── Add Position Form ──────────────────────────────────────────── */}
       <div
         style={{
           display: 'flex',
@@ -255,6 +678,7 @@ const PortfolioScreen: React.FC<Props> = ({ onNavigate }) => {
         )}
       </div>
 
+      {/* ─── Summary Bar ────────────────────────────────────────────────── */}
       {(data || (!isLoading && !isError)) && (
         <div
           style={{
@@ -288,6 +712,7 @@ const PortfolioScreen: React.FC<Props> = ({ onNavigate }) => {
         </div>
       )}
 
+      {/* ─── Holdings Table ─────────────────────────────────────────────── */}
       {isError ? (
         <div style={{ padding: '24px', textAlign: 'center', color: color.accentNegative }}>
           PORTFOLIO UNAVAILABLE {'\u2014'} BACKEND ERROR
@@ -305,7 +730,7 @@ const PortfolioScreen: React.FC<Props> = ({ onNavigate }) => {
             fontSize: '12px',
           }}
         >
-          PORTFOLIO EMPTY {'\u2014'} Add a position above
+          PORTFOLIO EMPTY {'\u2014'} Add a position above or connect Robinhood to sync
         </div>
       ) : (
         <>
@@ -395,6 +820,14 @@ const PortfolioScreen: React.FC<Props> = ({ onNavigate }) => {
 
           <AllocationBar holdings={holdings} totalValue={totalValue} />
         </>
+      )}
+
+      {/* ─── Robinhood Login Modal ──────────────────────────────────────── */}
+      {showRhLogin && (
+        <RobinhoodLoginModal
+          onClose={() => setShowRhLogin(false)}
+          onSuccess={handleRhLoginSuccess}
+        />
       )}
     </Panel>
   )

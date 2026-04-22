@@ -178,6 +178,12 @@ def init_db(db_path: str | None = None) -> None:
                 ON chat_messages(sender_id, recipient_id, id);
             CREATE INDEX IF NOT EXISTS ix_chat_msgs_dm_pair_rev
                 ON chat_messages(recipient_id, sender_id, id);
+
+            CREATE TABLE IF NOT EXISTS robinhood_sync (
+                user_id    INTEGER PRIMARY KEY,
+                synced_at  TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
         """)
 
         _ensure_email_columns(conn)
