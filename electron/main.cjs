@@ -205,14 +205,18 @@ async function createWindow() {
     },
   })
 
-  // External API integration: spoof User-Agent and inject CORS headers
-  // for Reddit and Robinhood (both block Electron's default headers).
+  // External API integration: spoof User-Agent and inject CORS headers.
+  // Reddit needs a Chrome UA; Robinhood needs User-Agent: * (robin_stocks convention).
   const externalFilter = { urls: ['https://*.reddit.com/*', 'https://*.robinhood.com/*'] }
   mainWindow.webContents.session.webRequest.onBeforeSendHeaders(
     externalFilter,
     (details, callback) => {
       const headers = Object.assign({}, details.requestHeaders)
-      headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+      if (details.url.includes('robinhood.com')) {
+        headers['User-Agent'] = '*'
+      } else {
+        headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+      }
       callback({ requestHeaders: headers })
     },
   )

@@ -92,9 +92,11 @@ export async function rhLogin(
   _pendingPayload = payload
 
   try {
+    // Use minimal headers to avoid CORS preflight — Robinhood returns 502
+    // for OPTIONS requests. application/x-www-form-urlencoded is CORS-safe.
     const res = await fetch(`${RH_BASE}/oauth2/token/`, {
       method: 'POST',
-      headers: { ...baseHeaders(), 'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8' },
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: payload.toString(),
     })
 
@@ -128,7 +130,7 @@ export async function rhLogin(
         // Retry login after push approval
         const retryRes = await fetch(`${RH_BASE}/oauth2/token/`, {
           method: 'POST',
-          headers: { ...baseHeaders(), 'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8' },
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: payload.toString(),
         })
         const retryData = await retryRes.json()
@@ -242,7 +244,7 @@ export async function rhSubmitChallenge(code: string): Promise<RhLoginResult> {
     // Submit the code
     const challengeRes = await fetch(`${RH_BASE}/challenge/${_pendingChallengeId}/respond/`, {
       method: 'POST',
-      headers: { ...baseHeaders(), 'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8' },
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({ response: code }).toString(),
     })
     const challengeData = await challengeRes.json()
@@ -254,7 +256,7 @@ export async function rhSubmitChallenge(code: string): Promise<RhLoginResult> {
     // Retry login
     const res = await fetch(`${RH_BASE}/oauth2/token/`, {
       method: 'POST',
-      headers: { ...baseHeaders(), 'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8' },
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: _pendingPayload.toString(),
     })
     const data = await res.json()
