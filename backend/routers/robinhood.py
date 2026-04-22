@@ -125,6 +125,28 @@ def _activate_session(data: dict, update_session=None, set_login_state=None):
     logger.info("Robinhood session activated — token type: %s", data.get("token_type"))
 
 
+def _verify_session() -> bool:
+    """Check if the current robin_stocks session can actually access the API."""
+    try:
+        import robin_stocks.robinhood.helper as rh_helper
+        logger.info("Session verify — LOGGED_IN=%s, has_auth=%s",
+                     rh_helper.LOGGED_IN,
+                     "Authorization" in rh_helper.SESSION.headers)
+        if not rh_helper.LOGGED_IN:
+            return False
+        from robin_stocks.robinhood.helper import request_get
+        from robin_stocks.robinhood.urls import positions_url
+        res = request_get(positions_url(), "pagination", {"nonzero": "true"}, jsonify_data=False)
+        if hasattr(res, 'status_code'):
+            logger.info("Session verify — positions response: %s", res.status_code)
+            return res.status_code == 200
+        # request_get with jsonify_data=False returns the response object
+        return res is not None
+    except Exception as e:
+        logger.warning("Session verify failed: %s", e)
+        return False
+
+
 def _server_login(username: str, password: str, mfa_code: str | None = None) -> dict:
     """Login to Robinhood without interactive input() calls.
 
@@ -168,7 +190,7 @@ def _server_login(username: str, password: str, mfa_code: str | None = None) -> 
 
     # Direct success (e.g. with MFA code)
     if "access_token" in data:
-        _activate_session(data, update_session, set_login_state)
+        _activate_session(data)
         return data
 
     # MFA required (app-based TOTP)
@@ -314,7 +336,14 @@ async def robinhood_login(
         logger.exception("Robinhood login error")
         raise HTTPException(status_code=401, detail=str(e))
 
+    logger.info("Login result keys: %s", list(result.keys()) if result else "None")
+
     if "access_token" in result:
+        # Verify the session actually works
+        verified = await _run_sync(_verify_session)
+        if not verified:
+            logger.warning("Login returned access_token but session verification failed")
+            raise HTTPException(status_code=401, detail="Login succeeded but session could not be verified — try again")
         return {"status": "ok", "message": "Robinhood authenticated"}
 
     if "challenge" in result:
@@ -335,7 +364,8 @@ async def robinhood_login(
             "message": f"Enter the verification code sent via {challenge_type}",
         }
 
-    raise HTTPException(status_code=401, detail="Unexpected login response")
+    logger.warning("Unexpected login response: %s", result)
+    raise HTTPException(status_code=401, detail=f"Unexpected login response: {list(result.keys())}")
 
 
 @router.post("/portfolio/robinhood/challenge")
