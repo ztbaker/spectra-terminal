@@ -8,16 +8,14 @@
 
 const RH_BASE = 'https://api.robinhood.com'
 const RH_CLIENT_ID = 'c82SH0WZOsabOXGP2sxqcj34FxkvfnWRZBKlBjFS'
-const RH_API_VERSION = '1.431.4'
-
-// Headers Robinhood expects on all requests
+// Headers matching robin_stocks' session defaults
 function baseHeaders(): Record<string, string> {
   return {
-    'Accept': 'application/json',
-    'Accept-Language': 'en-US,en;q=0.9',
-    'X-Robinhood-API-Version': RH_API_VERSION,
-    'Origin': 'https://robinhood.com',
-    'Referer': 'https://robinhood.com/',
+    'Accept': '*/*',
+    'Accept-Encoding': 'gzip, deflate',
+    'Accept-Language': 'en;q=1, fr;q=0.9, de;q=0.8, ja;q=0.7, nl;q=0.6, it;q=0.5',
+    'X-Robinhood-API-Version': '1.0.0',
+    'Connection': 'keep-alive',
   }
 }
 
@@ -32,7 +30,7 @@ function generateDeviceToken(): string {
 function authHeaders(): Record<string, string> {
   const h: Record<string, string> = {
     ...baseHeaders(),
-    'Content-Type': 'application/x-www-form-urlencoded',
+    'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8',
   }
   if (_accessToken) {
     h['Authorization'] = `Bearer ${_accessToken}`
@@ -96,11 +94,12 @@ export async function rhLogin(
   try {
     const res = await fetch(`${RH_BASE}/oauth2/token/`, {
       method: 'POST',
-      headers: { ...baseHeaders(), 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: { ...baseHeaders(), 'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8' },
       body: payload.toString(),
     })
 
     const data = await res.json()
+    console.log('[RH] login response status:', res.status, 'keys:', Object.keys(data))
 
     // Direct success
     if (data.access_token) {
@@ -129,7 +128,7 @@ export async function rhLogin(
         // Retry login after push approval
         const retryRes = await fetch(`${RH_BASE}/oauth2/token/`, {
           method: 'POST',
-          headers: { ...baseHeaders(), 'Content-Type': 'application/x-www-form-urlencoded' },
+          headers: { ...baseHeaders(), 'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8' },
           body: payload.toString(),
         })
         const retryData = await retryRes.json()
@@ -154,9 +153,11 @@ export async function rhLogin(
       return { status: 'error', message: result }
     }
 
-    // Unknown
-    return { status: 'error', message: data.detail || JSON.stringify(data) }
+    // Unknown — log full response for debugging
+    console.error('[RH] login failed, full response:', JSON.stringify(data))
+    return { status: 'error', message: data.detail || `RH error (${res.status}): ${JSON.stringify(data).slice(0, 200)}` }
   } catch (e: any) {
+    console.error('[RH] login exception:', e)
     return { status: 'error', message: e.message || 'Network error' }
   }
 }
@@ -241,7 +242,7 @@ export async function rhSubmitChallenge(code: string): Promise<RhLoginResult> {
     // Submit the code
     const challengeRes = await fetch(`${RH_BASE}/challenge/${_pendingChallengeId}/respond/`, {
       method: 'POST',
-      headers: { ...baseHeaders(), 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: { ...baseHeaders(), 'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8' },
       body: new URLSearchParams({ response: code }).toString(),
     })
     const challengeData = await challengeRes.json()
@@ -253,7 +254,7 @@ export async function rhSubmitChallenge(code: string): Promise<RhLoginResult> {
     // Retry login
     const res = await fetch(`${RH_BASE}/oauth2/token/`, {
       method: 'POST',
-      headers: { ...baseHeaders(), 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: { ...baseHeaders(), 'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8' },
       body: _pendingPayload.toString(),
     })
     const data = await res.json()
