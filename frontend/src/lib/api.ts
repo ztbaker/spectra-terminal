@@ -152,6 +152,9 @@ export const deletePosition = (id: number): Promise<void> =>
 export const robinhoodLogin = (username: string, password: string, mfa_code?: string) =>
   api.post('/portfolio/robinhood/login', { username, password, mfa_code }).then(r => r.data)
 
+export const robinhoodChallenge = (code: string) =>
+  api.post('/portfolio/robinhood/challenge', { code }).then(r => r.data)
+
 export const robinhoodSync = (): Promise<import('../types').RobinhoodSyncResult> =>
   api.post('/portfolio/robinhood/sync').then(r => r.data)
 

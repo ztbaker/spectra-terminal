@@ -6,6 +6,7 @@ import {
   addPosition,
   deletePosition,
   robinhoodLogin,
+  robinhoodChallenge,
   robinhoodSync,
   robinhoodHistory,
   robinhoodStatus,
@@ -257,29 +258,74 @@ interface RhLoginProps {
 const RobinhoodLoginModal: React.FC<RhLoginProps> = ({ onClose, onSuccess }) => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [mfaCode, setMfaCode] = useState('')
-  const [needsMfa, setNeedsMfa] = useState(false)
+  const [code, setCode] = useState('')
+  const [step, setStep] = useState<'credentials' | 'mfa' | 'challenge'>('credentials')
+  const [challengeType, setChallengeType] = useState('')
   const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [statusMsg, setStatusMsg] = useState('')
 
-  const loginMutation = useMutation({
-    mutationFn: () => robinhoodLogin(email, password, mfaCode || undefined),
-    onSuccess: () => onSuccess(),
-    onError: (err: Error) => {
-      const msg = err.message || ''
-      if (msg.toLowerCase().includes('mfa') || msg.toLowerCase().includes('challenge')) {
-        setNeedsMfa(true)
-        setError('Enter your 2FA code')
-      } else {
-        setError(msg || 'Login failed')
-      }
-    },
-  })
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    loginMutation.mutate()
+    setBusy(true)
+
+    try {
+      const mfa = step === 'mfa' ? code : undefined
+      setStatusMsg(step === 'credentials' ? 'Authenticating...' : 'Verifying...')
+      const result = await robinhoodLogin(email, password, mfa)
+
+      if (result.status === 'ok') {
+        onSuccess()
+      } else if (result.status === 'mfa_required') {
+        setStep('mfa')
+        setCode('')
+        setStatusMsg('')
+        setError(`Enter your ${result.mfa_type === 'sms' ? 'SMS' : 'authenticator app'} code`)
+      } else if (result.status === 'challenge') {
+        setStep('challenge')
+        setChallengeType(result.challenge_type)
+        setCode('')
+        setStatusMsg('')
+        setError(`Verification code sent via ${result.challenge_type}`)
+      }
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail || err?.message || 'Login failed'
+      if (msg.toLowerCase().includes('approve') || msg.toLowerCase().includes('push')) {
+        setStatusMsg('Waiting for approval in Robinhood app...')
+        setError(msg)
+      } else {
+        setError(msg)
+        setStatusMsg('')
+      }
+    } finally {
+      setBusy(false)
+    }
   }
+
+  const handleChallenge = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setBusy(true)
+    setStatusMsg('Verifying code...')
+
+    try {
+      const result = await robinhoodChallenge(code)
+      if (result.status === 'ok') {
+        onSuccess()
+      } else {
+        setError('Verification failed')
+        setStatusMsg('')
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || err?.message || 'Verification failed')
+      setStatusMsg('')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const isChallenge = step === 'challenge'
 
   return (
     <div
@@ -311,54 +357,67 @@ const RobinhoodLoginModal: React.FC<RhLoginProps> = ({ onClose, onSuccess }) => 
           Credentials are sent directly to Robinhood and are not stored.
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '10px' }}>
-            <label className="bb-label" style={{ display: 'block', marginBottom: '3px', fontSize: '10px' }}>
-              EMAIL
-            </label>
-            <input
-              className="bb-input"
-              style={{ width: '100%', fontSize: '13px' }}
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              autoComplete="email"
-              required
-            />
-          </div>
+        <form onSubmit={isChallenge ? handleChallenge : handleLogin}>
+          {!isChallenge && (
+            <>
+              <div style={{ marginBottom: '10px' }}>
+                <label className="bb-label" style={{ display: 'block', marginBottom: '3px', fontSize: '10px' }}>
+                  EMAIL
+                </label>
+                <input
+                  className="bb-input"
+                  style={{ width: '100%', fontSize: '13px' }}
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  disabled={step === 'mfa'}
+                  required
+                />
+              </div>
 
-          <div style={{ marginBottom: '10px' }}>
-            <label className="bb-label" style={{ display: 'block', marginBottom: '3px', fontSize: '10px' }}>
-              PASSWORD
-            </label>
-            <input
-              className="bb-input"
-              style={{ width: '100%', fontSize: '13px' }}
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="Password"
-              autoComplete="current-password"
-              required
-            />
-          </div>
+              <div style={{ marginBottom: '10px' }}>
+                <label className="bb-label" style={{ display: 'block', marginBottom: '3px', fontSize: '10px' }}>
+                  PASSWORD
+                </label>
+                <input
+                  className="bb-input"
+                  style={{ width: '100%', fontSize: '13px' }}
+                  type="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="Password"
+                  autoComplete="current-password"
+                  disabled={step === 'mfa'}
+                  required
+                />
+              </div>
+            </>
+          )}
 
-          {needsMfa && (
+          {(step === 'mfa' || isChallenge) && (
             <div style={{ marginBottom: '10px' }}>
               <label className="bb-label" style={{ display: 'block', marginBottom: '3px', fontSize: '10px' }}>
-                2FA CODE
+                {isChallenge ? `${challengeType.toUpperCase()} VERIFICATION CODE` : '2FA CODE'}
               </label>
               <input
                 className="bb-input"
                 style={{ width: '100%', fontSize: '13px' }}
                 type="text"
-                value={mfaCode}
-                onChange={e => setMfaCode(e.target.value)}
+                value={code}
+                onChange={e => setCode(e.target.value)}
                 placeholder="123456"
-                maxLength={6}
+                maxLength={8}
                 autoFocus
+                required
               />
+            </div>
+          )}
+
+          {statusMsg && (
+            <div style={{ fontSize: '11px', color: color.accentInfo, marginBottom: '8px' }}>
+              {statusMsg}
             </div>
           )}
 
@@ -370,11 +429,11 @@ const RobinhoodLoginModal: React.FC<RhLoginProps> = ({ onClose, onSuccess }) => 
 
           <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
             <button
-              className={loginMutation.isPending ? 'bb-btn bb-btn-active' : 'bb-btn'}
+              className={busy ? 'bb-btn bb-btn-active' : 'bb-btn'}
               type="submit"
-              disabled={loginMutation.isPending || !email || !password}
+              disabled={busy || (!isChallenge && (!email || !password)) || ((step === 'mfa' || isChallenge) && !code)}
             >
-              {loginMutation.isPending ? 'CONNECTING...' : '[CONNECT]'}
+              {busy ? 'CONNECTING...' : isChallenge ? '[VERIFY]' : step === 'mfa' ? '[VERIFY]' : '[CONNECT]'}
             </button>
             <button className="bb-btn" type="button" onClick={onClose}>
               [CANCEL]

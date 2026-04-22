@@ -1,8 +1,14 @@
-"""Robinhood integration — sync holdings + historical portfolio equity."""
+"""Robinhood integration — sync holdings + historical portfolio equity.
+
+Uses robin_stocks internally but wraps the login flow to work in a
+server context (no interactive input() calls).
+"""
 
 import asyncio
 import logging
-from datetime import datetime
+import os
+import pickle
+import time
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -16,15 +22,14 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # ---------------------------------------------------------------------------
-# Lazy-load robin_stocks so the rest of the app works even if it isn't installed
+# Lazy-load robin_stocks
 # ---------------------------------------------------------------------------
 
 _rs: Any = None
-_rs_available = True
 
 
 def _get_rs():
-    global _rs, _rs_available
+    global _rs
     if _rs is not None:
         return _rs
     try:
@@ -32,7 +37,6 @@ def _get_rs():
         _rs = rs
         return _rs
     except ImportError:
-        _rs_available = False
         return None
 
 
@@ -41,9 +45,13 @@ def _get_rs():
 # ---------------------------------------------------------------------------
 
 class RobinhoodLogin(BaseModel):
-    username: str  # Robinhood email
+    username: str
     password: str
     mfa_code: str | None = None
+
+
+class RobinhoodChallengeResponse(BaseModel):
+    code: str
 
 
 class RobinhoodSyncResult(BaseModel):
@@ -68,11 +76,18 @@ class RobinhoodStatus(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# In-memory state for pending challenges (keyed by user_id)
+# ---------------------------------------------------------------------------
+
+_pending_challenges: dict[int, dict] = {}
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
 def _run_sync(fn, *args, **kwargs):
-    """Run a blocking robin_stocks call in a thread."""
+    """Run a blocking call in a thread."""
     loop = asyncio.get_event_loop()
     return loop.run_in_executor(None, lambda: fn(*args, **kwargs))
 
@@ -96,6 +111,174 @@ def _get_last_sync(user_id: int) -> str | None:
     return row["synced_at"] if row else None
 
 
+def _server_login(username: str, password: str, mfa_code: str | None = None) -> dict:
+    """Login to Robinhood without interactive input() calls.
+
+    Handles three scenarios:
+    1. MFA code provided → direct login with code
+    2. Device verification (push to app) → polls until approved
+    3. SMS/email challenge → returns challenge info for two-step flow
+
+    Returns dict with either:
+      - {"access_token": ...} on success
+      - {"challenge": "sms"|"email"|"prompt", "challenge_id": ..., "workflow_id": ...}
+        when user action is needed
+    """
+    rs = _get_rs()
+    from robin_stocks.robinhood.helper import request_post, request_get
+    from robin_stocks.robinhood.urls import login_url
+    from robin_stocks.robinhood.authentication import (
+        generate_device_token,
+        set_login_state,
+        update_session,
+    )
+
+    device_token = generate_device_token()
+
+    login_payload = {
+        "client_id": "c82SH0WZOsabOXGP2sxqcj34FxkvfnWRZBKlBjFS",
+        "expires_in": 86400,
+        "grant_type": "password",
+        "password": password,
+        "scope": "internal",
+        "username": username,
+        "device_token": device_token,
+        "try_passkeys": False,
+        "token_request_path": "/login",
+        "create_read_only_secondary_token": True,
+    }
+
+    if mfa_code:
+        login_payload["mfa_code"] = mfa_code
+
+    data = request_post(login_url(), login_payload)
+
+    if not data:
+        raise ValueError("No response from Robinhood")
+
+    # Direct success (e.g. with MFA code)
+    if "access_token" in data:
+        token = f"{data['token_type']} {data['access_token']}"
+        update_session("Authorization", token)
+        set_login_state(True)
+        return data
+
+    # MFA required (app-based TOTP)
+    if "mfa_required" in data and data.get("mfa_required"):
+        return {"challenge": "mfa", "mfa_type": data.get("mfa_type", "app")}
+
+    # Verification workflow (push/sms/email)
+    if "verification_workflow" in data:
+        workflow_id = data["verification_workflow"]["id"]
+
+        # Start the pathfinder flow
+        pathfinder_url = "https://api.robinhood.com/pathfinder/user_machine/"
+        machine_payload = {
+            "device_id": device_token,
+            "flow": "suv",
+            "input": {"workflow_id": workflow_id},
+        }
+        machine_data = request_post(url=pathfinder_url, payload=machine_payload, json=True)
+
+        # Extract machine ID
+        machine_id = None
+        if machine_data and "id" in machine_data:
+            machine_id = machine_data["id"]
+        elif machine_data:
+            # Try to find it in nested structure
+            from robin_stocks.robinhood.authentication import _get_sherrif_id
+            try:
+                machine_id = _get_sherrif_id(machine_data)
+            except Exception:
+                pass
+
+        if not machine_id:
+            raise ValueError("Could not start verification workflow")
+
+        inquiries_url = f"https://api.robinhood.com/pathfinder/inquiries/{machine_id}/user_view/"
+
+        # Poll for the challenge type
+        start_time = time.time()
+        while time.time() - start_time < 30:
+            time.sleep(3)
+            inquiries_response = request_get(inquiries_url)
+
+            if not inquiries_response:
+                continue
+
+            if "context" in inquiries_response and "sheriff_challenge" in inquiries_response.get("context", {}):
+                challenge = inquiries_response["context"]["sheriff_challenge"]
+                challenge_type = challenge.get("type", "")
+                challenge_id = challenge.get("id", "")
+                challenge_status = challenge.get("status", "")
+
+                if challenge_type == "prompt":
+                    # Push notification — poll until approved
+                    prompt_url = f"https://api.robinhood.com/push/{challenge_id}/get_prompts_status/"
+                    poll_start = time.time()
+                    while time.time() - poll_start < 90:
+                        time.sleep(5)
+                        prompt_status = request_get(url=prompt_url)
+                        if prompt_status and prompt_status.get("challenge_status") == "validated":
+                            # Re-attempt login
+                            data2 = request_post(login_url(), login_payload)
+                            if data2 and "access_token" in data2:
+                                token = f"{data2['token_type']} {data2['access_token']}"
+                                update_session("Authorization", token)
+                                set_login_state(True)
+                                return data2
+                    raise ValueError("Push notification approval timed out — approve in your Robinhood app")
+
+                elif challenge_type in ("sms", "email") and challenge_status == "issued":
+                    # Need user to enter a code — return challenge info
+                    return {
+                        "challenge": challenge_type,
+                        "challenge_id": challenge_id,
+                        "machine_id": machine_id,
+                        "device_token": device_token,
+                        "login_payload": login_payload,
+                    }
+
+                elif challenge_status == "validated":
+                    # Already validated, retry login
+                    data2 = request_post(login_url(), login_payload)
+                    if data2 and "access_token" in data2:
+                        token = f"{data2['token_type']} {data2['access_token']}"
+                        update_session("Authorization", token)
+                        set_login_state(True)
+                        return data2
+
+        raise ValueError("Verification workflow timed out")
+
+    # Unknown response
+    detail = data.get("detail", str(data))
+    raise ValueError(f"Login failed: {detail}")
+
+
+def _respond_to_challenge(challenge_id: str, code: str, device_token: str, login_payload: dict) -> dict:
+    """Submit an SMS/email verification code and complete login."""
+    rs = _get_rs()
+    from robin_stocks.robinhood.helper import request_post
+    from robin_stocks.robinhood.urls import login_url
+    from robin_stocks.robinhood.authentication import set_login_state, update_session
+
+    challenge_url = f"https://api.robinhood.com/challenge/{challenge_id}/respond/"
+    challenge_response = request_post(url=challenge_url, payload={"response": code})
+
+    if not challenge_response or challenge_response.get("status") != "validated":
+        raise ValueError("Invalid verification code")
+
+    # Re-attempt login after challenge validated
+    data = request_post(login_url(), login_payload)
+    if data and "access_token" in data:
+        token = f"{data['token_type']} {data['access_token']}"
+        update_session("Authorization", token)
+        set_login_state(True)
+        return data
+
+    raise ValueError("Login failed after verification")
+
+
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
@@ -105,38 +288,85 @@ async def robinhood_login(
     creds: RobinhoodLogin,
     user_id: int = Depends(current_user_id),
 ):
-    """Authenticate with Robinhood. Returns success status.
+    """Authenticate with Robinhood.
 
-    The session stays alive in-process for subsequent sync calls.
+    Step 1: Call with username + password (and optional mfa_code for TOTP apps).
+    If Robinhood requires SMS/email verification, returns:
+      {"status": "challenge", "challenge_type": "sms"|"email"}
+    Then call /portfolio/robinhood/challenge with the code.
+
+    If using push notification (Robinhood app), this endpoint polls up to 90s
+    for approval, then completes automatically.
     """
     rs = _get_rs()
     if rs is None:
         raise HTTPException(
             status_code=501,
-            detail="robin_stocks not installed on server — run: pip install robin_stocks",
+            detail="robin_stocks not installed — run: pip install robin_stocks",
         )
 
     try:
-        login_kwargs: dict[str, Any] = {
-            "username": creds.username,
-            "password": creds.password,
-            "store_session": False,
-        }
-        if creds.mfa_code:
-            login_kwargs["mfa_code"] = creds.mfa_code
-
-        result = await _run_sync(rs.login, **login_kwargs)
-
-        if not result or "access_token" not in result:
-            raise HTTPException(status_code=401, detail="Robinhood login failed — check credentials or MFA code")
-
-        return {"status": "ok", "message": "Robinhood authenticated"}
-
-    except HTTPException:
-        raise
+        result = await _run_sync(
+            _server_login, creds.username, creds.password, creds.mfa_code
+        )
     except Exception as e:
         logger.exception("Robinhood login error")
-        raise HTTPException(status_code=401, detail=f"Login failed: {str(e)}")
+        raise HTTPException(status_code=401, detail=str(e))
+
+    if "access_token" in result:
+        return {"status": "ok", "message": "Robinhood authenticated"}
+
+    if "challenge" in result:
+        challenge_type = result["challenge"]
+
+        if challenge_type == "mfa":
+            return {
+                "status": "mfa_required",
+                "mfa_type": result.get("mfa_type", "app"),
+                "message": "Enter your authenticator app code",
+            }
+
+        # SMS or email challenge — store state for step 2
+        _pending_challenges[user_id] = result
+        return {
+            "status": "challenge",
+            "challenge_type": challenge_type,
+            "message": f"Enter the verification code sent via {challenge_type}",
+        }
+
+    raise HTTPException(status_code=401, detail="Unexpected login response")
+
+
+@router.post("/portfolio/robinhood/challenge")
+async def robinhood_challenge(
+    body: RobinhoodChallengeResponse,
+    user_id: int = Depends(current_user_id),
+):
+    """Step 2: Submit SMS/email verification code to complete login."""
+    rs = _get_rs()
+    if rs is None:
+        raise HTTPException(status_code=501, detail="robin_stocks not installed")
+
+    challenge_data = _pending_challenges.pop(user_id, None)
+    if not challenge_data:
+        raise HTTPException(status_code=400, detail="No pending challenge — login again")
+
+    try:
+        result = await _run_sync(
+            _respond_to_challenge,
+            challenge_data["challenge_id"],
+            body.code,
+            challenge_data["device_token"],
+            challenge_data["login_payload"],
+        )
+    except Exception as e:
+        logger.exception("Challenge verification error")
+        raise HTTPException(status_code=401, detail=str(e))
+
+    if "access_token" in result:
+        return {"status": "ok", "message": "Robinhood authenticated"}
+
+    raise HTTPException(status_code=401, detail="Verification failed")
 
 
 @router.post("/portfolio/robinhood/sync", response_model=RobinhoodSyncResult)
@@ -168,7 +398,6 @@ async def robinhood_sync(user_id: int = Depends(current_user_id)):
             if shares <= 0:
                 continue
 
-            # Upsert: update if ticker already exists for this user, else insert
             existing = conn.execute(
                 "SELECT id FROM portfolio WHERE user_id = ? AND ticker = ?",
                 (user_id, ticker),
@@ -216,7 +445,6 @@ async def robinhood_history(
     if span not in valid_spans:
         raise HTTPException(status_code=400, detail=f"Invalid span. Use: {', '.join(sorted(valid_spans))}")
 
-    # Map span to robin_stocks interval/span params
     interval_map = {
         "day": ("5minute", "day"),
         "week": ("10minute", "week"),
@@ -270,13 +498,20 @@ async def robinhood_status(user_id: int = Depends(current_user_id)):
     if rs is None:
         return RobinhoodStatus(connected=False, last_sync=None)
 
-    # Check if we have an active session
     connected = False
     try:
-        # robin_stocks stores auth in module-level state
-        if hasattr(rs, 'get_linked_user_info'):
-            info = await _run_sync(rs.get_linked_user_info)
-            connected = info is not None
+        from robin_stocks.robinhood.authentication import LOGIN_STATE
+        # robin_stocks stores login state in a module-level variable
+        connected = bool(getattr(rs.authentication, 'LOGGED_IN', False))
+        if not connected:
+            # Fallback: check if session has auth header
+            from robin_stocks.robinhood.helper import request_get
+            from robin_stocks.robinhood.urls import positions_url
+            res = await _run_sync(
+                request_get, positions_url(), "pagination",
+                {"nonzero": "true"},
+            )
+            connected = res is not None
     except Exception:
         connected = False
 
@@ -296,4 +531,5 @@ async def robinhood_logout(user_id: int = Depends(current_user_id)):
     except Exception:
         pass
 
+    _pending_challenges.pop(user_id, None)
     return {"status": "ok", "message": "Robinhood session cleared"}
