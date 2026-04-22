@@ -79,24 +79,48 @@ async def _fetch_world_news(topic: str = "general", limit: int = 50) -> list[dic
     import httpx
     import feedparser
 
-    sources_map = {
-        "general": "https://news.google.com/rss",
-        "business": "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGx6TVdZU0FtVnVHZ0pWVXlnQVAB",
-        "technology": "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGRQTVdZU0FtVnVHZ0pWVXlnQVAB",
-        "science": "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRFp0Y1RjU0FtVnVHZ0pWVXlnQVAB",
+    # Multiple feeds per topic — Google News blocks data-center IPs, so
+    # we aggregate from BBC, CNBC, MarketWatch, CoinDesk, NPR instead.
+    sources_map: dict[str, list[str]] = {
+        "general": [
+            "https://feeds.bbci.co.uk/news/world/rss.xml",
+            "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100003114",
+            "https://feeds.npr.org/1001/rss.xml",
+        ],
+        "business": [
+            "https://feeds.bbci.co.uk/news/business/rss.xml",
+            "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10000664",
+            "https://feeds.content.dowjones.io/public/rss/mw_topstories",
+        ],
+        "technology": [
+            "https://feeds.bbci.co.uk/news/technology/rss.xml",
+            "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=19854910",
+        ],
+        "science": [
+            "https://www.coindesk.com/arc/outboundfeeds/rss/",
+            "https://feeds.bbci.co.uk/news/technology/rss.xml",
+        ],
     }
-    url = sources_map.get(topic, sources_map["general"])
+    urls = sources_map.get(topic, sources_map["general"])
 
+    all_entries = []
     try:
         async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
-            resp = await client.get(url, headers={"User-Agent": "Mozilla/5.0"})
-            resp.raise_for_status()
-            feed = feedparser.parse(resp.text)
+            for url in urls:
+                try:
+                    resp = await client.get(url, headers={"User-Agent": "Mozilla/5.0"})
+                    if resp.status_code == 200:
+                        feed = feedparser.parse(resp.text)
+                        all_entries.extend(feed.entries)
+                except Exception:
+                    continue
     except Exception:
         return []
 
+    feed_entries = all_entries
+
     articles = []
-    for entry in feed.entries[:limit]:
+    for entry in feed_entries[:limit]:
         published_ts = 0
         if getattr(entry, "published_parsed", None):
             try:
