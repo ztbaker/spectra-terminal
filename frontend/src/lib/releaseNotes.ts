@@ -8,6 +8,15 @@ export interface ReleaseNote {
 // "What's New" dialog on first launch after update.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.2.0',
+    date: '2026-04-22',
+    highlights: [
+      'Robinhood integration: connect your account to sync holdings directly into PORT.',
+      'Historical portfolio equity chart with 7 time spans (1D to ALL) via TradingView.',
+      'Auto-upsert: synced positions update existing tickers, no duplicates.',
+    ],
+  },
+  {
     version: '1.1.18',
     date: '2026-04-22',
     highlights: [
