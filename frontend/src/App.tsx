@@ -41,6 +41,7 @@ import FAScreen         from './components/screens/FAScreen'
 import TickerMenuScreen from './components/screens/TickerMenuScreen'
 import TruthSocialScreen from './components/screens/TruthSocialScreen'
 import TopNewsScreen from './components/screens/TopNewsScreen'
+import WsbScreen from './components/screens/WsbScreen'
 import EconScreen       from './components/screens/EconScreen'
 import HomeScreenV3     from './components/screens/HomeScreenV3'
 import HelpScreen       from './components/screens/HelpScreen'
@@ -506,6 +507,9 @@ function TerminalApp() {
 
       case 'top':
         return <TopNewsScreen onNavigate={handleNavigate} />
+
+      case 'wsb':
+        return <WsbScreen onNavigate={handleNavigate} />
 
       case 'profile':
         return <ProfileScreen username={sub} onNavigate={handleNavigate} />

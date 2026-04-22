@@ -19,10 +19,9 @@
 
 ---
 
-## What's New in v1.1.14
+## What's New in v1.1.15
 
-- **TOP command** — world news feed with topic filters (Economy, Tech, Energy, Crypto, Politics)
-- **HELP screen** — now lists TRUMP and TOP commands
+- **WSB command** — live WallStreetBets daily/weekly discussion thread with real-time comments, sort by NEW or TOP, clickable $CASHTAG links
 
 ## What is Spectra Terminal?
 
@@ -145,6 +144,7 @@ Bloomberg-style command bar:
 | `MEME` | Meme coin tracker |
 | `TOP` | Top world news |
 | `TRUMP` | Trump's Truth Social posts |
+| `WSB` | WallStreetBets discussion |
 | `PROF` | User profile |
 
 

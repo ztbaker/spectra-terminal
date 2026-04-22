@@ -861,6 +861,7 @@ export type ScreenType =
   | 'ticker-menu'
   | 'truth'
   | 'top'
+  | 'wsb'
 
 // ─── Chat ────────────────────────────────────────────────────────────────────
 export interface ChatRoom {

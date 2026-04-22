@@ -110,6 +110,7 @@ const STANDALONE_COMMANDS: Record<string, ScreenType> = {
   BUG:       'bugreport',
   TRUMP:     'truth',
   TOP:       'top',
+  WSB:       'wsb',
 }
 
 // ─── Ticker-qualified suffixes ────────────────────────────────────────────────

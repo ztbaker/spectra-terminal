@@ -344,3 +344,37 @@ export interface TruthSocialData {
 
 export const fetchTruthSocial = (username: string = 'realDonaldTrump', limit: number = 40): Promise<TruthSocialData> =>
   api.get(`/truthsocial/${encodeURIComponent(username)}`, { params: { limit } }).then(r => r.data)
+
+// ─── WSB (WallStreetBets) ──────────────────────────────────────────────────
+export interface WsbComment {
+  id: string
+  author: string
+  body: string
+  score: number
+  created_utc: number
+  created_at: string
+  depth: number
+  is_op: boolean
+}
+
+export interface WsbThread {
+  thread_id: string
+  title: string
+  author: string
+  url: string
+  num_comments: number
+  score: number
+  created_utc: number
+  created_at: string
+}
+
+export interface WsbData {
+  thread: WsbThread | null
+  comments: WsbComment[]
+  total_comments: number
+  cached: boolean
+  error: string | null
+}
+
+export const fetchWsb = (sort: string = 'new', limit: number = 200): Promise<WsbData> =>
+  api.get('/wsb', { params: { sort, limit } }).then(r => r.data)

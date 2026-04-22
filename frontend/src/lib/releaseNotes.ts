@@ -8,6 +8,14 @@ export interface ReleaseNote {
 // "What's New" dialog on first launch after update.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.1.15',
+    date: '2026-04-22',
+    highlights: [
+      'New WSB command: live WallStreetBets daily/weekly discussion thread with real-time comments.',
+      'Sort by NEW or TOP, clickable $CASHTAG links, score-colored votes.',
+    ],
+  },
+  {
     version: '1.1.14',
     date: '2026-04-22',
     highlights: [
