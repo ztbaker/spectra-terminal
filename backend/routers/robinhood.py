@@ -224,13 +224,13 @@ async def robinhood_login(
 
         if result_holder["done"]:
             if result_holder["error"]:
-                raise HTTPException(status_code=401, detail=result_holder["error"])
+                raise HTTPException(status_code=400, detail=f"RH_LOGIN_ERROR: {result_holder['error']}")
             if result_holder["success"]:
                 return {"status": "ok", "message": "Robinhood authenticated"}
             # Login returned None — failed
             raise HTTPException(
-                status_code=401,
-                detail="Login failed — check credentials. Log: " + " | ".join(log_lines[-3:]),
+                status_code=400,
+                detail="RH_LOGIN_FAILED: " + " | ".join(log_lines[-3:]),
             )
 
         if result_holder["waiting_for_input"]:
@@ -280,12 +280,12 @@ async def robinhood_challenge(
         await asyncio.sleep(1)
         if result_holder["done"]:
             if result_holder["error"]:
-                raise HTTPException(status_code=401, detail=result_holder["error"])
+                raise HTTPException(status_code=400, detail=f"RH_LOGIN_ERROR: {result_holder['error']}")
             if result_holder["success"]:
                 return {"status": "ok", "message": "Robinhood authenticated"}
             raise HTTPException(
-                status_code=401,
-                detail="Verification failed. Log: " + " | ".join(log_lines[-3:]),
+                status_code=400,
+                detail="RH_VERIFY_FAILED: " + " | ".join(log_lines[-3:]),
             )
 
     raise HTTPException(status_code=408, detail="Challenge verification timed out")
@@ -337,28 +337,28 @@ async def robinhood_sync(user_id: int = Depends(current_user_id)):
 
     try:
         import robin_stocks.robinhood.helper as rh_helper
-        logger.info("Sync — LOGGED_IN=%s, auth_header=%s",
-                     rh_helper.LOGGED_IN,
-                     bool(rh_helper.SESSION.headers.get("Authorization")))
-        if not rh_helper.LOGGED_IN:
+        logged_in = rh_helper.LOGGED_IN
+        has_auth = bool(rh_helper.SESSION.headers.get("Authorization"))
+        logger.info("Sync — LOGGED_IN=%s, auth_header=%s", logged_in, has_auth)
+        if not logged_in:
             raise HTTPException(
-                status_code=401,
-                detail="Not logged into Robinhood — connect first",
+                status_code=400,
+                detail=f"RH_NOT_CONNECTED: LOGGED_IN={logged_in}, has_auth={has_auth}. Connect Robinhood first.",
             )
     except ImportError:
         pass
+    except HTTPException:
+        raise
 
     try:
         positions = await _run_sync(rs.build_holdings)
     except Exception as e:
         logger.exception("Failed to fetch Robinhood holdings")
         err_msg = str(e)
-        if "401" in err_msg or "Unauthorized" in err_msg:
-            raise HTTPException(
-                status_code=401,
-                detail="Robinhood session expired — reconnect",
-            )
-        raise HTTPException(status_code=502, detail=f"Could not fetch holdings: {err_msg}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"RH_SYNC_ERROR: {err_msg}",
+        )
 
     if not positions:
         return RobinhoodSyncResult(synced=0, holdings=[])
