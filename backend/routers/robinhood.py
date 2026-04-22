@@ -111,6 +111,20 @@ def _get_last_sync(user_id: int) -> str | None:
     return row["synced_at"] if row else None
 
 
+def _activate_session(data: dict, update_session=None, set_login_state=None):
+    """Set robin_stocks session state from a login response."""
+    if update_session is None:
+        from robin_stocks.robinhood.authentication import update_session, set_login_state
+    token = f"{data['token_type']} {data['access_token']}"
+    update_session("Authorization", token)
+    set_login_state(True)
+    # Double-check: also set directly on the helper module
+    import robin_stocks.robinhood.helper as rh_helper
+    rh_helper.SESSION.headers["Authorization"] = token
+    rh_helper.LOGGED_IN = True
+    logger.info("Robinhood session activated — token type: %s", data.get("token_type"))
+
+
 def _server_login(username: str, password: str, mfa_code: str | None = None) -> dict:
     """Login to Robinhood without interactive input() calls.
 
@@ -127,11 +141,7 @@ def _server_login(username: str, password: str, mfa_code: str | None = None) -> 
     rs = _get_rs()
     from robin_stocks.robinhood.helper import request_post, request_get
     from robin_stocks.robinhood.urls import login_url
-    from robin_stocks.robinhood.authentication import (
-        generate_device_token,
-        set_login_state,
-        update_session,
-    )
+    from robin_stocks.robinhood.authentication import generate_device_token
 
     device_token = generate_device_token()
 
@@ -158,9 +168,7 @@ def _server_login(username: str, password: str, mfa_code: str | None = None) -> 
 
     # Direct success (e.g. with MFA code)
     if "access_token" in data:
-        token = f"{data['token_type']} {data['access_token']}"
-        update_session("Authorization", token)
-        set_login_state(True)
+        _activate_session(data, update_session, set_login_state)
         return data
 
     # MFA required (app-based TOTP)
@@ -223,9 +231,7 @@ def _server_login(username: str, password: str, mfa_code: str | None = None) -> 
                             # Re-attempt login
                             data2 = request_post(login_url(), login_payload)
                             if data2 and "access_token" in data2:
-                                token = f"{data2['token_type']} {data2['access_token']}"
-                                update_session("Authorization", token)
-                                set_login_state(True)
+                                _activate_session(data2)
                                 return data2
                     raise ValueError("Push notification approval timed out — approve in your Robinhood app")
 
@@ -243,9 +249,7 @@ def _server_login(username: str, password: str, mfa_code: str | None = None) -> 
                     # Already validated, retry login
                     data2 = request_post(login_url(), login_payload)
                     if data2 and "access_token" in data2:
-                        token = f"{data2['token_type']} {data2['access_token']}"
-                        update_session("Authorization", token)
-                        set_login_state(True)
+                        _activate_session(data2)
                         return data2
 
         raise ValueError("Verification workflow timed out")
@@ -260,7 +264,6 @@ def _respond_to_challenge(challenge_id: str, code: str, device_token: str, login
     rs = _get_rs()
     from robin_stocks.robinhood.helper import request_post
     from robin_stocks.robinhood.urls import login_url
-    from robin_stocks.robinhood.authentication import set_login_state, update_session
 
     challenge_url = f"https://api.robinhood.com/challenge/{challenge_id}/respond/"
     challenge_response = request_post(url=challenge_url, payload={"response": code})
@@ -271,9 +274,7 @@ def _respond_to_challenge(challenge_id: str, code: str, device_token: str, login
     # Re-attempt login after challenge validated
     data = request_post(login_url(), login_payload)
     if data and "access_token" in data:
-        token = f"{data['token_type']} {data['access_token']}"
-        update_session("Authorization", token)
-        set_login_state(True)
+        _activate_session(data)
         return data
 
     raise ValueError("Login failed after verification")
@@ -376,11 +377,28 @@ async def robinhood_sync(user_id: int = Depends(current_user_id)):
     if rs is None:
         raise HTTPException(status_code=501, detail="robin_stocks not installed")
 
+    # Verify login state before calling build_holdings
+    try:
+        from robin_stocks.robinhood import helper as rh_helper
+        if not rh_helper.LOGGED_IN:
+            raise HTTPException(
+                status_code=401,
+                detail="Not logged into Robinhood — connect first",
+            )
+    except ImportError:
+        pass
+
     try:
         positions = await _run_sync(rs.build_holdings)
     except Exception as e:
         logger.exception("Failed to fetch Robinhood holdings")
-        raise HTTPException(status_code=502, detail=f"Could not fetch holdings: {e}")
+        err_msg = str(e)
+        if "401" in err_msg or "Unauthorized" in err_msg:
+            raise HTTPException(
+                status_code=401,
+                detail="Robinhood session expired — reconnect",
+            )
+        raise HTTPException(status_code=502, detail=f"Could not fetch holdings: {err_msg}")
 
     if not positions:
         return RobinhoodSyncResult(synced=0, holdings=[])
