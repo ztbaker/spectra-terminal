@@ -291,6 +291,43 @@ async def robinhood_challenge(
     raise HTTPException(status_code=408, detail="Challenge verification timed out")
 
 
+@router.get("/portfolio/robinhood/debug")
+async def robinhood_debug(user_id: int = Depends(current_user_id)):
+    """Diagnostic endpoint — returns full session state."""
+    info: dict[str, Any] = {"user_id": user_id}
+    try:
+        import robin_stocks.robinhood.helper as rh_helper
+        info["LOGGED_IN"] = rh_helper.LOGGED_IN
+        info["has_auth_header"] = bool(rh_helper.SESSION.headers.get("Authorization"))
+        info["auth_header_prefix"] = str(rh_helper.SESSION.headers.get("Authorization", ""))[:20] + "..."
+        info["session_headers"] = list(rh_helper.SESSION.headers.keys())
+    except Exception as e:
+        info["helper_error"] = str(e)
+
+    try:
+        rs = _get_rs()
+        if rs:
+            # Try a simple API call
+            from robin_stocks.robinhood.helper import request_get
+            from robin_stocks.robinhood.urls import positions_url
+            res = request_get(positions_url(), "pagination", {"nonzero": "true"}, jsonify_data=False)
+            if hasattr(res, "status_code"):
+                info["positions_status"] = res.status_code
+                if res.status_code != 200:
+                    info["positions_body"] = res.text[:200]
+            else:
+                info["positions_result"] = "got data" if res else "None"
+    except Exception as e:
+        info["positions_error"] = str(e)
+
+    # Check pickle file
+    import os
+    pickle_path = os.path.expanduser("~/.tokens/robinhood.pickle")
+    info["pickle_exists"] = os.path.isfile(pickle_path)
+
+    return info
+
+
 @router.post("/portfolio/robinhood/sync", response_model=RobinhoodSyncResult)
 async def robinhood_sync(user_id: int = Depends(current_user_id)):
     """Pull current Robinhood holdings and upsert into the portfolio table."""

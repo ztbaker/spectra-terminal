@@ -626,7 +626,7 @@ const PortfolioScreen: React.FC<Props> = ({ onNavigate }) => {
         )}
         {syncMutation.isError && (
           <span style={{ fontSize: '10px', color: color.accentNegative }}>
-            Sync failed: {(syncMutation.error as Error)?.message ?? 'error'}
+            Sync failed: {(syncMutation.error as any)?.response?.data?.detail || (syncMutation.error as Error)?.message || 'error'}
           </span>
         )}
       </div>
