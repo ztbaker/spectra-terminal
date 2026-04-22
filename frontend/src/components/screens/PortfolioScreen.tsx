@@ -12,9 +12,7 @@ import {
   rhSubmitChallenge,
   rhFetchHoldings,
   rhFetchHistory,
-  rhIsConnected,
   rhLogout,
-  type RhHolding,
   type RhEquityPoint,
 } from '../../lib/robinhoodClient'
 import { usePolling } from '../../hooks/usePolling'
