@@ -78,7 +78,6 @@ export async function rhLogin(
     password,
     scope: 'internal',
     username,
-    challenge_type: 'sms',
     device_token: deviceToken,
     try_passkeys: 'false',
     token_request_path: '/login',
