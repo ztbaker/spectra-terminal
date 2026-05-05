@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react'
-import { color, type as typeScale, font, radius, shadow } from '../../../lib/theme'
+import { color, type as typeScale, radius, shadow } from '../../../lib/theme'
 import type { CatalystEvent } from './types'
 
 const DAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']

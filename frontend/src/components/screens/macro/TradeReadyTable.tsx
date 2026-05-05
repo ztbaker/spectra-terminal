@@ -80,7 +80,7 @@ const TradeReadyTable: React.FC<TradeReadyTableProps> = ({ ideas, loading }) => 
   return (
     <div style={ideas.some(i => i.half_size) ? undefined : undefined}>
       <DataGrid
-        columns={columns as DataGridColumn<Record<string, unknown>>[]}
+        columns={columns as unknown as DataGridColumn<Record<string, unknown>>[]}
         data={gridData}
         keyField="asset"
         maxHeight="300px"
