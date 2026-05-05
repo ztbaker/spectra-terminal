@@ -73,6 +73,94 @@ def _ensure_presence_column(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE users ADD COLUMN last_seen_at TEXT")
 
 
+def _init_macro_tables(conn: sqlite3.Connection) -> None:
+    """Create MACRO subsystem tables (additive only — no modifications to existing tables)."""
+    conn.executescript("""
+        CREATE TABLE IF NOT EXISTS macro_iv30_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            asset TEXT NOT NULL,
+            date TEXT NOT NULL,
+            iv30 REAL,
+            iv_rank_pct REAL,
+            UNIQUE(asset, date)
+        );
+
+        CREATE TABLE IF NOT EXISTS macro_scores (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date TEXT NOT NULL,
+            factor_name TEXT NOT NULL,
+            score_5d REAL,
+            score_10d REAL,
+            score_21d REAL,
+            raw_inputs_json TEXT,
+            UNIQUE(date, factor_name)
+        );
+
+        CREATE TABLE IF NOT EXISTS macro_regime_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date TEXT NOT NULL UNIQUE,
+            regime_name TEXT NOT NULL,
+            conviction TEXT NOT NULL,
+            age_days INTEGER NOT NULL,
+            score_coherence REAL
+        );
+
+        CREATE TABLE IF NOT EXISTS macro_catalysts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_date TEXT NOT NULL,
+            event_time TEXT,
+            event_type TEXT NOT NULL,
+            event_label TEXT NOT NULL,
+            assets_impacted TEXT NOT NULL,
+            consensus_value REAL,
+            prior_value REAL,
+            surprise_weight REAL DEFAULT 1.0,
+            straddle_implied_move REAL
+        );
+
+        CREATE TABLE IF NOT EXISTS macro_trade_ideas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            generated_date TEXT NOT NULL,
+            asset TEXT NOT NULL,
+            direction TEXT NOT NULL,
+            dte_min INTEGER,
+            dte_max INTEGER,
+            structure TEXT,
+            entry_condition TEXT,
+            invalidation TEXT,
+            conviction TEXT NOT NULL,
+            iv_rank_context TEXT,
+            score_snapshot_json TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS macro_narratives (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date TEXT NOT NULL,
+            stage INTEGER NOT NULL,
+            content TEXT NOT NULL,
+            model_used TEXT,
+            generated_at TEXT NOT NULL DEFAULT (datetime('now')),
+            UNIQUE(date, stage)
+        );
+
+        CREATE TABLE IF NOT EXISTS macro_cftc_positions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            report_date TEXT NOT NULL,
+            asset TEXT NOT NULL,
+            net_long INTEGER,
+            pct_oi REAL,
+            change_1w INTEGER,
+            UNIQUE(report_date, asset)
+        );
+
+        CREATE TABLE IF NOT EXISTS macro_input_cache (
+            input_key TEXT PRIMARY KEY,
+            data_json TEXT NOT NULL,
+            cached_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+    """)
+
+
 def init_db(db_path: str | None = None) -> None:
     path = db_path or get_db_path()
     with sqlite3.connect(path) as conn:
@@ -189,6 +277,7 @@ def init_db(db_path: str | None = None) -> None:
         _ensure_email_columns(conn)
         _ensure_presence_column(conn)
         _ensure_user_scoped(conn)
+        _init_macro_tables(conn)
         conn.commit()
 
 

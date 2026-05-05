@@ -20,6 +20,7 @@ _TABLE_MAP = {
     "chart":      ("chart_cache",      "cache_key"),
     "econ":       ("econ_cache",       "series_id"),
     "financials": ("financials_cache", "ticker"),
+    "macro":      ("macro_input_cache", "input_key"),
 }
 
 

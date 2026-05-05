@@ -19,9 +19,12 @@
 
 ---
 
-## What's New in v1.2.1
+## What's New in v2.0.1
 
-- **WSB command** — live WallStreetBets daily/weekly discussion thread with real-time comments, sort by NEW or TOP, clickable $CASHTAG links
+- **MACRO Intelligence** — new factor-based macro options dashboard with regime classification, forward catalyst calendar, and filtered trade ideas across 7 instruments × 4 factors × 3 horizons
+- **Morning Narrative** — two-stage LLM read (regime characterization + directional bias) via Ollama with Claude API fallback
+- **Daily Pipeline** — 5am ET cron refreshes scores, regimes, and ideas; FOMC/CPI days re-run at 6am ET
+- **Robinhood client-side login** — push, MFA, and SMS/email challenges all handled locally (no Fly.io 401/502 errors)
 
 ## What is Spectra Terminal?
 

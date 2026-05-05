@@ -24,7 +24,6 @@ from routers import (
     fx,
     crypto,
     filings,
-    macro,
     indices,
     ecst,
     etf,
@@ -40,17 +39,23 @@ from routers import (
     wsb,
     robinhood,
 )
+from macro.router import router as macro_router
+from macro.scheduler import setup_scheduler
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    setup_scheduler(app)
     yield
+    from macro.scheduler import _scheduler
+    if _scheduler is not None:
+        _scheduler.shutdown(wait=False)
 
 
 app = FastAPI(
     title="SpectraTerminal API",
-    version="1.0.0",
+    version="2.0.1",
     lifespan=lifespan,
 )
 
@@ -89,7 +94,7 @@ app.include_router(screener.router, prefix="/api")
 app.include_router(fx.router, prefix="/api")
 app.include_router(crypto.router, prefix="/api")
 app.include_router(filings.router, prefix="/api")
-app.include_router(macro.router, prefix="/api")
+app.include_router(macro_router, prefix="/api")
 app.include_router(indices.router, prefix="/api")
 app.include_router(ecst.router, prefix="/api")
 app.include_router(etf.router, prefix="/api")

@@ -8,6 +8,15 @@ export interface ReleaseNote {
 // "What's New" dialog on first launch after update.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '2.0.1',
+    date: '2026-05-05',
+    highlights: [
+      'New MACRO command — factor-based macro options intelligence dashboard with regime classification, catalyst calendar, and trade ideas.',
+      'Two-stage LLM morning narrative (regime read + directional bias) via Ollama with Claude fallback.',
+      'Daily 5am ET pipeline scores 7 instruments across 4 macro factors at 3 horizons; FOMC/CPI days re-run at 6am ET.',
+    ],
+  },
+  {
     version: '1.2.7',
     date: '2026-04-22',
     highlights: [

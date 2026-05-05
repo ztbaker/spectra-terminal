@@ -1,13 +1,17 @@
 import axios from 'axios'
 import type {
   EquityData, ChartData, OptionsData, NewsResponse, IndexQuote,
-  EconSeries, MacroDashboard, PortfolioRow, PortfolioPerformance,
+  EconSeries, PortfolioRow, PortfolioPerformance,
   WatchlistRow, WatchlistQuote, EarningsCalendar, ScreenerResponse,
   FXResponse, CryptoResponse, FilingsResponse, FinancialsData,
   WorldIndicesResponse, IndexMembersResponse, SpreadData,
   ECSTResponse, FXRatesResponse, FAResponse, ReaderArticle,
   ChatRoom, ChatMessage, ChatDMThread, ChatUserRow, ChatNotification,
 } from '../types'
+import type {
+  MacroDashboardResponse, RegimeReading, CatalystEvent,
+  TradeIdea, NarrativeOutput,
+} from '../components/screens/macro/types'
 
 const API_URL = import.meta.env.VITE_API_URL || '/api'
 const API_KEY = import.meta.env.VITE_API_KEY || ''
@@ -132,8 +136,23 @@ export const fetchIndexMembers = (
 export const fetchEcon = (seriesId: string, start = '2010-01-01'): Promise<EconSeries> =>
   api.get(`/econ/${seriesId}`, { params: { start } }).then(r => r.data)
 
-export const fetchMacroDashboard = (): Promise<MacroDashboard> =>
+export const fetchMacroDashboard = (): Promise<MacroDashboardResponse> =>
   api.get('/macro/dashboard').then(r => r.data)
+
+export const fetchMacroRegime = (): Promise<RegimeReading> =>
+  api.get('/macro/regime').then(r => r.data)
+
+export const fetchMacroCatalysts = (): Promise<CatalystEvent[]> =>
+  api.get('/macro/catalysts').then(r => r.data)
+
+export const fetchMacroIdeas = (): Promise<TradeIdea[]> =>
+  api.get('/macro/ideas').then(r => r.data)
+
+export const fetchMacroNarrative = (): Promise<NarrativeOutput | null> =>
+  api.get('/macro/narrative').then(r => r.data)
+
+export const refreshMacro = (): Promise<{ status: string }> =>
+  api.post('/macro/refresh').then(r => r.data)
 
 // ─── Portfolio ────────────────────────────────────────────────────────────────
 export const fetchPortfolio = (): Promise<PortfolioRow[]> =>

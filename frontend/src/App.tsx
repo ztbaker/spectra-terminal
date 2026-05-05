@@ -14,7 +14,7 @@ import EquityScreenV3   from './components/screens/EquityScreenV3'
 import ChartScreen      from './components/screens/ChartScreen'
 import OptionsScreen    from './components/screens/OptionsScreen'
 import NewsScreen       from './components/screens/NewsScreen'
-import MacroScreen      from './components/screens/MacroScreen'
+import MacroIntelScreen from './components/screens/macro/MacroIntelScreen'
 import PortfolioScreen  from './components/screens/PortfolioScreen'
 import WatchlistScreen  from './components/screens/WatchlistScreen'
 import EarningsScreen   from './components/screens/EarningsScreen'
@@ -515,7 +515,7 @@ function TerminalApp() {
         return <ProfileScreen username={sub} onNavigate={handleNavigate} />
 
       case 'macro':
-        return <MacroScreen onNavigate={handleNavigate} />
+        return <MacroIntelScreen onNavigate={handleNavigate} />
 
       case 'help':
         return <HelpScreen onNavigate={handleNavigate} />
