@@ -20,7 +20,7 @@ async def try_providers(
     providers = get_providers_for(operation)
     last_exc: Exception | None = None
 
-    for provider in providers:
+    for idx, provider in enumerate(providers):
         try:
             fn = getattr(provider, method)
             result = await fn(*args, **kwargs)
@@ -28,9 +28,8 @@ async def try_providers(
                 return result, provider.name, False
         except Exception as exc:
             last_exc = exc
-            logger.debug(
-                "Provider %s failed for %s/%s: %s", provider.name, operation, method, exc
-            )
+            log_fn = logger.warning if idx == 0 else logger.debug
+            log_fn("Provider %s failed for %s/%s: %s", provider.name, operation, method, exc)
             continue
 
     if last_exc is not None:

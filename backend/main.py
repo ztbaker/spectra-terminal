@@ -2,6 +2,7 @@ import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
@@ -38,6 +39,7 @@ from routers import (
     truthsocial,
     wsb,
     robinhood,
+    seasonals,
 )
 from macro.router import router as macro_router
 from macro.scheduler import setup_scheduler
@@ -55,7 +57,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="SpectraTerminal API",
-    version="2.0.1",
+    version="2.1.0",
     lifespan=lifespan,
 )
 
@@ -66,6 +68,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 
 app.add_middleware(
     SharedKeyMiddleware,
@@ -102,6 +106,7 @@ app.include_router(fixedincome.router, prefix="/api")
 app.include_router(commodity.router, prefix="/api")
 app.include_router(congress.router, prefix="/api")
 app.include_router(analytics.router, prefix="/api")
+app.include_router(seasonals.router, prefix="/api")
 app.include_router(ai.router, prefix="/api")
 app.include_router(bugreport.router, prefix="/api")
 app.include_router(fa.router, prefix="/api")

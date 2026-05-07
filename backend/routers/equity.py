@@ -1,16 +1,26 @@
 import asyncio
+import json as _json
 import math
-import time as _time
-from datetime import datetime, timezone, timedelta
+import time
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from providers.registry import get_provider
 from cache import cache_get, cache_set, TTL
+from streaming import MEM, coalesce, CIRCUIT, IO_EXECUTOR
 
 
-NY_TZ = timezone(timedelta(hours=-4))
+NY_TZ = ZoneInfo("America/New_York")
+
+_US_MARKET_HOLIDAYS_2026 = {
+    "2026-01-01", "2026-01-19", "2026-02-16", "2026-04-03",
+    "2026-05-25", "2026-06-19", "2026-07-03", "2026-09-07",
+    "2026-11-26", "2026-12-25",
+}
 
 
 def _derive_market_state(info_raw: dict) -> str:
@@ -26,6 +36,8 @@ def _derive_market_state(info_raw: dict) -> str:
         if raw == "CLOSED":
             return "CLOSED"
     now = datetime.now(NY_TZ)
+    if now.strftime("%Y-%m-%d") in _US_MARKET_HOLIDAYS_2026:
+        return "CLOSED"
     t = now.hour * 60 + now.minute
     weekday = now.weekday()
     if weekday >= 5:
@@ -227,63 +239,127 @@ async def get_financials(ticker: str):
     return FinancialsData(**data)
 
 
-@router.get("/equity/{ticker}/live")
-async def get_equity_live(ticker: str):
-    ticker = ticker.upper()
-
+async def _build_live(ticker: str) -> dict:
     cache_key = f"live_ext_{ticker}"
-    cached = cache_get("price", cache_key, 5)
-    if cached:
-        return cached
+
+    if CIRCUIT.is_tripped("yfinance"):
+        cached = cache_get("price", cache_key, 60)
+        if cached:
+            cached["cached"] = True
+            return cached
 
     provider = get_provider("yfinance")
     if not provider:
         raise HTTPException(status_code=502, detail="No equity provider available")
 
-    try:
-        ext = await provider.get_extended_quote_raw(ticker)
-    except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Data fetch failed: {exc}")
+    fast = await provider.get_fast_quote_raw(ticker)
 
-    if not ext or ext.get("ticker") != ticker:
-        raise HTTPException(status_code=404, detail=f"No data for {ticker}")
+    slow_cached = cache_get("price", cache_key, 60)
+    market_state_val = None
+    pre_market_price = None
+    pre_market_change = None
+    pre_market_change_pct = None
+    pre_market_time = None
+    post_market_price = None
+    post_market_change = None
+    post_market_change_pct = None
+    post_market_time = None
+    regular_close = None
+    regular_close_time = None
 
-    market_state = _derive_market_state(ext)
+    if slow_cached:
+        market_state_val = slow_cached.get("market_state")
+        pre_market_price = slow_cached.get("pre_market_price")
+        pre_market_change = slow_cached.get("pre_market_change")
+        pre_market_change_pct = slow_cached.get("pre_market_change_pct")
+        pre_market_time = slow_cached.get("pre_market_time")
+        post_market_price = slow_cached.get("post_market_price")
+        post_market_change = slow_cached.get("post_market_change")
+        post_market_change_pct = slow_cached.get("post_market_change_pct")
+        post_market_time = slow_cached.get("post_market_time")
+        regular_close = slow_cached.get("regular_close")
+        regular_close_time = slow_cached.get("regular_close_time")
+    else:
+        try:
+            ext = await provider.get_extended_quote_raw(ticker)
+            if ext and ext.get("ticker") == ticker:
+                market_state_val = ext.get("market_state")
+                pre_market_price = ext.get("pre_market_price")
+                pre_market_change = ext.get("pre_market_change")
+                pre_market_change_pct = ext.get("pre_market_change_pct")
+                pre_market_time = ext.get("pre_market_time")
+                post_market_price = ext.get("post_market_price")
+                post_market_change = ext.get("post_market_change")
+                post_market_change_pct = ext.get("post_market_change_pct")
+                post_market_time = ext.get("post_market_time")
+                regular_close = ext.get("regular_close")
+                regular_close_time = ext.get("regular_market_time")
+        except Exception:
+            pass
+
+    if market_state_val is None:
+        market_state_val = _derive_market_state({"marketState": None})
+
+    price = fast.get("price")
+    prev_close = fast.get("prev_close")
+    change = None
+    change_pct = None
+    if price and prev_close:
+        change = round(price - prev_close, 4)
+        change_pct = round((price - prev_close) / prev_close * 100, 4)
 
     resp = {
         "ticker": ticker,
-        "price": ext.get("price"),
-        "change": ext.get("change"),
-        "change_pct": ext.get("change_pct"),
-        "bid": ext.get("bid"),
-        "ask": ext.get("ask"),
-        "volume": ext.get("volume"),
-        "day_high": ext.get("day_high"),
-        "day_low": ext.get("day_low"),
-        "market_state": market_state,
-        "pre_market_price": ext.get("pre_market_price"),
-        "pre_market_change": ext.get("pre_market_change"),
-        "pre_market_change_pct": ext.get("pre_market_change_pct"),
-        "pre_market_time": ext.get("pre_market_time"),
-        "post_market_price": ext.get("post_market_price"),
-        "post_market_change": ext.get("post_market_change"),
-        "post_market_change_pct": ext.get("post_market_change_pct"),
-        "post_market_time": ext.get("post_market_time"),
-        "regular_close": ext.get("regular_close"),
-        "regular_close_time": ext.get("regular_market_time"),
-        "as_of": int(_time.time()),
+        "price": price,
+        "change": change,
+        "change_pct": change_pct,
+        "bid": fast.get("bid"),
+        "ask": fast.get("ask"),
+        "volume": fast.get("volume"),
+        "day_high": fast.get("day_high"),
+        "day_low": fast.get("day_low"),
+        "market_state": market_state_val,
+        "pre_market_price": pre_market_price,
+        "pre_market_change": pre_market_change,
+        "pre_market_change_pct": pre_market_change_pct,
+        "pre_market_time": pre_market_time,
+        "post_market_price": post_market_price,
+        "post_market_change": post_market_change,
+        "post_market_change_pct": post_market_change_pct,
+        "post_market_time": post_market_time,
+        "regular_close": regular_close,
+        "regular_close_time": regular_close_time,
+        "as_of": int(time.time()),
     }
-
-    if ext.get("price") and ext.get("prev_close"):
-        price = ext["price"]
-        prev = ext["prev_close"]
-        if resp.get("change") is None:
-            resp["change"] = round(price - prev, 4)
-        if resp.get("change_pct") is None:
-            resp["change_pct"] = round((price - prev) / prev * 100, 4)
 
     cache_set("price", cache_key, resp)
     return resp
+
+
+@router.get("/equity/{ticker}/live")
+async def get_equity_live(ticker: str):
+    ticker = ticker.upper()
+    hot_key = f"live_hot_{ticker}"
+    cached = MEM.get(hot_key, ttl=0.5)
+    if cached:
+        return cached
+    resp = await coalesce(hot_key, lambda: _build_live(ticker))
+    MEM.set(hot_key, resp)
+    return resp
+
+
+@router.get("/equity/{ticker}/stream")
+async def stream_equity(ticker: str):
+    ticker = ticker.upper()
+    async def gen():
+        while True:
+            try:
+                data = await _build_live(ticker)
+            except Exception as e:
+                data = {"error": str(e), "ticker": ticker, "as_of": int(time.time())}
+            yield f"data: {_json.dumps(data)}\n\n"
+            await asyncio.sleep(1.0)
+    return StreamingResponse(gen(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
 def _safe_float(val) -> float | None:

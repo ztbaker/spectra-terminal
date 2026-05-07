@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { fetchEquityLive } from '../lib/api'
 import { useReportTick } from '../lib/freshness'
+import { useLiveStream } from './useLiveStream'
 import type { MarketSession } from '../types'
 
 export interface LivePriceData {
@@ -27,16 +28,33 @@ export interface LivePriceData {
   as_of: number
 }
 
+const SSE_SUPPORTED = typeof window !== 'undefined' && typeof window.EventSource !== 'undefined'
+
 export function useLivePrice(ticker: string, intervalMs = 500, enabled = true) {
-  const q = useQuery<LivePriceData>({
+  const stream = useLiveStream(ticker, enabled && SSE_SUPPORTED)
+
+  const poll = useQuery<LivePriceData>({
     queryKey: ['live-price', ticker],
     queryFn: () => fetchEquityLive(ticker),
     staleTime: 0,
-    refetchInterval: enabled ? intervalMs : false,
+    refetchInterval: enabled && !SSE_SUPPORTED ? intervalMs : false,
     refetchIntervalInBackground: false,
-    retry: false,
+    retry: 1,
+    enabled: enabled && !SSE_SUPPORTED,
   })
-  // Report freshness to the enclosing panel so the live dot reflects tick arrival
-  useReportTick(q.data?.as_of)
-  return q
+
+  const as_of = SSE_SUPPORTED ? stream.data?.as_of : poll.data?.as_of
+  useReportTick(as_of)
+
+  if (SSE_SUPPORTED) {
+    return {
+      data: stream.data ?? undefined,
+      isLoading: stream.isLoading,
+      isError: !!stream.error,
+      error: stream.error,
+      refetch: () => {},
+    } as const
+  }
+
+  return poll
 }

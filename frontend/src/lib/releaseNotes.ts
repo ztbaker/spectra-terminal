@@ -8,6 +8,15 @@ export interface ReleaseNote {
 // "What's New" dialog on first launch after update.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '2.1.0',
+    date: '2026-05-07',
+    highlights: [
+      'Live quotes now stream over Server-Sent Events — sub-second tick latency, no more 500ms polling.',
+      'New SEAS command — view 20-year seasonal price patterns for any ticker. Try `SPY SEAS` or `AAPL SEAS`.',
+      'Backend hardening: zoneinfo-based market state, holiday calendar, request coalescing, in-memory price cache, 429 circuit breaker, GZip compression.',
+    ],
+  },
+  {
     version: '2.0.1',
     date: '2026-05-05',
     highlights: [

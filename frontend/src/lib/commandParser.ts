@@ -100,6 +100,8 @@ const STANDALONE_COMMANDS: Record<string, ScreenType> = {
   CONG:      'cong',
   CONGRESS:  'cong',
   QUANT:     'quant',
+  SEAS:      'seasonal',
+  SEASONAL:  'seasonal',
   ASK:       'ask',
   HELP:      'help',
   BACK:      'back',
@@ -133,6 +135,8 @@ const TICKER_SUFFIXES: Record<string, ScreenType> = {
   COMD:     'comd',
   CONG:     'cong',
   QUANT:    'quant',
+  SEAS:     'seasonal',
+  SEASONAL: 'seasonal',
   HS:       'hs',
 }
 
@@ -167,6 +171,8 @@ export function isValidTicker(s: string): boolean {
  *   "FX"            → fx
  *   "CRYPTO"        → crypto
  *   "MACRO"         → macro
+ *   "SEAS"           → seasonal (standalone — defaults to SPY)
+ *   "SPY SEAS"       → seasonal / SPY
  *   Unknown         → equity / <input>  (assume ticker)
  */
 export function parseCommand(input: string): ParsedCommand {

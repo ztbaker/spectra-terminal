@@ -91,6 +91,12 @@ export const fetchEquity = (ticker: string): Promise<EquityData> =>
 export const fetchEquityLive = (ticker: string): Promise<import('../types').ExtendedHoursData & { ticker: string; price: number | null; change: number | null; change_pct: number | null; bid: number | null; ask: number | null; volume: number | null; day_high: number | null; day_low: number | null; as_of: number }> =>
   api.get(`/equity/${ticker}/live`).then(r => r.data)
 
+export function equityStreamUrl(ticker: string): string {
+  const baseURL = api.defaults.baseURL || ''
+  const sharedKey = ((api.defaults.headers.common as Record<string, string>)['X-Spectra-Key']) || ''
+  return `${baseURL}/equity/${ticker}/stream${sharedKey ? `?key=${encodeURIComponent(sharedKey)}` : ''}`
+}
+
 // ─── Chart ───────────────────────────────────────────────────────────────────
 export const fetchChart = (ticker: string, period = '1y', interval = '1d'): Promise<ChartData> =>
   api.get(`/chart/${ticker}`, { params: { period, interval } }).then(r => r.data)

@@ -19,6 +19,12 @@
 
 ---
 
+## What's New in v2.1.0
+
+- **Live SSE Quotes** — real-time prices stream over Server-Sent Events with sub-second tick latency, replacing 500ms HTTP polling
+- **SEAS Command** — view 20-year seasonal price patterns for any ticker (e.g. `SPY SEAS`, `AAPL SEAS`); monthly bar chart, best/worst months, and cumulative seasonal path
+- **Backend Hardening** — zoneinfo-based market state, holiday calendar, request coalescing, in-memory price cache, 429 circuit breaker, GZip compression
+
 ## What's New in v2.0.1
 
 - **MACRO Intelligence** — new factor-based macro options dashboard with regime classification, forward catalyst calendar, and filtered trade ideas across 7 instruments × 4 factors × 3 horizons
@@ -45,6 +51,7 @@ Spectra Terminal is a Bloomberg-inspired desktop application that aggregates mar
 - **Portfolio & Watchlist** — track your positions privately
 - **Congress** — US congressional bill tracking
 - **Quantitative** — CAPM, Fama-French, cointegration, OLS, multi-period returns
+- **Seasonality** — 20-year price patterns, monthly returns, best/worst months
 - **Chat** — public rooms and private DMs with reply threads, presence indicators, and news sharing
 - **Meme Coins** — dedicated meme coin tracker (DOGE, SHIB, PEPE, BONK, FLOKI, WIF, and more)
 - **User Profiles** — Bloomberg IB-style profile cards with activity stats
@@ -143,6 +150,7 @@ Bloomberg-style command bar:
 | `EARN` | Earnings calendar |
 | `SCR` | Stock screener |
 | `CONG` | Congress bills |
+| `SEAS` | Seasonal price patterns |
 | `CHAT` | Chat rooms and DMs |
 | `MEME` | Meme coin tracker |
 | `TOP` | Top world news |

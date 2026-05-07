@@ -37,6 +37,7 @@ import BondScreen       from './components/screens/BondScreen'
 import CommodityScreen  from './components/screens/CommodityScreen'
 import CongressScreen   from './components/screens/CongressScreen'
 import QuantScreen      from './components/screens/QuantScreen'
+import SeasonalScreen   from './components/screens/SeasonalScreen'
 import FAScreen         from './components/screens/FAScreen'
 import TickerMenuScreen from './components/screens/TickerMenuScreen'
 import TruthSocialScreen from './components/screens/TruthSocialScreen'
@@ -272,7 +273,7 @@ function screenTitle(screen: ScreenType, ticker?: string): string {
     fx: 'FX', fxc: 'FXC', crypto: 'CRYPTO', macro: 'MACRO',
     home: 'HOME', des: 'DES', graph: 'GRAPH', gpo: 'GPO', gip: 'GIP',
     wei: 'WEI', hs: 'HS', ecst: 'ECST', etf: 'ETF', bond: 'BOND',
-    comd: 'COMD', cong: 'CONG', quant: 'QUANT', fa: 'FA', ask: 'ASK', help: 'HELP',
+    comd: 'COMD', cong: 'CONG', quant: 'QUANT', seasonal: 'SEAS', fa: 'FA', ask: 'ASK', help: 'HELP',
     chat: 'CHAT', meme: 'MEME', profile: 'PROFILE',
   }
   const label = labels[screen] ?? screen.toUpperCase()
@@ -321,7 +322,7 @@ function TerminalApp() {
     // If a ticker-required screen has no ticker, substitute the last-used ticker
     const TICKER_SCREENS = new Set<ScreenType>([
       'equity', 'chart', 'options', 'filings', 'des', 'gpo', 'gip', 'news',
-      'etf', 'bond', 'comd', 'cong', 'quant', 'fa',
+      'etf', 'bond', 'comd', 'cong', 'quant', 'seasonal', 'fa',
     ])
     let resolved = cmd
     if (!cmd.ticker && TICKER_SCREENS.has(cmd.screen) && lastTicker) {
@@ -469,6 +470,9 @@ function TerminalApp() {
         return ticker
           ? <QuantScreen ticker={ticker} onNavigate={handleNavigate} />
           : <HomeScreenV3 onNavigate={handleNavigate} />
+
+      case 'seasonal':
+        return <SeasonalScreen ticker={ticker} />
 
       case 'fa':
         return ticker

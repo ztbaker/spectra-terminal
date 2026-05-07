@@ -2,7 +2,7 @@ from providers.base import BaseProvider
 
 _PROVIDERS: dict[str, BaseProvider] = {}
 _PROVIDER_PRIORITY: dict[str, list[str]] = {
-    "quote": ["yfinance", "stooq"],
+    "quote": ["yfinance"],
     "fundamentals": ["yfinance"],
     "historical": ["yfinance", "stooq"],
     "option_expiries": ["yfinance", "cboe"],

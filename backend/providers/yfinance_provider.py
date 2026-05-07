@@ -284,7 +284,7 @@ class YFinanceProvider(BaseProvider):
             return {
                 "ticker": ticker,
                 "price": getattr(fi, "last_price", None),
-                "prev_close": getattr(fi, "previous_close", None),
+                "prev_close": self._safe_float(getattr(fi, "previous_close", None)),
                 "open": getattr(fi, "open", None),
                 "day_high": getattr(fi, "day_high", None),
                 "day_low": getattr(fi, "day_low", None),
@@ -295,8 +295,12 @@ class YFinanceProvider(BaseProvider):
             }
 
         try:
-            return await self._retry(_fetch)
-        except Exception:
+            return await self._retry(_fetch, attempts=2)
+        except Exception as exc:
+            from streaming import CIRCUIT
+            exc_str = str(exc)
+            if "429" in exc_str or "too many requests" in exc_str.lower():
+                CIRCUIT.trip("yfinance")
             return {"ticker": ticker}
 
     async def get_financials_raw(self, ticker: str, period: str) -> dict:
