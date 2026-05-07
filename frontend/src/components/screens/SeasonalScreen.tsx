@@ -137,12 +137,19 @@ export default function SeasonalScreen({ ticker }: Props) {
       )
     }
 
-    // Historical year lines — thin amber, opacity falls off with age
+    // Historical year lines — each year gets a distinct hue (golden-ratio
+    // rotation gives evenly-spaced, perceptually-distinct colors). Hues
+    // around the current-year green (~140°) and seasonal-mean amber (~40°)
+    // are nudged so the bold lines stay readable on top.
     const historicalSeries: { year: number; series: ISeriesApi<'Line'> }[] = []
     for (const yp of historical) {
       if (hidden.has(yp.year)) continue
+      let hue = (yp.year * 137.508) % 360
+      if (Math.abs(hue - 40) < 18) hue = (hue + 24) % 360   // away from amber
+      if (Math.abs(hue - 140) < 18) hue = (hue + 24) % 360 // away from green
+      const yearColor = `hsl(${hue.toFixed(0)}, 60%, 58%)`
       const s = chart.addSeries(LineSeries, {
-        color: color.accentWarningDim,
+        color: yearColor,
         lineWidth: 1,
         priceLineVisible: false,
         lastValueVisible: false,
@@ -307,6 +314,15 @@ export default function SeasonalScreen({ ticker }: Props) {
         {yearsList.map((yp) => {
           const isCurrent = yp.year === currentYear
           const isHidden = hidden.has(yp.year)
+          let hue = (yp.year * 137.508) % 360
+          if (Math.abs(hue - 40) < 18) hue = (hue + 24) % 360
+          if (Math.abs(hue - 140) < 18) hue = (hue + 24) % 360
+          const lineColor = `hsl(${hue.toFixed(0)}, 60%, 58%)`
+          const chipColor = isHidden
+            ? color.textTertiary
+            : isCurrent
+            ? color.accentPositive
+            : lineColor
           return (
             <button
               key={yp.year}
@@ -320,11 +336,7 @@ export default function SeasonalScreen({ ticker }: Props) {
               }}
               style={{
                 background: 'transparent',
-                color: isHidden
-                  ? color.textTertiary
-                  : isCurrent
-                  ? color.accentPositive
-                  : color.accentWarningDim,
+                color: chipColor,
                 border: 'none',
                 padding: '0 6px',
                 fontSize: 10,
