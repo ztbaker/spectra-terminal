@@ -881,7 +881,7 @@ export type ScreenType =
   | 'screener' | 'fx' | 'crypto' | 'macro' | 'home' | 'des'
   | 'graph' | 'gpo' | 'gip' | 'wei' | 'hs'
   | 'ecst' | 'fxc' | 'quit'
-  | 'fa' | 'etf' | 'bond' | 'comd' | 'cong' | 'quant' | 'seasonal' | 'ask' | 'help' | 'back'
+  | 'fa' | 'etf' | 'bond' | 'comd' | 'cong' | 'quant' | 'seasonal' | 'ladder' | 'ask' | 'help' | 'back'
   | 'bugreport'
   | 'logout'
   | 'chat'

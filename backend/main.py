@@ -40,6 +40,7 @@ from routers import (
     wsb,
     robinhood,
     seasonals,
+    ladder,
 )
 from macro.router import router as macro_router
 from macro.scheduler import setup_scheduler
@@ -57,7 +58,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="SpectraTerminal API",
-    version="2.1.1",
+    version="2.2.0",
     lifespan=lifespan,
 )
 
@@ -114,6 +115,7 @@ app.include_router(chat.router, prefix="/api")
 app.include_router(truthsocial.router, prefix="/api")
 app.include_router(wsb.router, prefix="/api")
 app.include_router(robinhood.router, prefix="/api")
+app.include_router(ladder.router, prefix="/api")
 
 
 @app.get("/health")

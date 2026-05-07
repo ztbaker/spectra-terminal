@@ -136,6 +136,28 @@ export interface SeasonalsResponse {
 export const fetchSeasonals = (ticker: string, years = 20): Promise<SeasonalsResponse> =>
   api.get(`/seasonals/${ticker}?years=${years}`).then(r => r.data)
 
+export interface LadderLevel {
+  price: number
+  volume: number
+  side: 'bid' | 'ask' | 'last'
+}
+
+export interface LadderResponse {
+  ticker: string
+  current_price: number
+  bid: number
+  ask: number
+  bid_size: number
+  ask_size: number
+  tick: number
+  lookback_minutes: number
+  levels: LadderLevel[]
+  cached: boolean
+}
+
+export const fetchLadder = (ticker: string, levels = 20, lookback = 60): Promise<LadderResponse> =>
+  api.get(`/ladder/${ticker}?levels=${levels}&lookback=${lookback}`).then(r => r.data)
+
 export function equityStreamUrl(ticker: string): string {
   const baseURL = api.defaults.baseURL || ''
   const sharedKey = ((api.defaults.headers.common as Record<string, string>)['X-Spectra-Key']) || ''

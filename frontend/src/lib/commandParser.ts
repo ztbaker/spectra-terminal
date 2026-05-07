@@ -102,6 +102,8 @@ const STANDALONE_COMMANDS: Record<string, ScreenType> = {
   QUANT:     'quant',
   SEAS:      'seasonal',
   SEASONAL:  'seasonal',
+  LADDER:    'ladder',
+  DOM:       'ladder',
   ASK:       'ask',
   HELP:      'help',
   BACK:      'back',
@@ -137,6 +139,8 @@ const TICKER_SUFFIXES: Record<string, ScreenType> = {
   QUANT:    'quant',
   SEAS:     'seasonal',
   SEASONAL: 'seasonal',
+  LADDER:   'ladder',
+  DOM:      'ladder',
   HS:       'hs',
 }
 

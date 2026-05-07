@@ -8,6 +8,14 @@ export interface ReleaseNote {
 // "What's New" dialog on first launch after update.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '2.2.0',
+    date: '2026-05-08',
+    highlights: [
+      'New LADDER command — Robinhood-style price ladder showing recent volume distribution at each price level around the current quote. Try `SPY LADDER` or `AAPL DOM`.',
+      'Updates every 2 seconds with the latest 60-minute volume profile.',
+    ],
+  },
+  {
     version: '2.1.1',
     date: '2026-05-08',
     highlights: [
