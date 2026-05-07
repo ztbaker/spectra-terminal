@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import numpy as np
 import pandas as pd
 
 
@@ -106,3 +107,83 @@ def best_worst_months(points: list[SeasonalPoint]) -> dict:
         "worst": sorted_months[-3:][::-1],
         "monthly": monthly,
     }
+
+
+@dataclass
+class YearPathPoint:
+    day_of_year: int
+    cum_return: float
+
+
+@dataclass
+class YearPath:
+    year: int
+    points: list[YearPathPoint]
+
+
+@dataclass
+class SeasonalEnvelopePoint:
+    day_of_year: int
+    mean_cum_return: float
+    median_cum_return: float
+    p25: float
+    p75: float
+
+
+def compute_yearly_paths(prices: pd.DataFrame, years: int = 20) -> list[YearPath]:
+    if prices is None or prices.empty or "Close" not in prices.columns:
+        return []
+    df = prices[["Close"]].copy()
+    df.index = pd.to_datetime(df.index)
+    if df.index.tz is not None:
+        df.index = df.index.tz_localize(None)
+    cutoff = df.index.max() - pd.DateOffset(years=years)
+    df = df.loc[df.index >= cutoff]
+    if df.empty:
+        return []
+    df["year"] = df.index.year
+    df["doy"] = df.index.dayofyear
+    out: list[YearPath] = []
+    for yr, grp in df.groupby("year", sort=True):
+        grp = grp.sort_index()
+        first = float(grp["Close"].iloc[0])
+        if first == 0.0 or not np.isfinite(first):
+            continue
+        cum = grp["Close"].astype(float) / first - 1.0
+        pts = [
+            YearPathPoint(day_of_year=int(d), cum_return=float(c))
+            for d, c in zip(grp["doy"].values, cum.values)
+            if np.isfinite(c)
+        ]
+        if pts:
+            out.append(YearPath(year=int(yr), points=pts))
+    return out
+
+
+def compute_seasonal_envelope(
+    yearly_paths: list[YearPath], exclude_year: int | None = None
+) -> list[SeasonalEnvelopePoint]:
+    if not yearly_paths:
+        return []
+    by_doy: dict[int, list[float]] = {}
+    for yp in yearly_paths:
+        if exclude_year is not None and yp.year == exclude_year:
+            continue
+        for p in yp.points:
+            by_doy.setdefault(p.day_of_year, []).append(p.cum_return)
+    out: list[SeasonalEnvelopePoint] = []
+    for doy in sorted(by_doy):
+        vals = by_doy[doy]
+        if len(vals) < 2:
+            continue
+        arr = np.array(vals, dtype=float)
+        out.append(
+            SeasonalEnvelopePoint(
+                day_of_year=doy,
+                mean_cum_return=float(np.mean(arr)),
+                median_cum_return=float(np.median(arr)),
+                p25=float(np.quantile(arr, 0.25)),
+                p75=float(np.quantile(arr, 0.75)),
+            )
+        )
+    return out

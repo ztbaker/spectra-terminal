@@ -104,6 +104,21 @@ export interface SeasonalPoint {
   sample_size: number
 }
 
+/** Single point in a yearly cumulative-return path (day_of_year 1..366) */
+export interface YearPathPoint { day_of_year: number; cum_return: number }
+
+/** One calendar year's cumulative return path, rebased to 0% at day 1 */
+export interface YearPath { year: number; points: YearPathPoint[] }
+
+/** Seasonal envelope: mean, median, p25, p75 of all historical year paths */
+export interface SeasonalEnvelopePoint {
+  day_of_year: number
+  mean_cum_return: number
+  median_cum_return: number
+  p25: number
+  p75: number
+}
+
 export interface SeasonalsResponse {
   ticker: string
   years: number
@@ -112,6 +127,10 @@ export interface SeasonalsResponse {
   worst_months: { month: number; avg_daily_return: number; days: number }[]
   monthly: { month: number; avg_daily_return: number; days: number }[]
   cached: boolean
+  /** Per-calendar-year cumulative return paths (year-overlay / spaghetti chart) */
+  yearly_paths: YearPath[]
+  /** Cross-year seasonal envelope (mean, median, p25, p75) */
+  seasonal_path: SeasonalEnvelopePoint[]
 }
 
 export const fetchSeasonals = (ticker: string, years = 20): Promise<SeasonalsResponse> =>

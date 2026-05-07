@@ -1,41 +1,66 @@
-import { useState } from 'react'
+/**
+ * SeasonalScreen v2 — Year-overlay (spaghetti) seasonality chart.
+ * Historical years stacked on a Jan→Dec axis, rebased to 0% at year start.
+ * Current year and historical mean drawn boldly on top.
+ */
+
+import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { fetchSeasonals } from '../../lib/api'
+import {
+  createChart,
+  LineSeries,
+  CrosshairMode,
+  LineStyle,
+  ColorType,
+  type IChartApi,
+  type ISeriesApi,
+  type UTCTimestamp,
+  type LineData,
+} from 'lightweight-charts'
+import {
+  fetchSeasonals,
+  type SeasonalsResponse,
+  type YearPath,
+} from '../../lib/api'
+import theme from '../../lib/theme'
 
-interface SeasonalPoint {
-  day_of_year: number
-  month: number
-  day: number
-  mean_return: number
-  median_return: number
-  p25_return: number
-  p75_return: number
-  cumulative_mean: number
-  cumulative_median: number
-  sample_size: number
-}
-
-interface SeasonalsResponse {
-  ticker: string
-  years: number
-  points: SeasonalPoint[]
-  best_months: { month: number; avg_daily_return: number; days: number }[]
-  worst_months: { month: number; avg_daily_return: number; days: number }[]
-  monthly: { month: number; avg_daily_return: number; days: number }[]
-  cached: boolean
-}
+const { color } = theme
 
 const MONTHS = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-const AMBER = '#ff9900'
-const GREEN = '#00ff41'
-const RED = '#ff3333'
-const BG = '#000000'
+const LOOKBACKS = [5, 10, 20, 30] as const
+
+const REF_YEAR_BASE = Date.UTC(2025, 0, 1) / 1000
+function doyToTime(doy: number): UTCTimestamp {
+  return (REF_YEAR_BASE + (doy - 1) * 86400) as UTCTimestamp
+}
+function pathToLineData(pts: { day_of_year: number; cum_return: number }[]): LineData[] {
+  // Lightweight-charts requires strictly ascending unique time stamps.
+  const seen = new Set<number>()
+  const out: LineData[] = []
+  for (const p of pts) {
+    if (seen.has(p.day_of_year)) continue
+    seen.add(p.day_of_year)
+    out.push({ time: doyToTime(p.day_of_year), value: p.cum_return * 100 })
+  }
+  out.sort((a, b) => Number(a.time) - Number(b.time))
+  return out
+}
+
+const PCT_FORMAT = {
+  type: 'custom' as const,
+  formatter: (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`,
+  minMove: 0.01,
+}
 
 interface Props { ticker?: string }
 
 export default function SeasonalScreen({ ticker }: Props) {
-  const [years, setYears] = useState(20)
+  const [years, setYears] = useState<number>(20)
   const t = (ticker || 'SPY').toUpperCase()
+  const [hidden, setHidden] = useState<Set<number>>(new Set())
+
+  const chartContainerRef = useRef<HTMLDivElement | null>(null)
+  const chartRef = useRef<IChartApi | null>(null)
 
   const { data, isLoading, error } = useQuery<SeasonalsResponse>({
     queryKey: ['seasonals', t, years],
@@ -43,111 +68,345 @@ export default function SeasonalScreen({ ticker }: Props) {
     staleTime: 60 * 60 * 1000,
   })
 
-  if (isLoading) return <div style={{ color: AMBER, padding: 16, fontFamily: 'JetBrains Mono, monospace' }}>Loading seasonals for {t}...</div>
-  if (error) return <div style={{ color: RED, padding: 16, fontFamily: 'JetBrains Mono, monospace' }}>Error: {String(error)}</div>
-  if (!data) return null
+  useEffect(() => {
+    const container = chartContainerRef.current
+    if (!container || !data || !data.yearly_paths || data.yearly_paths.length === 0) return
 
-  const monthlyMax = Math.max(...data.monthly.map(m => Math.abs(m.avg_daily_return)))
+    const chart = createChart(container, {
+      layout: {
+        background: { type: ColorType.Solid, color: color.bgBase },
+        textColor: color.textSecondary,
+        fontFamily: theme.font.mono,
+      },
+      grid: {
+        vertLines: { color: color.borderSubtle, style: LineStyle.Dotted },
+        horzLines: { color: color.borderSubtle, style: LineStyle.Dotted },
+      },
+      crosshair: { mode: CrosshairMode.Normal },
+      rightPriceScale: {
+        borderColor: color.borderSubtle,
+        scaleMargins: { top: 0.08, bottom: 0.08 },
+      },
+      timeScale: {
+        timeVisible: false,
+        borderColor: color.borderSubtle,
+        tickMarkFormatter: (t: UTCTimestamp) => {
+          const d = new Date(Number(t) * 1000)
+          return d.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' })
+        },
+      },
+      width: container.clientWidth,
+      height: container.clientHeight,
+      autoSize: false,
+    })
+    chartRef.current = chart
+
+    const yearsList = [...data.yearly_paths].sort((a, b) => a.year - b.year)
+    const currentYear = yearsList[yearsList.length - 1]?.year
+    const historical: YearPath[] = yearsList.filter((yp) => yp.year !== currentYear)
+
+    // p25 / p75 envelope (drawn first, dimmest)
+    if (data.seasonal_path && data.seasonal_path.length > 0) {
+      const p25Series = chart.addSeries(LineSeries, {
+        color: color.accentNegativeDim,
+        lineWidth: 1,
+        lineStyle: LineStyle.Dotted,
+        priceLineVisible: false,
+        lastValueVisible: false,
+        crosshairMarkerVisible: false,
+        priceFormat: PCT_FORMAT,
+      })
+      const p75Series = chart.addSeries(LineSeries, {
+        color: color.accentPositiveDim,
+        lineWidth: 1,
+        lineStyle: LineStyle.Dotted,
+        priceLineVisible: false,
+        lastValueVisible: false,
+        crosshairMarkerVisible: false,
+        priceFormat: PCT_FORMAT,
+      })
+      p25Series.setData(
+        pathToLineData(
+          data.seasonal_path.map((e) => ({ day_of_year: e.day_of_year, cum_return: e.p25 })),
+        ),
+      )
+      p75Series.setData(
+        pathToLineData(
+          data.seasonal_path.map((e) => ({ day_of_year: e.day_of_year, cum_return: e.p75 })),
+        ),
+      )
+    }
+
+    // Historical year lines — thin amber, opacity falls off with age
+    const historicalSeries: { year: number; series: ISeriesApi<'Line'> }[] = []
+    for (const yp of historical) {
+      if (hidden.has(yp.year)) continue
+      const s = chart.addSeries(LineSeries, {
+        color: color.accentWarningDim,
+        lineWidth: 1,
+        priceLineVisible: false,
+        lastValueVisible: false,
+        crosshairMarkerVisible: false,
+        priceFormat: PCT_FORMAT,
+      })
+      s.setData(pathToLineData(yp.points))
+      historicalSeries.push({ year: yp.year, series: s })
+    }
+
+    // Seasonal mean line — bold amber
+    if (data.seasonal_path && data.seasonal_path.length > 0) {
+      const meanSeries = chart.addSeries(LineSeries, {
+        color: color.accentWarning,
+        lineWidth: 2,
+        priceLineVisible: false,
+        lastValueVisible: true,
+        priceFormat: PCT_FORMAT,
+      })
+      meanSeries.setData(
+        pathToLineData(
+          data.seasonal_path.map((e) => ({ day_of_year: e.day_of_year, cum_return: e.mean_cum_return })),
+        ),
+      )
+    }
+
+    // Current year — bold cyan/green, drawn last
+    const currentPath = yearsList.find((yp) => yp.year === currentYear)
+    if (currentPath && !hidden.has(currentPath.year)) {
+      const cur = chart.addSeries(LineSeries, {
+        color: color.accentPositive,
+        lineWidth: 3,
+        priceLineVisible: false,
+        lastValueVisible: true,
+        priceFormat: PCT_FORMAT,
+      })
+      cur.setData(pathToLineData(currentPath.points))
+    }
+
+    chart.timeScale().fitContent()
+
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect
+        chart.applyOptions({ width, height })
+      }
+    })
+    ro.observe(container)
+
+    return () => {
+      ro.disconnect()
+      chart.remove()
+      chartRef.current = null
+    }
+  }, [data, hidden])
+
+  const headerStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    height: 36,
+    padding: '0 12px',
+    borderBottom: `1px solid ${color.borderSubtle}`,
+    background: color.bgElevated,
+    flexShrink: 0,
+  }
+
+  const pillStyle = (active: boolean): React.CSSProperties => ({
+    background: active ? color.accentWarningDim : 'transparent',
+    color: active ? color.accentWarning : color.textSecondary,
+    border: `1px solid ${active ? color.accentWarning : color.borderSubtle}`,
+    padding: '2px 10px',
+    marginLeft: 4,
+    fontFamily: theme.font.mono,
+    fontSize: 11,
+    cursor: 'pointer',
+    letterSpacing: '0.04em',
+  })
+
+  // Loading / error / empty
+  if (isLoading) {
+    return (
+      <div style={{ background: color.bgBase, color: color.accentWarning, fontFamily: theme.font.mono, padding: 16, height: '100%' }}>
+        LOADING SEAS · {t}…
+      </div>
+    )
+  }
+  if (error) {
+    return (
+      <div style={{ background: color.bgBase, color: color.accentNegative, fontFamily: theme.font.mono, padding: 16, height: '100%' }}>
+        SEAS UNAVAILABLE · {String((error as Error).message ?? error)}
+      </div>
+    )
+  }
+  if (!data || !data.yearly_paths || data.yearly_paths.length === 0) {
+    return (
+      <div style={{ background: color.bgBase, color: color.textSecondary, fontFamily: theme.font.mono, padding: 16, height: '100%' }}>
+        INSUFFICIENT HISTORY FOR {t}
+      </div>
+    )
+  }
+
+  const monthlyMax = Math.max(...data.monthly.map((m) => Math.abs(m.avg_daily_return)), 0)
+  const yearsList = [...data.yearly_paths].sort((a, b) => a.year - b.year)
+  const currentYear = yearsList[yearsList.length - 1]?.year
+  const visibleHistCount = yearsList.filter((yp) => yp.year !== currentYear && !hidden.has(yp.year)).length
 
   return (
-    <div style={{ background: BG, color: AMBER, fontFamily: 'JetBrains Mono, monospace', padding: 16, height: '100%', overflow: 'auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <div style={{ fontSize: 18, fontWeight: 'bold' }}>SEAS — {t} Seasonal Pattern</div>
-        <div>
-          {[5, 10, 20, 30].map(y => (
-            <button
-              key={y}
-              onClick={() => setYears(y)}
-              style={{
-                background: y === years ? AMBER : 'transparent',
-                color: y === years ? BG : AMBER,
-                border: `1px solid ${AMBER}`,
-                padding: '4px 10px',
-                marginLeft: 4,
-                fontFamily: 'inherit',
-                cursor: 'pointer',
-              }}
-            >{y}Y</button>
-          ))}
+    <div style={{ background: color.bgBase, fontFamily: theme.font.mono, height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Header */}
+      <div style={headerStyle}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
+          <span style={{ color: color.ticker, fontSize: 13, fontWeight: 600, letterSpacing: '0.06em' }}>
+            SEAS · {t}
+          </span>
+          <span style={{ color: color.textTertiary, fontSize: 10 }}>
+            {data.years}Y LOOKBACK · {visibleHistCount} HIST + MEAN + {currentYear}
+            {data.cached ? ' · CACHED' : ''}
+          </span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 10, color: color.textSecondary }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ width: 16, height: 2, background: color.accentPositive, display: 'inline-block' }} />
+              {currentYear}
+            </span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ width: 16, height: 2, background: color.accentWarning, display: 'inline-block' }} />
+              MEAN
+            </span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ width: 16, height: 1, background: color.accentWarningDim, display: 'inline-block' }} />
+              YEARS
+            </span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: color.textTertiary }}>
+              ⋯ p25/p75
+            </span>
+          </div>
+          <div>
+            {LOOKBACKS.map((y) => (
+              <button key={y} onClick={() => setYears(y)} style={pillStyle(y === years)}>
+                {y}Y
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: 12, marginBottom: 8, opacity: 0.7 }}>AVERAGE DAILY RETURN BY MONTH</div>
-        {data.monthly.map(m => {
-          const w = monthlyMax > 0 ? (Math.abs(m.avg_daily_return) / monthlyMax) * 50 : 0
-          const color = m.avg_daily_return >= 0 ? GREEN : RED
-          const sign = m.avg_daily_return >= 0 ? '' : '-'
+      {/* Year toggle strip */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 4,
+        padding: '4px 12px',
+        height: 24,
+        borderBottom: `1px solid ${color.borderSubtle}`,
+        overflowX: 'auto',
+        whiteSpace: 'nowrap',
+        flexShrink: 0,
+        background: color.bgElevated,
+      }}>
+        {yearsList.map((yp) => {
+          const isCurrent = yp.year === currentYear
+          const isHidden = hidden.has(yp.year)
           return (
-            <div key={m.month} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, lineHeight: '20px' }}>
-              <div style={{ width: 32 }}>{MONTHS[m.month]}</div>
-              <div style={{ width: 250, position: 'relative', background: '#111', height: 16 }}>
-                <div style={{
-                  position: 'absolute',
-                  left: m.avg_daily_return >= 0 ? '50%' : `${50 - w}%`,
-                  top: 0,
-                  bottom: 0,
-                  width: `${w}%`,
-                  background: color,
-                }} />
-                <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 1, background: AMBER, opacity: 0.4 }} />
-              </div>
-              <div style={{ color, width: 80, textAlign: 'right' }}>{sign}{(Math.abs(m.avg_daily_return) * 100).toFixed(3)}%</div>
-            </div>
+            <button
+              key={yp.year}
+              onClick={() => {
+                setHidden((prev) => {
+                  const next = new Set(prev)
+                  if (next.has(yp.year)) next.delete(yp.year)
+                  else next.add(yp.year)
+                  return next
+                })
+              }}
+              style={{
+                background: 'transparent',
+                color: isHidden
+                  ? color.textTertiary
+                  : isCurrent
+                  ? color.accentPositive
+                  : color.accentWarningDim,
+                border: 'none',
+                padding: '0 6px',
+                fontSize: 10,
+                fontFamily: theme.font.mono,
+                cursor: 'pointer',
+                opacity: isHidden ? 0.4 : 1,
+                textDecoration: isHidden ? 'line-through' : 'none',
+                letterSpacing: '0.04em',
+              }}
+            >
+              {yp.year}
+            </button>
           )
         })}
       </div>
 
-      <div style={{ display: 'flex', gap: 32, marginBottom: 24 }}>
-        <div>
-          <div style={{ fontSize: 12, marginBottom: 6, opacity: 0.7 }}>BEST MONTHS</div>
-          {data.best_months.map(m => (
-            <div key={m.month} style={{ color: GREEN, fontSize: 12 }}>
-              {MONTHS[m.month].padEnd(4)} {(m.avg_daily_return * 100).toFixed(3)}% / day ({m.days}d)
-            </div>
-          ))}
-        </div>
-        <div>
-          <div style={{ fontSize: 12, marginBottom: 6, opacity: 0.7 }}>WORST MONTHS</div>
-          {data.worst_months.map(m => (
-            <div key={m.month} style={{ color: RED, fontSize: 12 }}>
-              {MONTHS[m.month].padEnd(4)} {(m.avg_daily_return * 100).toFixed(3)}% / day ({m.days}d)
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* Chart */}
+      <div ref={chartContainerRef} style={{ flex: 1, minHeight: 0, position: 'relative' }} />
 
-      <div>
-        <div style={{ fontSize: 12, marginBottom: 6, opacity: 0.7 }}>SEASONAL PATH (cumulative mean return, sampled)</div>
-        <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 4 }}>
-          {data.points.length} trading days · {data.years}Y lookback {data.cached ? '· cached' : ''}
+      {/* Bottom monthly strip */}
+      <div style={{
+        height: 140,
+        flexShrink: 0,
+        borderTop: `1px solid ${color.borderSubtle}`,
+        background: color.bgElevated,
+        padding: '6px 12px',
+        overflow: 'hidden',
+      }}>
+        <div style={{
+          fontSize: 10,
+          color: color.textTertiary,
+          letterSpacing: '0.08em',
+          marginBottom: 4,
+        }}>
+          AVG DAILY RETURN BY MONTH
+          <span style={{ color: color.textSecondary, marginLeft: 12 }}>
+            BEST: {data.best_months.map((m) => MONTHS[m.month]).join(' ')}
+          </span>
+          <span style={{ color: color.textSecondary, marginLeft: 8 }}>
+            WORST: {data.worst_months.map((m) => MONTHS[m.month]).join(' ')}
+          </span>
         </div>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
-          <thead>
-            <tr style={{ borderBottom: `1px solid ${AMBER}`, opacity: 0.7 }}>
-              <th style={{ textAlign: 'left', padding: '4px 8px' }}>DATE</th>
-              <th style={{ textAlign: 'right', padding: '4px 8px' }}>MEAN%</th>
-              <th style={{ textAlign: 'right', padding: '4px 8px' }}>MEDIAN%</th>
-              <th style={{ textAlign: 'right', padding: '4px 8px' }}>P25%</th>
-              <th style={{ textAlign: 'right', padding: '4px 8px' }}>P75%</th>
-              <th style={{ textAlign: 'right', padding: '4px 8px' }}>CUM%</th>
-              <th style={{ textAlign: 'right', padding: '4px 8px' }}>N</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.points.filter((_, i) => i % Math.max(1, Math.floor(data.points.length / 30)) === 0).map(p => (
-              <tr key={`${p.month}-${p.day}`}>
-                <td style={{ padding: '2px 8px' }}>{MONTHS[p.month]} {String(p.day).padStart(2, '0')}</td>
-                <td style={{ padding: '2px 8px', textAlign: 'right', color: p.mean_return >= 0 ? GREEN : RED }}>{(p.mean_return * 100).toFixed(3)}</td>
-                <td style={{ padding: '2px 8px', textAlign: 'right', color: p.median_return >= 0 ? GREEN : RED }}>{(p.median_return * 100).toFixed(3)}</td>
-                <td style={{ padding: '2px 8px', textAlign: 'right' }}>{(p.p25_return * 100).toFixed(3)}</td>
-                <td style={{ padding: '2px 8px', textAlign: 'right' }}>{(p.p75_return * 100).toFixed(3)}</td>
-                <td style={{ padding: '2px 8px', textAlign: 'right', color: p.cumulative_mean >= 0 ? GREEN : RED }}>{(p.cumulative_mean * 100).toFixed(2)}</td>
-                <td style={{ padding: '2px 8px', textAlign: 'right' }}>{p.sample_size}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 2, height: 110 }}>
+          {data.monthly.map((m) => {
+            const w = monthlyMax > 0 ? (Math.abs(m.avg_daily_return) / monthlyMax) * 50 : 0
+            const clr = m.avg_daily_return >= 0 ? color.accentPositive : color.accentNegative
+            const sign = m.avg_daily_return >= 0 ? '+' : '-'
+            return (
+              <div key={m.month} style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'stretch',
+                fontSize: 9,
+                color: color.textSecondary,
+              }}>
+                <div style={{ textAlign: 'center', color: color.textTertiary, marginBottom: 2 }}>{MONTHS[m.month]}</div>
+                <div style={{ position: 'relative', flex: 1, background: 'transparent' }}>
+                  <div style={{
+                    position: 'absolute',
+                    left: 0,
+                    right: 0,
+                    top: '50%',
+                    height: 1,
+                    background: color.borderSubtle,
+                  }} />
+                  <div style={{
+                    position: 'absolute',
+                    left: '50%',
+                    top: m.avg_daily_return >= 0 ? `${50 - w}%` : '50%',
+                    width: 8,
+                    height: `${w}%`,
+                    transform: 'translateX(-50%)',
+                    background: clr,
+                  }} />
+                </div>
+                <div style={{ textAlign: 'center', color: clr, marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>
+                  {sign}{(Math.abs(m.avg_daily_return) * 100).toFixed(2)}%
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )
