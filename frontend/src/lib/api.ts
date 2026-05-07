@@ -91,6 +91,32 @@ export const fetchEquity = (ticker: string): Promise<EquityData> =>
 export const fetchEquityLive = (ticker: string): Promise<import('../types').ExtendedHoursData & { ticker: string; price: number | null; change: number | null; change_pct: number | null; bid: number | null; ask: number | null; volume: number | null; day_high: number | null; day_low: number | null; as_of: number }> =>
   api.get(`/equity/${ticker}/live`).then(r => r.data)
 
+export interface SeasonalPoint {
+  day_of_year: number
+  month: number
+  day: number
+  mean_return: number
+  median_return: number
+  p25_return: number
+  p75_return: number
+  cumulative_mean: number
+  cumulative_median: number
+  sample_size: number
+}
+
+export interface SeasonalsResponse {
+  ticker: string
+  years: number
+  points: SeasonalPoint[]
+  best_months: { month: number; avg_daily_return: number; days: number }[]
+  worst_months: { month: number; avg_daily_return: number; days: number }[]
+  monthly: { month: number; avg_daily_return: number; days: number }[]
+  cached: boolean
+}
+
+export const fetchSeasonals = (ticker: string, years = 20): Promise<SeasonalsResponse> =>
+  api.get(`/seasonals/${ticker}?years=${years}`).then(r => r.data)
+
 export function equityStreamUrl(ticker: string): string {
   const baseURL = api.defaults.baseURL || ''
   const sharedKey = ((api.defaults.headers.common as Record<string, string>)['X-Spectra-Key']) || ''

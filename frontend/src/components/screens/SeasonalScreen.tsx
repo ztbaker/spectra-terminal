@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { api } from '../../lib/api'
+import { fetchSeasonals } from '../../lib/api'
 
 interface SeasonalPoint {
   day_of_year: number
@@ -39,7 +39,7 @@ export default function SeasonalScreen({ ticker }: Props) {
 
   const { data, isLoading, error } = useQuery<SeasonalsResponse>({
     queryKey: ['seasonals', t, years],
-    queryFn: () => api.get(`/seasonals/${t}?years=${years}`).then(r => r.data),
+    queryFn: () => fetchSeasonals(t, years),
     staleTime: 60 * 60 * 1000,
   })
 
