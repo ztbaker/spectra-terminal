@@ -57,7 +57,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="SpectraTerminal API",
-    version="2.1.0",
+    version="2.1.1",
     lifespan=lifespan,
 )
 

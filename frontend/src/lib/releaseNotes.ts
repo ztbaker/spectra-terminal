@@ -8,6 +8,14 @@ export interface ReleaseNote {
 // "What's New" dialog on first launch after update.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '2.1.1',
+    date: '2026-05-08',
+    highlights: [
+      'SEAS reimagined as a year-overlay (spaghetti) chart — every historical year stacked on a Jan→Dec axis, current year highlighted vs. the seasonal mean and p25/p75 envelope.',
+      'Themed chart UI with TradingView Lightweight Charts, lookback pills (5/10/20/30Y), and per-year toggles.',
+    ],
+  },
+  {
     version: '2.1.0',
     date: '2026-05-07',
     highlights: [
