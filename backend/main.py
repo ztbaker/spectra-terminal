@@ -37,6 +37,7 @@ from routers import (
     fa,
     chat,
     truthsocial,
+    trump,
     wsb,
     robinhood,
     seasonals,
@@ -58,7 +59,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="SpectraTerminal API",
-    version="2.2.0",
+    version="2.2.1",
     lifespan=lifespan,
 )
 
@@ -113,6 +114,7 @@ app.include_router(bugreport.router, prefix="/api")
 app.include_router(fa.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
 app.include_router(truthsocial.router, prefix="/api")
+app.include_router(trump.router, prefix="/api")
 app.include_router(wsb.router, prefix="/api")
 app.include_router(robinhood.router, prefix="/api")
 app.include_router(ladder.router, prefix="/api")

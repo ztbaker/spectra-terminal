@@ -1,8 +1,8 @@
 import React from 'react'
 import { useQuery } from '@tanstack/react-query'
 import theme from '../../lib/theme'
-import { fetchTruthSocial } from '../../lib/api'
-import type { TruthPost } from '../../lib/api'
+import { fetchTrumpFeed } from '../../lib/api'
+import type { FeedPost } from '../../lib/api'
 import LoadingBar from '../shared/LoadingBar'
 
 const { color, font } = theme
@@ -11,7 +11,19 @@ interface Props {
   onNavigate: (cmd: string) => void
 }
 
-// ─── Format helpers ─────────────────────────────────────────────────────────
+const SOURCE_CONFIG = {
+  truth: { color: color.accentWarning, label: 'TRUTH', handle: '@realDonaldTrump' },
+  rr47:  { color: color.accentInfo,    label: 'RR47',  handle: '@RapidResponse47' },
+  wh:    { color: color.accentPositive,label: 'WH',    handle: '@WhiteHouse' },
+} as const
+
+type SourceKey = keyof typeof SOURCE_CONFIG
+
+function sourceKey(p: FeedPost): SourceKey {
+  if (p.source === 'truth') return 'truth'
+  if (p.username === 'RapidResponse47') return 'rr47'
+  return 'wh'
+}
 
 function timeAgo(dateStr: string): string {
   try {
@@ -37,10 +49,10 @@ function fmtNum(n: number): string {
   return n.toLocaleString()
 }
 
-// ─── Post row ───────────────────────────────────────────────────────────────
-
-const TruthRow: React.FC<{ post: TruthPost }> = ({ post }) => {
+const PostRow: React.FC<{ post: FeedPost }> = ({ post }) => {
   const [hovered, setHovered] = React.useState(false)
+  const key = sourceKey(post)
+  const cfg = SOURCE_CONFIG[key]
 
   return (
     <div
@@ -53,24 +65,31 @@ const TruthRow: React.FC<{ post: TruthPost }> = ({ post }) => {
         transition: 'background 0.15s',
       }}
     >
-      {/* Header: time + engagement */}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: '6px',
       }}>
-        <span style={{
-          color: color.textTertiary,
-          fontSize: '10px',
-          fontFamily: font.mono,
-          letterSpacing: '0.5px',
-        }}>
-          {post.created_at}
-          <span style={{ marginLeft: '8px', color: color.textTertiary }}>
-            {timeAgo(post.created_at)}
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <span style={{ background: cfg.color, color: '#000', padding: '1px 6px', fontSize: '9px', fontWeight: 700, fontFamily: font.mono, marginRight: '8px' }}>
+            {cfg.label}
           </span>
-        </span>
+          <span style={{ color: cfg.color, fontSize: '10px', fontFamily: font.mono, marginRight: '8px' }}>
+            {cfg.handle}
+          </span>
+          <span style={{
+            color: color.textTertiary,
+            fontSize: '10px',
+            fontFamily: font.mono,
+            letterSpacing: '0.5px',
+          }}>
+            {post.created_at}
+            <span style={{ marginLeft: '8px', color: color.textTertiary }}>
+              {timeAgo(post.created_at)}
+            </span>
+          </span>
+        </div>
 
         <div style={{ display: 'flex', gap: '12px' }}>
           <span style={{ color: color.textTertiary, fontSize: '10px', fontFamily: font.mono }}>
@@ -85,7 +104,6 @@ const TruthRow: React.FC<{ post: TruthPost }> = ({ post }) => {
         </div>
       </div>
 
-      {/* Content */}
       <div style={{
         color: color.textPrimary,
         fontSize: '12px',
@@ -97,7 +115,6 @@ const TruthRow: React.FC<{ post: TruthPost }> = ({ post }) => {
         {post.content}
       </div>
 
-      {/* Link */}
       <div style={{ marginTop: '6px' }}>
         <a
           href={post.url}
@@ -111,26 +128,35 @@ const TruthRow: React.FC<{ post: TruthPost }> = ({ post }) => {
             opacity: 0.6,
           }}
         >
-          VIEW ON TRUTH SOCIAL &#8594;
+          {post.source === 'truth' ? 'VIEW ON TRUTH SOCIAL \u2197' : 'VIEW ON X \u2197'}
         </a>
       </div>
     </div>
   )
 }
 
-// ─── Main screen ────────────────────────────────────────────────────────────
+const TrumpScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
+  const [active, setActive] = React.useState<{ truth: boolean; rr47: boolean; wh: boolean }>({
+    truth: true,
+    rr47: true,
+    wh: true,
+  })
 
-const TruthSocialScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
   const { data, isLoading, error } = useQuery({
-    queryKey: ['truthsocial', 'realDonaldTrump'],
-    queryFn: () => fetchTruthSocial('realDonaldTrump', 40),
+    queryKey: ['trumpFeed'],
+    queryFn: fetchTrumpFeed,
     staleTime: 500,
     refetchInterval: 1_000,
   })
 
+  const toggle = (key: SourceKey) => {
+    setActive(prev => ({ ...prev, [key]: !prev[key] }))
+  }
+
+  const filtered = data ? data.posts.filter(p => active[sourceKey(p)]) : []
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* Header */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -146,25 +172,46 @@ const TruthSocialScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
             fontFamily: font.sans,
             fontWeight: 700,
           }}>
-            TRUTH SOCIAL
+            TRUMP FEED
           </span>
-          <span style={{
-            color: color.accentWarning,
-            fontSize: '11px',
-            fontFamily: font.mono,
-            fontWeight: 700,
-          }}>
-            @realDonaldTrump
-          </span>
-          {data && (
-            <span style={{
-              color: color.textTertiary,
-              fontSize: '10px',
-              fontFamily: font.mono,
-            }}>
-              {data.posts.length} POSTS
-            </span>
-          )}
+          {(['truth', 'rr47', 'wh'] as SourceKey[]).map(key => {
+            const cfg = SOURCE_CONFIG[key]
+            const src = data?.sources[key]
+            const isActive = active[key]
+            const hasError = src && !src.ok
+            return (
+              <button
+                key={key}
+                onClick={() => toggle(key)}
+                title={hasError && src ? src.error ?? undefined : undefined}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '2px 8px',
+                  fontSize: '10px',
+                  fontFamily: font.mono,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  opacity: isActive ? 1 : 0.35,
+                  background: 'transparent',
+                  color: color.textPrimary,
+                  border: `1px solid ${hasError ? '#ff4444' : color.borderSubtle}`,
+                  borderRadius: '3px',
+                  transition: 'opacity 0.15s',
+                }}
+              >
+                <span style={{
+                  display: 'inline-block',
+                  width: '8px',
+                  height: '8px',
+                  background: cfg.color,
+                }} />
+                {cfg.label}
+                {src != null && ` ${src.count}`}
+              </button>
+            )
+          })}
         </div>
         {data?.cached && (
           <span style={{
@@ -182,7 +229,6 @@ const TruthSocialScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
 
       <LoadingBar loading={isLoading} />
 
-      {/* Posts */}
       <div style={{ flex: 1, overflow: 'auto' }}>
         {error && (
           <div style={{
@@ -192,15 +238,15 @@ const TruthSocialScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
             fontSize: '12px',
             fontFamily: font.mono,
           }}>
-            Failed to load Truth Social posts. Try again later.
+            Failed to load Trump feed. Try again later.
           </div>
         )}
 
-        {data?.posts.map(post => (
-          <TruthRow key={post.id} post={post} />
+        {filtered.map(post => (
+          <PostRow key={post.id} post={post} />
         ))}
 
-        {!isLoading && data?.posts.length === 0 && (
+        {!isLoading && data && filtered.length === 0 && (
           <div style={{
             padding: '48px',
             textAlign: 'center',
@@ -208,7 +254,9 @@ const TruthSocialScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
             fontSize: '12px',
             fontFamily: font.mono,
           }}>
-            No posts found.
+            {data.posts.length === 0
+              ? 'No posts found.'
+              : 'No sources active. Click a chip above to enable.'}
           </div>
         )}
       </div>
@@ -216,4 +264,4 @@ const TruthSocialScreen: React.FC<Props> = ({ onNavigate: _onNavigate }) => {
   )
 }
 
-export default TruthSocialScreen
+export default TrumpScreen

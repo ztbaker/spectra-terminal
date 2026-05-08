@@ -10,6 +10,7 @@ class Settings:
     BLS_API_KEY: str = os.getenv("BLS_API_KEY", "")
     EIA_API_KEY: str = os.getenv("EIA_API_KEY", "")
     CONGRESS_API_KEY: str = os.getenv("CONGRESS_API_KEY", "")
+    TWITTERAPI_KEY: str = os.getenv("TWITTERAPI_KEY", "")
     DB_PATH: str = os.getenv("DB_PATH", "spectra_terminal.db")
     CORS_ORIGINS: list[str] = [
         "http://localhost:5173",

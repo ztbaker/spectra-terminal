@@ -34,6 +34,7 @@ export const SCREEN_ACCENT: Record<string, AccentColor> = {
   etf:        'green',
   ask:        'cyan',
   help:       'cyan',
+  trump:      'amber',
   quit:       'red',
 }
 

@@ -510,7 +510,7 @@ function TerminalApp() {
       case 'meme':
         return <MemeScreen onNavigate={handleNavigate} />
 
-      case 'truth':
+      case 'trump':
         return <TruthSocialScreen onNavigate={handleNavigate} />
 
       case 'top':

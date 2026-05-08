@@ -112,7 +112,8 @@ const STANDALONE_COMMANDS: Record<string, ScreenType> = {
   LOGOUT:    'logout',
   SIGNOUT:   'logout',
   BUG:       'bugreport',
-  TRUMP:     'truth',
+  TRUMP:     'trump',
+  TRUTH:     'trump',
   TOP:       'top',
   WSB:       'wsb',
 }

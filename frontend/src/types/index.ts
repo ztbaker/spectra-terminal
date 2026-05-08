@@ -888,7 +888,7 @@ export type ScreenType =
   | 'meme'
   | 'profile'
   | 'ticker-menu'
-  | 'truth'
+  | 'trump'
   | 'top'
   | 'wsb'
 

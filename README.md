@@ -19,6 +19,10 @@
 
 ---
 
+## What's New in v2.2.1
+
+- **TRUMP** — merged feed combining Truth Social (@realDonaldTrump), Twitter @RapidResponse47, and Twitter @WhiteHouse with source filter chips (powered by twitterapi.io)
+
 ## What's New in v2.1.0
 
 - **Live SSE Quotes** — real-time prices stream over Server-Sent Events with sub-second tick latency, replacing 500ms HTTP polling

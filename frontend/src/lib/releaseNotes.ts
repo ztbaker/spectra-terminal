@@ -8,6 +8,13 @@ export interface ReleaseNote {
 // "What's New" dialog on first launch after update.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '2.2.1',
+    date: '2026-05-08',
+    highlights: [
+      'TRUMP — merged feed combining Truth Social (@realDonaldTrump), Twitter @RapidResponse47, and Twitter @WhiteHouse with source filter chips (powered by twitterapi.io)',
+    ],
+  },
+  {
     version: '2.2.0',
     date: '2026-05-08',
     highlights: [
